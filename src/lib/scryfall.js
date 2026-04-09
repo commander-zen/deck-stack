@@ -9,7 +9,12 @@ export function buildQuery(filters) {
   if (filters.name?.trim())   parts.push(`name:"${filters.name.trim()}"`);
   if (filters.oracle?.trim()) parts.push(`o:"${filters.oracle.trim()}"`);
 
-  // Colors
+  // Color identity (id: operator — for commander identity filtering)
+  if (filters.colorIdentity && filters.colorIdentity.length > 0) {
+    parts.push(`id:${filters.colorIdentity.join("")}`);
+  }
+
+  // Colors (c: operator — legacy advanced search)
   if (filters.colors && filters.colors.selected.length > 0) {
     const joined = filters.colors.selected.join("");
     const mode   = filters.colors.mode; // "include" | "exact" | "subset"
@@ -18,6 +23,11 @@ export function buildQuery(filters) {
     else                    parts.push(`c:${joined}`);
   }
   if (filters.colors?.colorless) parts.push("c:c");
+
+  // Tags (strategy + function chips)
+  if (filters.tags && filters.tags.length > 0) {
+    filters.tags.forEach(t => parts.push(t));
+  }
 
   // Types
   if (filters.types && filters.types.length > 0) {
@@ -63,17 +73,26 @@ function cacheResults(query, data) {
 
 // ── Card fetcher with pagination + backoff ────────────────────────────────────
 
-const PAGE_DELAY  = 500;  // ms between pages
-const BACKOFF_429 = 30000; // ms on 429
+const PAGE_DELAY   = 500;   // ms between pages
+const BACKOFF_429  = 30000; // ms on 429
+export const EJECT_THRESHOLD = 500;  // show eject warning after this many cards
+export const HARD_CAP        = 1000; // auto-eject at this count
 
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-export async function fetchAllCards(query, onProgress) {
+// options: { signal?: AbortSignal }
+// onProgress: ({ done, total, partial, ejectable, autoEjected }) => void
+//   partial   — snapshot of all cards fetched so far
+//   ejectable — true once done >= EJECT_THRESHOLD
+//   autoEjected — true when hard cap hit (fetch stopped automatically)
+export async function fetchAllCards(query, onProgress, options = {}) {
+  const { signal } = options;
+
   const cached = getCachedResults(query);
   if (cached) {
-    onProgress?.({ done: cached.length, total: cached.length, finished: true });
+    onProgress?.({ done: cached.length, total: cached.length, partial: cached, finished: true });
     return cached;
   }
 
@@ -82,10 +101,14 @@ export async function fetchAllCards(query, onProgress) {
   let total = null;
 
   while (url) {
+    // Check abort before each page fetch
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
     let res;
     try {
-      res = await fetch(url, { headers: { "User-Agent": UA } });
+      res = await fetch(url, { headers: { "User-Agent": UA }, signal });
     } catch (err) {
+      if (err.name === "AbortError") throw err;
       throw new Error("Network error fetching cards.");
     }
 
@@ -102,14 +125,23 @@ export async function fetchAllCards(query, onProgress) {
     if (total === null) total = json.total_cards ?? null;
 
     all.push(...(json.data ?? []));
-    onProgress?.({ done: all.length, total: total ?? all.length, finished: false });
+
+    // Hard cap — auto-eject
+    if (all.length >= HARD_CAP) {
+      onProgress?.({ done: all.length, total: total ?? all.length, partial: [...all], finished: true, autoEjected: true });
+      cacheResults(query, all);
+      return all;
+    }
+
+    const ejectable = all.length >= EJECT_THRESHOLD;
+    onProgress?.({ done: all.length, total: total ?? all.length, partial: [...all], ejectable, finished: false });
 
     url = json.has_more ? json.next_page : null;
     if (url) await sleep(PAGE_DELAY);
   }
 
   cacheResults(query, all);
-  onProgress?.({ done: all.length, total: all.length, finished: true });
+  onProgress?.({ done: all.length, total: all.length, partial: [...all], finished: true });
   return all;
 }
 
