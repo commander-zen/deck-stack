@@ -3,7 +3,8 @@ import { getCardImage, formatManaCost } from "../lib/scryfall.js";
 
 const SWIPE_THRESHOLD = 40; // px
 
-export default function SwipeScreen({ cards, onDone, onBack }) {
+export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }) {
+  const [cards,   setCards]   = useState(initialCards);
   const [index,   setIndex]   = useState(0);
   const [pile,    setPile]    = useState([]);
   const [history, setHistory] = useState([]); // [{card, kept}] for undo
@@ -91,7 +92,7 @@ export default function SwipeScreen({ cards, onDone, onBack }) {
         <div style={{ fontSize: 13, color: "var(--muted)", margin: "12px 0 32px", letterSpacing: 1 }}>
           {pile.length} card{pile.length !== 1 ? "s" : ""} kept out of {cards.length}
         </div>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
           <button
             onClick={() => onDone(pile)}
             style={{
@@ -102,6 +103,18 @@ export default function SwipeScreen({ cards, onDone, onBack }) {
           >
             REVIEW PILE →
           </button>
+          {onLoadMore && (
+            <button
+              onClick={() => onLoadMore(moreCards => setCards(prev => [...prev, ...moreCards]))}
+              style={{
+                padding: "14px 32px", borderRadius: 12,
+                border: "1px solid rgba(251,191,36,0.4)", background: "rgba(251,191,36,0.07)", color: "#fbbf24",
+                fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3, cursor: "pointer",
+              }}
+            >
+              I'M A SICKO, MORE CARDS
+            </button>
+          )}
           <button
             onClick={onBack}
             style={{
@@ -154,13 +167,23 @@ export default function SwipeScreen({ cards, onDone, onBack }) {
         <div style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 2 }}>
           {index + 1} / {cards.length}
         </div>
-        <button onClick={handleUndo} disabled={history.length === 0} style={{
-          background: "transparent", border: "none",
-          color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
-          fontSize: 12, letterSpacing: 1, cursor: history.length > 0 ? "pointer" : "default",
-        }}>
-          UNDO ↺
-        </button>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <button onClick={handleUndo} disabled={history.length === 0} style={{
+            background: "transparent", border: "none",
+            color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
+            fontSize: 12, letterSpacing: 1, cursor: history.length > 0 ? "pointer" : "default",
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}>
+            UNDO ↺
+          </button>
+          <button onClick={() => onDone(pile)} style={{
+            background: "transparent", border: "none", color: "var(--danger)",
+            fontSize: 12, letterSpacing: 1, cursor: "pointer",
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}>
+            EJECT ⏏
+          </button>
+        </div>
       </div>
 
       {/* Pile counter */}

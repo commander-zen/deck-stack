@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef } from "react";
-import { buildQuery, fetchAllCards, EJECT_THRESHOLD, HARD_CAP } from "../lib/scryfall.js";
+import { buildQuery, fetchAllCards } from "../lib/scryfall.js";
+
+const CAP = 500;
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,14 @@ const FUNCTION_CHIPS = [
   { label: "ramp",             tag: "tag:ramp"      },
   { label: "disruption",       tag: "tag:removal"   },
   { label: "mass disruption",  tag: "tag:wrath"     },
+];
+
+const LAND_CHIPS = [
+  { label: "basic lands",    tag: "type:land is:basic"   },
+  { label: "nonbasic lands", tag: "type:land -is:basic"  },
+  { label: "fetch lands",    tag: "tag:fetchland"        },
+  { label: "shock lands",    tag: "tag:shockland"        },
+  { label: "dual lands",     tag: "tag:dual"             },
 ];
 
 const CMC_OPS      = ["=", "<=", ">=", "<", ">"];
@@ -250,9 +260,10 @@ export default function SearchScreen({ onCardsReady }) {
   const [progress,  setProgress]  = useState(null);   // { done, total, ejectable, autoEjected }
   const [error,     setError]     = useState(null);
 
-  // Refs so eject/cancel handlers can read current values without stale closures
-  const abortCtrlRef   = useRef(null);
+  // Refs so cancel/auto-stop handlers can read current values without stale closures
+  const abortCtrlRef    = useRef(null);
   const partialCardsRef = useRef([]);
+  const autoStopRef     = useRef(false);
 
   const query = buildQuery(filters);
 
@@ -277,24 +288,13 @@ export default function SearchScreen({ onCardsReady }) {
   // ── Cancel (abort, discard partial, back to idle) ──────────────────────────
 
   const handleCancel = useCallback(() => {
+    autoStopRef.current = false;
     abortCtrlRef.current?.abort();
     partialCardsRef.current = [];
     setLoading(false);
     setProgress(null);
     setError(null);
   }, []);
-
-  // ── Eject (abort, use partial cards collected so far) ─────────────────────
-
-  const handleEject = useCallback(() => {
-    abortCtrlRef.current?.abort();
-    const partial = partialCardsRef.current;
-    setLoading(false);
-    setProgress(null);
-    if (partial.length > 0) {
-      onCardsReady(partial);
-    }
-  }, [onCardsReady]);
 
   // ── Search ─────────────────────────────────────────────────────────────────
 
@@ -308,18 +308,17 @@ export default function SearchScreen({ onCardsReady }) {
 
     setLoading(true);
     setError(null);
-    setProgress({ done: 0, total: null, ejectable: false, autoEjected: false });
+    setProgress({ done: 0, total: null });
 
     try {
       const cards = await fetchAllCards(
         query,
-        ({ done, total, partial, ejectable, autoEjected, finished }) => {
+        ({ done, total, partial, finished }) => {
           partialCardsRef.current = partial ?? [];
-          setProgress({ done, total, ejectable: !!ejectable, autoEjected: !!autoEjected });
-          // Auto-eject hit the hard cap — navigate immediately
-          if (autoEjected && finished) {
-            setLoading(false);
-            onCardsReady(partial);
+          setProgress({ done, total });
+          if (!finished && (partial ?? []).length >= CAP) {
+            autoStopRef.current = true;
+            ctrl.abort();
           }
         },
         { signal: ctrl.signal },
@@ -329,9 +328,18 @@ export default function SearchScreen({ onCardsReady }) {
         setLoading(false);
         return;
       }
-      onCardsReady(cards);
+      onCardsReady(cards.slice(0, CAP), query);
     } catch (err) {
-      if (err.name === "AbortError") return; // cancelled — already handled
+      if (err.name === "AbortError") {
+        if (autoStopRef.current) {
+          const partial = partialCardsRef.current;
+          autoStopRef.current = false;
+          setLoading(false);
+          setProgress(null);
+          if (partial.length > 0) onCardsReady(partial, query);
+        }
+        return;
+      }
       setError(err.message ?? "Something went wrong.");
       setLoading(false);
     }
@@ -390,6 +398,18 @@ export default function SearchScreen({ onCardsReady }) {
             <button
               key={tag}
               style={S.chip(filters.tags.includes(tag), "var(--secondary)")}
+              onClick={() => toggleTag(tag)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{ ...S.sectionLabel, marginTop: 16 }}>lands</div>
+        <div style={S.chipRow}>
+          {LAND_CHIPS.map(({ label, tag }) => (
+            <button
+              key={tag}
+              style={S.chip(filters.tags.includes(tag), "#4ade80")}
               onClick={() => toggleTag(tag)}
             >
               {label}
@@ -507,57 +527,11 @@ export default function SearchScreen({ onCardsReady }) {
             <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, marginBottom: 14 }}>
               <div style={{
                 height: "100%",
-                width: `${Math.min(100, (progress.done / progress.total) * 100)}%`,
+                width: `${Math.min(100, (progress.done / Math.min(progress.total, CAP)) * 100)}%`,
                 background: "var(--primary)",
                 borderRadius: 2,
                 transition: "width 0.3s",
               }} />
-            </div>
-          )}
-
-          {/* Eject warning — shown once 500+ cards fetched */}
-          {progress.ejectable && (
-            <div style={{
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.35)",
-              borderRadius: 10,
-              padding: "12px 16px",
-              marginBottom: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-            }}>
-              <div>
-                <div style={{ fontSize: 11, color: "#fbbf24", fontWeight: 600, letterSpacing: 1 }}>
-                  ⚠ THAT'S A BIG STACK
-                </div>
-                <div style={{ fontSize: 10, color: "rgba(251,191,36,0.6)", marginTop: 2 }}>
-                  {progress.done} cards so far — you can swipe now
-                  {progress.total && progress.total > HARD_CAP
-                    ? ` (auto-stops at ${HARD_CAP})`
-                    : ""}
-                </div>
-              </div>
-              <button
-                onClick={handleEject}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  border: "1px solid #fbbf24",
-                  background: "rgba(251,191,36,0.15)",
-                  color: "#fbbf24",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  letterSpacing: 1,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                eject — swipe what I have
-              </button>
             </div>
           )}
 
