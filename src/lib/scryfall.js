@@ -145,6 +145,25 @@ export async function fetchAllCards(query, onProgress, options = {}) {
   return all;
 }
 
+// ── Single-page fetcher (for type-ahead / small queries) ─────────────────────
+
+export async function fetchFirstPage(query, options = {}) {
+  const { signal } = options;
+  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&order=edhrec&unique=cards`;
+  let res;
+  try {
+    res = await fetch(url, { headers: { "User-Agent": UA }, signal });
+  } catch (err) {
+    if (err.name === "AbortError") throw err;
+    throw new Error("Network error.");
+  }
+  if (res.status === 404) return [];
+  if (res.status === 429) throw new Error("Rate limited — try again in a moment.");
+  if (!res.ok) throw new Error(`Scryfall error: ${res.status}`);
+  const json = await res.json();
+  return json.data ?? [];
+}
+
 // ── Image helpers ─────────────────────────────────────────────────────────────
 
 export function getCardImage(card, size = "normal") {

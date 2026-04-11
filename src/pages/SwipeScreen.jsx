@@ -3,7 +3,42 @@ import { getCardImage, formatManaCost } from "../lib/scryfall.js";
 
 const SWIPE_THRESHOLD = 40; // px
 
-export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }) {
+// ── Sort ──────────────────────────────────────────────────────────────────────
+
+const SORT_OPTIONS = [
+  { key: "edhrec",     label: "EDHREC"  },
+  { key: "cmc-asc",    label: "MV ↑"    },
+  { key: "cmc-desc",   label: "MV ↓"    },
+  { key: "alpha",      label: "A→Z"     },
+  { key: "price-asc",  label: "$ ↑"     },
+  { key: "price-desc", label: "$ ↓"     },
+];
+
+function sortComparator(a, b, key) {
+  switch (key) {
+    case "cmc-asc":    return (a.cmc ?? 0) - (b.cmc ?? 0);
+    case "cmc-desc":   return (b.cmc ?? 0) - (a.cmc ?? 0);
+    case "alpha":      return a.name.localeCompare(b.name);
+    case "price-asc":  return (parseFloat(a.prices?.usd) || 0) - (parseFloat(b.prices?.usd) || 0);
+    case "price-desc": return (parseFloat(b.prices?.usd) || 0) - (parseFloat(a.prices?.usd) || 0);
+    default:           return 0;
+  }
+}
+
+// ── Veggie filter categories ──────────────────────────────────────────────────
+
+const VEG_CHIPS = [
+  { key: "ramp",           label: "🌱 Ramp"           },
+  { key: "card-advantage", label: "📖 Card Advantage"  },
+  { key: "disruption",     label: "✂️ Disruption"      },
+  { key: "mass-disruption",label: "💥 Mass Disruption" },
+  { key: "lands",          label: "🗺️ Lands"           },
+  { key: "affiliated",     label: "⭐ Affiliated"      },
+];
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore, commander = null, vegCategories = null }) {
   const [cards,   setCards]   = useState(initialCards);
   const [index,   setIndex]   = useState(0);
   const [pile,    setPile]    = useState([]);
@@ -13,7 +48,16 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
   const [dragging,setDragging]= useState(false);
   const [animOut, setAnimOut] = useState(null); // "left" | "right" | null
 
-  const dragStart = useRef(null);
+  // Commander-mode state
+  const [sortOrder,        setSortOrder]        = useState("edhrec");
+  const [activeVegFilters, setActiveVegFilters] = useState(new Set());
+  const [filterOpen,       setFilterOpen]       = useState(false);
+
+  // Refs for sort/filter operations
+  const originalCardsRef = useRef([...initialCards]);
+  const swipedIds        = useRef(new Set());
+  const dragStart        = useRef(null);
+
   const card = cards[index] ?? null;
   const done = index >= cards.length;
 
@@ -34,6 +78,7 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
     setAnimOut(keep ? "right" : "left");
     setBadge(keep ? "keep" : "pass");
     setTimeout(() => {
+      swipedIds.current.add(card.id);
       setHistory(h => [...h, { card, kept: keep }]);
       if (keep) setPile(p => [...p, card]);
       setIndex(i => i + 1);
@@ -46,10 +91,52 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
   const handleUndo = useCallback(() => {
     if (history.length === 0 || animOut) return;
     const last = history[history.length - 1];
+    swipedIds.current.delete(last.card.id);
     setHistory(h => h.slice(0, -1));
     if (last.kept) setPile(p => p.filter(c => c !== last.card));
     setIndex(i => i - 1);
   }, [history, animOut]);
+
+  // ── Sort ──────────────────────────────────────────────────────────────────
+  const handleSort = (key) => {
+    setSortOrder(key);
+    setCards(prev => {
+      const swiped    = prev.slice(0, index);
+      let remaining;
+      if (key === "edhrec") {
+        // Restore original fetch order for unswiped cards
+        remaining = originalCardsRef.current.filter(c => !swipedIds.current.has(c.id));
+      } else {
+        remaining = [...prev.slice(index)].sort((a, b) => sortComparator(a, b, key));
+      }
+      return [...swiped, ...remaining];
+    });
+  };
+
+  // ── Veggie filter ─────────────────────────────────────────────────────────
+  const handleVegFilterToggle = (cat) => {
+    setActiveVegFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      // Reorder: matching-first, then non-matching
+      setCards(cardsPrev => {
+        const swiped    = cardsPrev.slice(0, index);
+        const remaining = cardsPrev.slice(index);
+        if (next.size === 0) return [...swiped, ...remaining];
+        const matching  = remaining.filter(c => next.has(c._vegCategory));
+        const other     = remaining.filter(c => !next.has(c._vegCategory));
+        return [...swiped, ...matching, ...other];
+      });
+      return next;
+    });
+  };
+
+  // ── Load more (preserves original order ref) ──────────────────────────────
+  const addMoreCards = (moreCards) => {
+    originalCardsRef.current = [...originalCardsRef.current, ...moreCards];
+    setCards(prev => [...prev, ...moreCards]);
+  };
 
   // ── Pointer drag ──────────────────────────────────────────────────────────
   const onPointerDown = (e) => {
@@ -60,7 +147,7 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
     if (!dragging || dragStart.current === null) return;
     const dx = e.clientX - dragStart.current;
     setOffset(dx);
-    if (dx > SWIPE_THRESHOLD)      setBadge("keep");
+    if (dx > SWIPE_THRESHOLD)       setBadge("keep");
     else if (dx < -SWIPE_THRESHOLD) setBadge("pass");
     else                             setBadge(null);
   };
@@ -75,8 +162,21 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
   };
 
   // ── Images ────────────────────────────────────────────────────────────────
-  const artUrl  = card ? getCardImage(card, "art_crop")  : null;
-  const mainUrl = card ? getCardImage(card, "normal")    : null;
+  const artUrl  = card ? getCardImage(card, "art_crop") : null;
+  const mainUrl = card ? getCardImage(card, "normal")   : null;
+
+  // ── Commander badge art ───────────────────────────────────────────────────
+  const commanderArt = commander ? getCardImage(commander, "art_crop") : null;
+
+  // ── Counter (reflects active filter) ─────────────────────────────────────
+  const isFiltered      = activeVegFilters.size > 0;
+  const filteredTotal   = isFiltered
+    ? cards.filter(c => activeVegFilters.has(c._vegCategory)).length
+    : cards.length;
+  const filteredSwiped  = isFiltered
+    ? cards.slice(0, index).filter(c => activeVegFilters.has(c._vegCategory)).length
+    : index;
+  const counterDisplay  = `${filteredSwiped + 1} / ${filteredTotal}`;
 
   // ── Done screen ───────────────────────────────────────────────────────────
   if (done) {
@@ -105,7 +205,7 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
           </button>
           {onLoadMore && (
             <button
-              onClick={() => onLoadMore(moreCards => setCards(prev => [...prev, ...moreCards]))}
+              onClick={() => onLoadMore(addMoreCards)}
               style={{
                 padding: "14px 32px", borderRadius: 12,
                 border: "1px solid rgba(251,191,36,0.4)", background: "rgba(251,191,36,0.07)", color: "#fbbf24",
@@ -132,8 +232,8 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
 
   // ── Swipe card ────────────────────────────────────────────────────────────
   const rotation = (animOut ? (animOut === "right" ? 12 : -12) : offset / 20);
-  const tx = animOut ? (animOut === "right" ? 500 : -500) : offset;
-  const opacity = animOut ? 0 : 1;
+  const tx       = animOut ? (animOut === "right" ? 500 : -500) : offset;
+  const opacity  = animOut ? 0 : 1;
 
   return (
     <div style={{
@@ -152,7 +252,35 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
         }} />
       )}
 
-      {/* Top bar */}
+      {/* ── Commander badge strip (easy mode only) ── */}
+      {commander && (
+        <div style={{
+          position: "relative", zIndex: 11,
+          width: "100%", height: 36,
+          background: "rgba(6,4,15,0.9)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", alignItems: "center",
+          gap: 10, padding: "0 14px",
+          overflow: "hidden",
+          flexShrink: 0,
+        }}>
+          {commanderArt && (
+            <img
+              src={commanderArt}
+              alt=""
+              style={{ height: 26, width: 38, objectFit: "cover", borderRadius: 3, flexShrink: 0 }}
+            />
+          )}
+          <span style={{ fontSize: 11, color: "var(--text)", letterSpacing: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {commander.name}
+          </span>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: 2, whiteSpace: "nowrap" }}>
+            COMMANDER
+          </span>
+        </div>
+      )}
+
+      {/* ── Top bar ── */}
       <div style={{
         position: "relative", zIndex: 10, width: "100%", maxWidth: 480,
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -165,7 +293,7 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
           ← BACK
         </button>
         <div style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 2 }}>
-          {index + 1} / {cards.length}
+          {counterDisplay}
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <button onClick={handleUndo} disabled={history.length === 0} style={{
@@ -185,6 +313,112 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
           </button>
         </div>
       </div>
+
+      {/* ── Sort row (easy mode only) ── */}
+      {commander && (
+        <div style={{
+          position: "relative", zIndex: 10,
+          width: "100%", maxWidth: 480,
+          display: "flex", alignItems: "center",
+          gap: 6, padding: "0 16px 8px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          flexShrink: 0,
+        }}>
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => handleSort(opt.key)}
+              style={{
+                whiteSpace: "nowrap", padding: "5px 11px",
+                borderRadius: 20, flexShrink: 0,
+                border: `1px solid ${sortOrder === opt.key ? "var(--secondary)" : "rgba(255,255,255,0.1)"}`,
+                background: sortOrder === opt.key ? "rgba(167,139,250,0.15)" : "transparent",
+                color: sortOrder === opt.key ? "var(--secondary)" : "var(--muted)",
+                fontSize: 11, cursor: "pointer",
+                fontFamily: "'IBM Plex Mono', monospace",
+                transition: "all 0.15s",
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {/* Filter toggle */}
+          <button
+            onClick={() => setFilterOpen(v => !v)}
+            style={{
+              marginLeft: "auto", whiteSpace: "nowrap", padding: "5px 11px",
+              borderRadius: 20, flexShrink: 0,
+              border: `1px solid ${filterOpen || activeVegFilters.size > 0 ? "var(--primary)" : "rgba(255,255,255,0.1)"}`,
+              background: filterOpen || activeVegFilters.size > 0 ? "rgba(91,143,255,0.15)" : "transparent",
+              color: filterOpen || activeVegFilters.size > 0 ? "var(--primary)" : "var(--muted)",
+              fontSize: 11, cursor: "pointer",
+              fontFamily: "'IBM Plex Mono', monospace",
+              transition: "all 0.15s",
+            }}
+          >
+            FILTER ☰{activeVegFilters.size > 0 ? ` (${activeVegFilters.size})` : ""}
+          </button>
+        </div>
+      )}
+
+      {/* ── Filter drawer (easy mode only) ── */}
+      {commander && filterOpen && (
+        <div style={{
+          position: "relative", zIndex: 10,
+          width: "100%", maxWidth: 480,
+          padding: "0 16px 12px",
+          display: "flex", flexWrap: "wrap", gap: 8,
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          marginBottom: 4,
+        }}>
+          {VEG_CHIPS.map(({ key, label }) => {
+            const available = !vegCategories || vegCategories.includes(key);
+            const active    = activeVegFilters.has(key);
+            return (
+              <button
+                key={key}
+                disabled={!available}
+                onClick={() => available && handleVegFilterToggle(key)}
+                style={{
+                  padding: "6px 13px", borderRadius: 20, whiteSpace: "nowrap",
+                  border: `1px solid ${active ? "var(--active)" : available ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)"}`,
+                  background: active ? "color-mix(in srgb, var(--active) 15%, transparent)" : "transparent",
+                  color: active ? "var(--active)" : available ? "var(--muted)" : "rgba(255,255,255,0.2)",
+                  fontSize: 11, cursor: available ? "pointer" : "default",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  transition: "all 0.15s",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+          {activeVegFilters.size > 0 && (
+            <button
+              onClick={() => {
+                setActiveVegFilters(new Set());
+                // Restore all remaining cards (no filtering)
+                setCards(prev => {
+                  const swiped    = prev.slice(0, index);
+                  const remaining = prev.slice(index);
+                  return [...swiped, ...remaining];
+                });
+              }}
+              style={{
+                padding: "6px 13px", borderRadius: 20,
+                border: "1px solid rgba(255,77,109,0.3)",
+                background: "transparent", color: "var(--danger)",
+                fontSize: 11, cursor: "pointer",
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}
+            >
+              clear
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Pile counter */}
       <div style={{
@@ -215,13 +449,11 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
           <div style={{
             position: "absolute", top: 16, zIndex: 20,
             ...(badge === "keep" ? { right: 16 } : { left: 16 }),
-            padding: "8px 16px",
-            borderRadius: 8,
+            padding: "8px 16px", borderRadius: 8,
             border: `3px solid ${badge === "keep" ? "var(--success)" : "var(--danger)"}`,
             color: badge === "keep" ? "var(--success)" : "var(--danger)",
             fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 28,
-            letterSpacing: 4,
+            fontSize: 28, letterSpacing: 4,
             transform: `rotate(${badge === "keep" ? -15 : 15}deg)`,
             background: "rgba(0,0,0,0.6)",
           }}>
@@ -243,8 +475,7 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
           />
         ) : (
           <div style={{
-            width: 280, height: 390,
-            background: "var(--panel)", borderRadius: 16,
+            width: 280, height: 390, background: "var(--panel)", borderRadius: 16,
             display: "flex", alignItems: "center", justifyContent: "center",
             color: "var(--muted)", fontSize: 12,
           }}>
@@ -260,13 +491,15 @@ export default function SwipeScreen({ initialCards, onDone, onBack, onLoadMore }
           {card.type_line}
           {card.mana_cost ? ` · ${formatManaCost(card.mana_cost)}` : ""}
         </div>
+        {commander && card._vegCategory && (
+          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 3, letterSpacing: 2 }}>
+            {card._vegCategory.toUpperCase()}
+          </div>
+        )}
       </div>
 
       {/* Swipe buttons */}
-      <div style={{
-        position: "relative", zIndex: 10,
-        display: "flex", gap: 32, marginTop: 28,
-      }}>
+      <div style={{ position: "relative", zIndex: 10, display: "flex", gap: 32, marginTop: 28 }}>
         <button
           onClick={() => resolve(false)}
           style={{
