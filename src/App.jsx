@@ -1,196 +1,154 @@
-import { useState } from "react";
-import { fetchAllCards } from "./lib/scryfall.js";
-import SearchScreen    from "./pages/SearchScreen.jsx";
-import CommanderScreen from "./pages/CommanderScreen.jsx";
-import SwipeScreen     from "./pages/SwipeScreen.jsx";
-import PileScreen      from "./pages/PileScreen.jsx";
-
-const LOAD_MORE_CAP = 500;
-
-function readMode() {
-  try { return localStorage.getItem("deckswipe_mode") ?? "manual"; }
-  catch { return "manual"; }
-}
-function writeMode(m) {
-  try { localStorage.setItem("deckswipe_mode", m); } catch {}
-}
-
-// ── Mode toggle bar ───────────────────────────────────────────────────────────
-
-function ModeToggle({ easyMode, onToggle }) {
-  return (
-    <div style={{
-      width: "100%",
-      background: "var(--bg)",
-      borderBottom: "1px solid rgba(255,255,255,0.05)",
-      display: "flex",
-      justifyContent: "center",
-      padding: "10px 20px",
-      position: "relative",
-      zIndex: 200,
-      flexShrink: 0,
-    }}>
-      <div style={{
-        display: "flex",
-        background: "var(--panel)",
-        borderRadius: 10,
-        padding: 3,
-        gap: 2,
-      }}>
-        <button
-          onClick={() => onToggle("easy")}
-          style={{
-            padding: "6px 20px",
-            borderRadius: 8,
-            border: "none",
-            background: easyMode ? "var(--primary)" : "transparent",
-            color: easyMode ? "#fff" : "var(--muted)",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 13,
-            letterSpacing: 3,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-        >
-          EASY MODE
-        </button>
-        <button
-          onClick={() => onToggle("manual")}
-          style={{
-            padding: "6px 20px",
-            borderRadius: 8,
-            border: "none",
-            background: !easyMode ? "rgba(255,255,255,0.08)" : "transparent",
-            color: !easyMode ? "var(--text)" : "var(--muted)",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 13,
-            letterSpacing: 3,
-            cursor: "pointer",
-            transition: "all 0.15s",
-          }}
-        >
-          MANUAL
-        </button>
-      </div>
-    </div>
-  );
-}
+import { useState, useCallback } from "react";
+import LandingScreen  from "./screens/LandingScreen.jsx";
+import ConfirmScreen  from "./screens/ConfirmScreen.jsx";
+import LoadingScreen  from "./screens/LoadingScreen.jsx";
+import SwipeScreen    from "./screens/SwipeScreen.jsx";
+import DoneScreen     from "./screens/DoneScreen.jsx";
+import PileScreen     from "./screens/PileScreen.jsx";
 
 // ── App ───────────────────────────────────────────────────────────────────────
+// Screen flow: landing → confirm → loading → swipe → done → pile
+//
+// Resuming swipe from the done screen is supported by storing swipeState
+// (the full { cards, index, pile, history } snapshot) in App state.
 
 export default function App() {
-  const [easyMode,      setEasyMode]      = useState(() => readMode() === "easy");
-  const [screen,        setScreen]        = useState(() => readMode() === "easy" ? "commander" : "search");
-  const [cards,         setCards]         = useState([]);
-  const [pile,          setPile]          = useState([]);
-  const [currentQuery,  setCurrentQuery]  = useState("");
-  const [commander,     setCommander]     = useState(null);
-  const [vegCategories, setVegCategories] = useState(null);
+  const [screen,     setScreen]     = useState("landing");
+  const [commander,  setCommander]  = useState(null);
+  const [swipeState, setSwipeState] = useState(null); // resume data for swipe screen
+  const [finalPile,  setFinalPile]  = useState([]);   // pile passed to pile screen
+  const [loadError,  setLoadError]  = useState(null);
 
-  // ── Mode toggle ───────────────────────────────────────────────────────────
-
-  function handleToggleMode(mode) {
-    const isEasy = mode === "easy";
-    setEasyMode(isEasy);
-    writeMode(mode);
-    if (screen === "search" || screen === "commander") {
-      setScreen(isEasy ? "commander" : "search");
-    }
+  // ── Landing → Confirm ────────────────────────────────────────────────────
+  function handleCommanderSelected(card) {
+    setCommander(card);
+    setLoadError(null);
+    setSwipeState(null);
+    setScreen("confirm");
   }
 
-  // ── Manual flow handlers ──────────────────────────────────────────────────
+  // ── Confirm → Loading ────────────────────────────────────────────────────
+  function handleBuild() {
+    setScreen("loading");
+  }
 
-  function handleCardsReady(cardList, query) {
-    setCards(cardList);
-    setCurrentQuery(query);
+  // ── Confirm → Landing ────────────────────────────────────────────────────
+  function handleChooseAnother() {
     setCommander(null);
-    setVegCategories(null);
-    setPile([]);
-    setScreen("swipe");
+    setScreen("landing");
   }
 
-  // ── Easy mode handlers ────────────────────────────────────────────────────
-
-  function handleCommanderReady(cmdr, cardPool) {
-    const cats = [...new Set(cardPool.map(c => c._vegCategory).filter(Boolean))];
-    setCommander(cmdr);
-    setVegCategories(cats);
-    setCards(cardPool);
-    setCurrentQuery("");
-    setPile([]);
+  // ── Loading → Swipe ──────────────────────────────────────────────────────
+  const handlePoolReady = useCallback((cards) => {
+    setSwipeState({ initialCards: cards });
     setScreen("swipe");
+  }, []);
+
+  // ── Loading error → back to Confirm ──────────────────────────────────────
+  function handleLoadError(msg) {
+    setLoadError(msg);
+    setScreen("confirm");
   }
 
-  // ── Shared handlers ───────────────────────────────────────────────────────
+  // ── Swipe → Done ─────────────────────────────────────────────────────────
+  const handleSwipeComplete = useCallback((pile, savedState) => {
+    setFinalPile(pile);
+    setSwipeState(savedState); // save so user can resume
+    setScreen("done");
+  }, []);
 
-  function handleSwipeDone(keptCards) {
-    setPile(keptCards);
+  // ── Done → Pile ──────────────────────────────────────────────────────────
+  function handleViewPile() {
     setScreen("pile");
   }
 
-  function handleNewSearch() {
-    setCards([]);
-    setPile([]);
-    setCurrentQuery("");
-    setCommander(null);
-    setVegCategories(null);
-    setScreen(easyMode ? "commander" : "search");
+  // ── Done → Swipe (resume) ────────────────────────────────────────────────
+  function handleKeepSwiping() {
+    // swipeState already has { cards, index, pile, history }
+    setScreen("swipe");
   }
 
-  async function handleLoadMore(callback) {
-    if (!currentQuery) return;
-    const ctrl      = new AbortController();
-    const collected = [];
-    try {
-      await fetchAllCards(
-        currentQuery,
-        ({ partial, finished }) => {
-          if (partial) {
-            collected.length = 0;
-            collected.push(...partial);
-          }
-          if (!finished && collected.length >= cards.length + LOAD_MORE_CAP) {
-            ctrl.abort();
-          }
-        },
-        { signal: ctrl.signal },
-      );
-    } catch (err) {
-      if (err.name !== "AbortError") return;
-    }
-    const moreCards = collected.slice(cards.length, cards.length + LOAD_MORE_CAP);
-    if (moreCards.length > 0) callback(moreCards);
+  // ── Pile → Landing ───────────────────────────────────────────────────────
+  function handleNewSearch() {
+    setCommander(null);
+    setSwipeState(null);
+    setFinalPile([]);
+    setLoadError(null);
+    setScreen("landing");
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const onLanding = screen === "search" || screen === "commander";
+  const centered = { display: "flex", flexDirection: "column", minHeight: "100vh" };
 
-  if (screen === "swipe") {
-    return (
-      <SwipeScreen
-        initialCards={cards}
-        onDone={handleSwipeDone}
-        onBack={handleNewSearch}
-        onLoadMore={currentQuery ? handleLoadMore : undefined}
-        commander={commander}
-        vegCategories={vegCategories}
-      />
-    );
+  switch (screen) {
+    case "landing":
+      return (
+        <div style={centered}>
+          <LandingScreen onCommanderSelected={handleCommanderSelected} />
+        </div>
+      );
+
+    case "confirm":
+      return (
+        <div style={centered}>
+          <ConfirmScreen
+            commander={commander}
+            onBuild={handleBuild}
+            onBack={handleChooseAnother}
+            loadError={loadError}
+          />
+        </div>
+      );
+
+    case "loading":
+      return (
+        <div style={centered}>
+          <LoadingScreen
+            commander={commander}
+            onReady={handlePoolReady}
+            onError={handleLoadError}
+          />
+        </div>
+      );
+
+    case "swipe":
+      return (
+        <SwipeScreen
+          commander={commander}
+          initialCards={swipeState?.initialCards ?? swipeState?.cards ?? []}
+          resumeState={
+            // If swipeState has an index (i.e., user is resuming), pass the full state.
+            // If it only has initialCards (fresh start), pass nothing.
+            swipeState?.index != null ? swipeState : undefined
+          }
+          onComplete={handleSwipeComplete}
+        />
+      );
+
+    case "done":
+      return (
+        <div style={centered}>
+          <DoneScreen
+            keptCount={finalPile.length}
+            onViewPile={handleViewPile}
+            onKeepSwiping={handleKeepSwiping}
+          />
+        </div>
+      );
+
+    case "pile":
+      return (
+        <div style={centered}>
+          <PileScreen
+            commander={commander}
+            pile={finalPile}
+            onNewSearch={handleNewSearch}
+          />
+        </div>
+      );
+
+    default:
+      return null;
   }
-
-  if (screen === "pile") {
-    return <PileScreen pile={pile} onNewSearch={handleNewSearch} />;
-  }
-
-  // Landing screens: wrap with mode toggle
-  return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <ModeToggle easyMode={easyMode} onToggle={handleToggleMode} />
-      {screen === "commander"
-        ? <CommanderScreen onCommanderReady={handleCommanderReady} />
-        : <SearchScreen    onCardsReady={handleCardsReady} />
-      }
-    </div>
-  );
 }
