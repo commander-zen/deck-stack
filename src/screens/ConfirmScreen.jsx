@@ -1,6 +1,13 @@
 import { getCardImage, formatManaCost } from "../lib/scryfall.js";
 
-export default function ConfirmScreen({ commander, onBuild, onBack, loadError }) {
+export default function ConfirmScreen({
+  commander,
+  onBuild,
+  onBack,
+  loadError,
+  easyMode,
+  onSetEasyMode,
+}) {
   const art     = getCardImage(commander, "normal");
   const artCrop = getCardImage(commander, "art_crop");
   const ci      = commander.color_identity ?? [];
@@ -16,6 +23,7 @@ export default function ConfirmScreen({ commander, onBuild, onBack, loadError })
       position: "relative",
       overflow: "hidden",
     }}>
+
       {/* Blurred art background */}
       {artCrop && (
         <div style={{
@@ -56,12 +64,7 @@ export default function ConfirmScreen({ commander, onBuild, onBack, loadError })
       </div>
 
       {/* Card image */}
-      <div style={{
-        position: "relative",
-        zIndex: 10,
-        marginTop: 24,
-        padding: "0 20px",
-      }}>
+      <div style={{ position: "relative", zIndex: 10, marginTop: 24, padding: "0 20px" }}>
         {art ? (
           <img
             src={art}
@@ -75,8 +78,7 @@ export default function ConfirmScreen({ commander, onBuild, onBack, loadError })
           />
         ) : (
           <div style={{
-            width: 280,
-            height: 390,
+            width: 280, height: 390,
             background: "var(--panel)",
             borderRadius: 18,
             display: "flex",
@@ -107,36 +109,26 @@ export default function ConfirmScreen({ commander, onBuild, onBack, loadError })
         }}>
           {commander.name}
         </div>
-        <div style={{
-          fontSize: 11,
-          color: "var(--muted)",
-          marginTop: 6,
-          letterSpacing: 1,
-        }}>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, letterSpacing: 1 }}>
           {commander.type_line}
         </div>
-        <div style={{
-          fontSize: 12,
-          color: "var(--secondary)",
-          marginTop: 4,
-          letterSpacing: 1,
-        }}>
+        <div style={{ fontSize: 12, color: "var(--secondary)", marginTop: 4, letterSpacing: 1 }}>
           {formatManaCost(commander.mana_cost) || "—"}
           {ci.length > 0 && (
-            <span style={{ marginLeft: 8, color: "var(--muted)" }}>
-              · {ci.join("")}
-            </span>
+            <span style={{ marginLeft: 8, color: "var(--muted)" }}>· {ci.join("")}</span>
           )}
         </div>
       </div>
 
-      {/* BUILD AROUND THIS */}
+      {/* BUILD button + Easy Mode toggle */}
       <div style={{
         position: "relative",
         zIndex: 10,
         width: "100%",
         maxWidth: 480,
-        padding: "24px 20px 40px",
+        padding: "24px 20px",
+        paddingBottom: "max(40px, env(safe-area-inset-bottom))",
+        marginTop: "auto",
       }}>
         {loadError && (
           <div style={{
@@ -152,6 +144,7 @@ export default function ConfirmScreen({ commander, onBuild, onBack, loadError })
             {loadError}
           </div>
         )}
+
         <button
           onClick={onBuild}
           style={{
@@ -171,7 +164,58 @@ export default function ConfirmScreen({ commander, onBuild, onBack, loadError })
           onMouseDown={e => { e.currentTarget.style.transform = "scale(0.98)"; }}
           onMouseUp={e => { e.currentTarget.style.transform = ""; }}
         >
-          BUILD AROUND THIS →
+          {easyMode ? "AUTO-BUILD DECK →" : "BUILD AROUND THIS →"}
+        </button>
+
+        {/* Easy Mode toggle */}
+        <button
+          onClick={() => onSetEasyMode(!easyMode)}
+          style={{
+            width: "100%",
+            marginTop: 12,
+            padding: "13px 16px",
+            borderRadius: 12,
+            border: `1px solid ${easyMode ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.1)"}`,
+            background: easyMode ? "rgba(52,211,153,0.08)" : "transparent",
+            color: easyMode ? "var(--success)" : "var(--muted)",
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 12,
+            cursor: "pointer",
+            transition: "all 0.15s",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            textAlign: "left",
+          }}
+        >
+          {/* Toggle knob */}
+          <span style={{
+            display: "inline-flex",
+            width: 34,
+            height: 20,
+            borderRadius: 10,
+            background: easyMode ? "var(--success)" : "rgba(255,255,255,0.15)",
+            position: "relative",
+            flexShrink: 0,
+            transition: "background 0.15s",
+          }}>
+            <span style={{
+              position: "absolute",
+              top: 3,
+              left: easyMode ? 17 : 3,
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: "#fff",
+              transition: "left 0.15s",
+            }} />
+          </span>
+          <span>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: 2 }}>EASY MODE</span>
+            <span style={{ display: "block", fontSize: 9, opacity: 0.6, marginTop: 1, letterSpacing: 1 }}>
+              AUTO-BUILD · SKIP SWIPING
+            </span>
+          </span>
         </button>
       </div>
     </div>

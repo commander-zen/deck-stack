@@ -282,6 +282,24 @@ export async function fetchAllCards(query, onProgress, options = {}) {
   return all;
 }
 
+// ── Category query helpers for SwipeScreen syntax inspector ──────────────────
+export function buildCategoryQueries(colorId) {
+  const id = colorId || "C";
+  const map = {};
+  for (const { cat, q } of buildPoolQueries(id)) {
+    map[cat] = q;
+  }
+  return map;
+}
+
+export function buildPlanQuery(commander, colorId) {
+  const id = colorId || "C";
+  const tags = getCommanderPlanTags(commander);
+  if (!tags.size) return null;
+  const tagQuery = [...tags].map(s => `oracletag:${s}`).join(" OR ");
+  return `(${tagQuery}) id<=${id}`;
+}
+
 // ── Legacy query builder (kept for SearchScreen compatibility) ────────────────
 export function buildQuery(filters) {
   const parts = [];

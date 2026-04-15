@@ -1,56 +1,82 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getCardImage,
   formatManaCost,
   formatPrice,
   autocompleteCardNames,
   fetchCardByName,
+  fetchFirstPage,
+  buildCategoryQueries,
+  buildPlanQuery,
 } from "../lib/scryfall.js";
-import { CATEGORY_META, CATEGORY_ORDER } from "../lib/wrec.js";
+import { CATEGORY_META } from "../lib/wrec.js";
+import DeckReviewPill from "../components/DeckReviewPill.jsx";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const SWIPE_THRESHOLD = 60; // px
-const BOTTOM_BAR_H   = 60; // px
+const SWIPE_THRESHOLD = 60;
+const BOTTOM_BAR_H   = 60;
 
-const SORT_OPTIONS = [
-  { key: "edhrec",     label: "EDHREC"  },
-  { key: "cmc-asc",    label: "MV ↑"    },
-  { key: "cmc-desc",   label: "MV ↓"    },
-  { key: "alpha",      label: "A→Z"     },
-  { key: "price-asc",  label: "$ ↑"     },
-  { key: "price-desc", label: "$ ↓"     },
-];
+// Tab order per spec: ramp → draw → removal → wrath → plan → lands
+const TAB_ORDER = ["ramp", "card-advantage", "disruption", "mass-disruption", "plan", "mana-base"];
 
-const FILTER_CHIPS = CATEGORY_ORDER.map(cat => ({
-  key:   cat,
-  label: `${CATEGORY_META[cat].emoji} ${CATEGORY_META[cat].label}`,
-}));
+const TAB_LABELS = {
+  "ramp":           "RAMP",
+  "card-advantage": "DRAW",
+  "disruption":     "REMOVAL",
+  "mass-disruption":"WRATH",
+  "plan":           "PLAN",
+  "mana-base":      "LANDS",
+};
 
-function sortCards(cards, key) {
-  switch (key) {
-    case "cmc-asc":    return [...cards].sort((a, b) => (a.cmc ?? 0) - (b.cmc ?? 0));
-    case "cmc-desc":   return [...cards].sort((a, b) => (b.cmc ?? 0) - (a.cmc ?? 0));
-    case "alpha":      return [...cards].sort((a, b) => a.name.localeCompare(b.name));
-    case "price-asc":  return [...cards].sort((a, b) => (parseFloat(a.prices?.usd) || 0) - (parseFloat(b.prices?.usd) || 0));
-    case "price-desc": return [...cards].sort((a, b) => (parseFloat(b.prices?.usd) || 0) - (parseFloat(a.prices?.usd) || 0));
-    default:           return cards;
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
+  return a;
+}
+
+function buildQueues(cards) {
+  const groups = {};
+  for (const cat of TAB_ORDER) groups[cat] = [];
+  for (const card of cards) {
+    const cat = card._deckCategory ?? "plan";
+    if (groups[cat]) groups[cat].push(card);
+    else groups["plan"].push(card);
+  }
+  const result = {};
+  for (const cat of TAB_ORDER) {
+    // Take top 30 by EDHREC order (already sorted), then shuffle
+    result[cat] = shuffle(groups[cat].slice(0, 30));
+  }
+  return result;
+}
+
+function initCatIdx() {
+  return Object.fromEntries(TAB_ORDER.map(c => [c, 0]));
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SwipeScreen({
   commander,
-  resumeState,   // { cards, index, pile, history } — optional, to resume after Done screen
-  initialCards,
-  onComplete,    // (pile, savedState) — called when user clicks I'M DONE or all cards exhausted
+  swipeState,   // { initialCards?, queues?, catIdx?, pile?, history?, activeTab? }
+  onComplete,   // (pile, savedState) — user clicked I'M DONE or all tabs exhausted
 }) {
-  // ── Core swipe state ──────────────────────────────────────────────────────
-  const [cards,   setCards]   = useState(() => resumeState?.cards   ?? initialCards ?? []);
-  const [index,   setIndex]   = useState(() => resumeState?.index   ?? 0);
-  const [pile,    setPile]    = useState(() => resumeState?.pile    ?? []);
-  const [history, setHistory] = useState(() => resumeState?.history ?? []);
+  const colorId = commander?.color_identity?.join("") || "C";
+
+  // ── Core state ────────────────────────────────────────────────────────────
+  const [queues,    setQueues]    = useState(() =>
+    swipeState?.queues ?? buildQueues(swipeState?.initialCards ?? [])
+  );
+  const [catIdx,    setCatIdx]    = useState(() => swipeState?.catIdx ?? initCatIdx());
+  const [pile,      setPile]      = useState(() => swipeState?.pile    ?? []);
+  const [history,   setHistory]   = useState(() => swipeState?.history ?? []);
+  const [activeTab, setActiveTab] = useState(() => swipeState?.activeTab ?? TAB_ORDER[0]);
 
   // ── Drag / animation ──────────────────────────────────────────────────────
   const [offset,   setOffset]  = useState(0);
@@ -58,10 +84,10 @@ export default function SwipeScreen({
   const [badge,    setBadge]   = useState(null);  // "keep" | "pass" | null
   const [animOut,  setAnimOut] = useState(null);  // "right" | "left" | null
 
-  // ── Sort / filter ─────────────────────────────────────────────────────────
-  const [sortKey,       setSortKey]      = useState("edhrec");
-  const [activeFilters, setActiveFilters]= useState(new Set());
-  const [filterOpen,    setFilterOpen]  = useState(false);
+  // ── Syntax inspector ──────────────────────────────────────────────────────
+  const [inspOpen,    setInspOpen]    = useState(false);
+  const [queryText,   setQueryText]   = useState("");
+  const [refetching,  setRefetching]  = useState(false);
 
   // ── Bottom search bar ─────────────────────────────────────────────────────
   const [searchVal,   setSearchVal]  = useState("");
@@ -69,24 +95,24 @@ export default function SwipeScreen({
   const [searchOpen,  setSearchOpen] = useState(false);
   const [searchBusy,  setSearchBusy] = useState(false);
 
-  const originalRef  = useRef([...(resumeState?.cards ?? initialCards ?? [])]);
-  // Seed swipedIds from history when resuming, so EDHREC sort excludes already-seen cards
-  const swipedIds    = useRef(
-    new Set((resumeState?.history ?? []).map(h => h.card.id))
-  );
   const dragStartRef = useRef(null);
   const searchRef    = useRef(null);
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const done = index >= cards.length;
-  const card = cards[index] ?? null;
+  const queue   = queues[activeTab] ?? [];
+  const idx     = catIdx[activeTab] ?? 0;
+  const card    = queue[idx] ?? null;
+  const tabDone = idx >= queue.length;
 
-  // Notify parent when all cards exhausted
+  // ── Sync query text when tab changes ─────────────────────────────────────
   useEffect(() => {
-    if (done) {
-      onComplete(pile, { cards, index, pile, history });
+    const catQueries = buildCategoryQueries(colorId);
+    if (activeTab === "plan") {
+      setQueryText(buildPlanQuery(commander, colorId) ?? "");
+    } else {
+      setQueryText(catQueries[activeTab] ?? "");
     }
-  }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
@@ -98,7 +124,7 @@ export default function SwipeScreen({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }); // intentionally re-registers every render so callbacks capture fresh state
+  }); // intentionally re-registers every render so callbacks close over fresh state
 
   // ── Autocomplete debounce ─────────────────────────────────────────────────
   useEffect(() => {
@@ -113,14 +139,13 @@ export default function SwipeScreen({
 
   // ── Resolve (keep / pass) ─────────────────────────────────────────────────
   function doResolve(keep) {
-    if (!card || animOut || done) return;
+    if (!card || animOut || tabDone) return;
     setAnimOut(keep ? "right" : "left");
     setBadge(keep ? "keep" : "pass");
     setTimeout(() => {
-      swipedIds.current.add(card.id);
-      setHistory(h => [...h, { card, kept: keep }]);
+      setHistory(h => [...h, { card, cat: activeTab, kept: keep }]);
       if (keep) setPile(p => [...p, card]);
-      setIndex(i => i + 1);
+      setCatIdx(prev => ({ ...prev, [activeTab]: (prev[activeTab] ?? 0) + 1 }));
       setOffset(0);
       setBadge(null);
       setAnimOut(null);
@@ -131,61 +156,49 @@ export default function SwipeScreen({
   function doUndo() {
     if (history.length === 0 || animOut) return;
     const last = history[history.length - 1];
-    swipedIds.current.delete(last.card.id);
     setHistory(h => h.slice(0, -1));
     if (last.kept) setPile(p => p.filter(c => c !== last.card));
-    setIndex(i => i - 1);
+    setCatIdx(prev => ({ ...prev, [last.cat]: Math.max(0, (prev[last.cat] ?? 0) - 1) }));
+    setActiveTab(last.cat);
   }
 
-  // ── Sort ──────────────────────────────────────────────────────────────────
-  function handleSort(key) {
-    setSortKey(key);
-    setCards(prev => {
-      const swiped    = prev.slice(0, index);
-      const remaining = key === "edhrec"
-        ? originalRef.current.filter(c => !swipedIds.current.has(c.id))
-        : sortCards(prev.slice(index), key);
-      return [...swiped, ...remaining];
-    });
+  // ── I'M DONE ─────────────────────────────────────────────────────────────
+  function handleDone() {
+    onComplete(pile, { queues, catIdx, pile, history, activeTab });
   }
 
-  // ── Category filter ───────────────────────────────────────────────────────
-  function handleFilterToggle(cat) {
-    setActiveFilters(prev => {
-      const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
-      setCards(cardsPrev => {
-        const swiped    = cardsPrev.slice(0, index);
-        const remaining = cardsPrev.slice(index);
-        if (next.size === 0) return [...swiped, ...remaining];
-        const matching = remaining.filter(c => next.has(c._deckCategory ?? "plan"));
-        const other    = remaining.filter(c => !next.has(c._deckCategory ?? "plan"));
-        return [...swiped, ...matching, ...other];
-      });
-      return next;
-    });
+  // ── Refetch current tab ───────────────────────────────────────────────────
+  async function handleRefetch() {
+    if (!queryText.trim() || refetching) return;
+    setRefetching(true);
+    try {
+      const cards = await fetchFirstPage(queryText);
+      const tagged = cards.map(c => ({ ...c, _deckCategory: activeTab }));
+      const newQueue = shuffle(tagged).slice(0, 30);
+      setQueues(prev => ({ ...prev, [activeTab]: newQueue }));
+      setCatIdx(prev => ({ ...prev, [activeTab]: 0 }));
+    } catch (e) {
+      if (e.name === "AbortError") return;
+      // silently swallow other errors
+    } finally {
+      setRefetching(false);
+    }
   }
 
-  function handleFilterClear() {
-    setActiveFilters(new Set());
-    setCards(prev => [...prev.slice(0, index), ...prev.slice(index)]);
-  }
-
-  // ── Insert card at front of queue ─────────────────────────────────────────
-  async function addCardToFront(name) {
+  // ── Add card to front of active tab queue ─────────────────────────────────
+  async function addCardToQueue(name) {
     setSearchVal("");
     setSearchSuggs([]);
     setSearchOpen(false);
     setSearchBusy(true);
     try {
       const fetched = await fetchCardByName(name);
-      const tagged  = { ...fetched, _deckCategory: "plan" };
-      originalRef.current = [tagged, ...originalRef.current];
-      setCards(prev => {
-        const swiped    = prev.slice(0, index);
-        const remaining = prev.slice(index);
-        return [...swiped, tagged, ...remaining];
+      const tagged  = { ...fetched, _deckCategory: activeTab };
+      setQueues(prev => {
+        const q       = prev[activeTab] ?? [];
+        const current = catIdx[activeTab] ?? 0;
+        const newQueue = [...q.slice(0, current), tagged, ...q.slice(current)];
+        return { ...prev, [activeTab]: newQueue };
       });
     } catch {
       // card not found — silently ignore
@@ -195,14 +208,14 @@ export default function SwipeScreen({
     }
   }
 
-  // ── I'M DONE (manual trigger) ─────────────────────────────────────────────
-  function handleDone() {
-    onComplete(pile, { cards, index, pile, history });
+  // ── Pile remove (for DeckReviewPill) ──────────────────────────────────────
+  function handlePileRemove(cardId, cat) {
+    setPile(prev => prev.filter(c => !(c.id === cardId && (c._deckCategory ?? "plan") === cat)));
   }
 
   // ── Pointer drag ──────────────────────────────────────────────────────────
   function onPointerDown(e) {
-    if (animOut || done) return;
+    if (animOut || tabDone) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragStartRef.current = e.clientX;
     setDragging(true);
@@ -227,22 +240,20 @@ export default function SwipeScreen({
     else { setOffset(0); setBadge(null); }
   }
 
-  // ── Images / display values ───────────────────────────────────────────────
+  // ── Display values ────────────────────────────────────────────────────────
   const commanderArt = commander ? getCardImage(commander, "art_crop") : null;
-  const artUrl       = card ? getCardImage(card, "art_crop") : null;
-  const mainUrl      = card ? getCardImage(card, "normal")   : null;
+  const artUrl       = card ? getCardImage(card, "art_crop")  : null;
+  const mainUrl      = card ? getCardImage(card, "normal")    : null;
+  const price        = card ? formatPrice(card) : null;
 
-  const rotation = animOut ? (animOut === "right" ? 14 : -14) : offset / 22;
-  const tx       = animOut ? (animOut === "right" ? 560 : -560) : offset;
+  const rotation   = animOut ? (animOut === "right" ? 14 : -14) : offset / 22;
+  const tx         = animOut ? (animOut === "right" ? 560 : -560) : offset;
   const cardOpacity = animOut ? 0 : 1;
 
-  const catKey   = card?._deckCategory ?? "plan";
-  const catMeta  = CATEGORY_META[catKey];
-  const catLabel = catMeta ? `${catMeta.emoji} ${catMeta.label}` : "";
-  const price    = card ? formatPrice(card) : null;
-  const counterStr = `${Math.min(index + 1, cards.length)} / ${cards.length} · ${pile.length} kept`;
-
-  if (done) return null; // parent handles transition
+  const catMeta    = activeTab ? CATEGORY_META[activeTab] : null;
+  const counterStr = tabDone
+    ? `ALL ${TAB_LABELS[activeTab]} SEEN`
+    : `${idx + 1} / ${queue.length} · ${pile.length} KEPT`;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -260,7 +271,7 @@ export default function SwipeScreen({
       width: "100%",
     }}>
 
-      {/* Blurred background */}
+      {/* Blurred art background */}
       {artUrl && (
         <div style={{
           position: "fixed",
@@ -326,112 +337,59 @@ export default function SwipeScreen({
         </button>
       </div>
 
-      {/* ── Sort chips ── */}
+      {/* ── Category tab bar ── */}
       <div style={{
         position: "relative",
         zIndex: 15,
         flexShrink: 0,
         display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "6px 12px",
+        alignItems: "stretch",
         overflowX: "auto",
         scrollbarWidth: "none",
-        background: "rgba(13,13,15,0.7)",
+        background: "rgba(13,13,15,0.85)",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
-        {SORT_OPTIONS.map(opt => (
-          <button
-            key={opt.key}
-            onClick={() => handleSort(opt.key)}
-            style={{
-              whiteSpace: "nowrap",
-              padding: "5px 12px",
-              borderRadius: 20,
-              flexShrink: 0,
-              border: `1px solid ${sortKey === opt.key ? "var(--secondary)" : "rgba(255,255,255,0.1)"}`,
-              background: sortKey === opt.key ? "rgba(167,139,250,0.18)" : "transparent",
-              color: sortKey === opt.key ? "var(--secondary)" : "var(--muted)",
-              fontSize: 11,
-              cursor: "pointer",
-              transition: "all 0.12s",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
-        <button
-          onClick={() => setFilterOpen(v => !v)}
-          style={{
-            marginLeft: "auto",
-            whiteSpace: "nowrap",
-            padding: "5px 12px",
-            borderRadius: 20,
-            flexShrink: 0,
-            border: `1px solid ${filterOpen || activeFilters.size > 0 ? "var(--primary)" : "rgba(255,255,255,0.1)"}`,
-            background: filterOpen || activeFilters.size > 0 ? "rgba(91,143,255,0.15)" : "transparent",
-            color: filterOpen || activeFilters.size > 0 ? "var(--primary)" : "var(--muted)",
-            fontSize: 11,
-            cursor: "pointer",
-            transition: "all 0.12s",
-          }}
-        >
-          FILTER{activeFilters.size > 0 ? ` (${activeFilters.size})` : ""}
-        </button>
-      </div>
-
-      {/* ── Filter drawer ── */}
-      {filterOpen && (
-        <div style={{
-          position: "relative",
-          zIndex: 15,
-          flexShrink: 0,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 7,
-          padding: "8px 12px",
-          background: "rgba(22,22,26,0.97)",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
-        }}>
-          {FILTER_CHIPS.map(({ key, label }) => {
-            const active = activeFilters.has(key);
-            return (
-              <button
-                key={key}
-                onClick={() => handleFilterToggle(key)}
-                style={{
-                  padding: "5px 11px",
-                  borderRadius: 20,
-                  whiteSpace: "nowrap",
-                  border: `1px solid ${active ? "var(--active)" : "rgba(255,255,255,0.1)"}`,
-                  background: active ? "rgba(245,158,11,0.15)" : "transparent",
-                  color: active ? "var(--active)" : "var(--muted)",
-                  fontSize: 11,
-                  cursor: "pointer",
-                  transition: "all 0.12s",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-          {activeFilters.size > 0 && (
+        {TAB_ORDER.map(cat => {
+          const active   = cat === activeTab;
+          const tabQueue = queues[cat] ?? [];
+          const tabIdx   = catIdx[cat] ?? 0;
+          const remaining = tabQueue.length - tabIdx;
+          const exhausted = remaining <= 0;
+          return (
             <button
-              onClick={handleFilterClear}
+              key={cat}
+              onClick={() => setActiveTab(cat)}
               style={{
-                padding: "5px 11px",
-                borderRadius: 20,
-                border: "1px solid rgba(255,77,109,0.3)",
+                flexShrink: 0,
+                padding: "10px 12px",
+                border: "none",
+                borderBottom: `2px solid ${active ? "var(--primary)" : "transparent"}`,
                 background: "transparent",
-                color: "var(--danger)",
-                fontSize: 11,
+                color: active
+                  ? "var(--primary)"
+                  : exhausted ? "rgba(255,255,255,0.2)" : "var(--muted)",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 12,
+                letterSpacing: 2,
                 cursor: "pointer",
+                position: "relative",
+                transition: "color 0.12s, border-color 0.12s",
               }}
             >
-              clear
+              {TAB_LABELS[cat]}
+              {!exhausted && (
+                <span style={{
+                  marginLeft: 4,
+                  fontSize: 9,
+                  opacity: active ? 0.8 : 0.4,
+                }}>
+                  {remaining}
+                </span>
+              )}
             </button>
-          )}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
       {/* ── Card area ── */}
       <div style={{
@@ -445,10 +403,11 @@ export default function SwipeScreen({
         overflow: "hidden",
         paddingBottom: 8,
       }}>
+
         {/* Counter */}
         <div style={{
-          fontSize: 11,
-          color: "var(--muted)",
+          fontSize: 10,
+          color: tabDone ? "var(--active)" : "var(--muted)",
           letterSpacing: 2,
           marginBottom: 8,
           flexShrink: 0,
@@ -456,113 +415,148 @@ export default function SwipeScreen({
           {counterStr}
         </div>
 
-        {/* Card (swipeable) */}
-        <div
-          style={{
-            transform: `translateX(${tx}px) rotate(${rotation}deg)`,
-            transition: animOut
-              ? "transform 0.26s ease, opacity 0.26s ease"
-              : dragging ? "none" : "transform 0.18s ease",
-            opacity: cardOpacity,
-            cursor: dragging ? "grabbing" : "grab",
-            touchAction: "none",
-            userSelect: "none",
-            position: "relative",
-            flexShrink: 0,
-          }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-        >
-          {badge === "keep" && (
+        {tabDone ? (
+          /* Tab exhausted placeholder */
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 14,
+            padding: "0 32px",
+            textAlign: "center",
+          }}>
             <div style={{
-              position: "absolute", top: 14, right: 14, zIndex: 20,
-              padding: "6px 14px",
-              border: "3px solid var(--success)", borderRadius: 8,
-              color: "var(--success)",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 26, letterSpacing: 4,
-              transform: "rotate(-15deg)",
-              background: "rgba(0,0,0,0.55)",
-            }}>KEEP</div>
-          )}
-          {badge === "pass" && (
-            <div style={{
-              position: "absolute", top: 14, left: 14, zIndex: 20,
-              padding: "6px 14px",
-              border: "3px solid var(--danger)", borderRadius: 8,
-              color: "var(--danger)",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 26, letterSpacing: 4,
-              transform: "rotate(15deg)",
-              background: "rgba(0,0,0,0.55)",
-            }}>PASS</div>
-          )}
-
-          {mainUrl ? (
-            <img
-              src={mainUrl}
-              alt={card?.name}
-              draggable={false}
-              style={{
-                width: "min(82vw, 300px)",
-                borderRadius: 14,
-                boxShadow: "0 18px 56px rgba(0,0,0,0.8)",
-                display: "block",
-                pointerEvents: "none",
-              }}
-            />
-          ) : (
-            <div style={{
-              width: 260, height: 362,
-              background: "var(--panel)", borderRadius: 14,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "var(--muted)", fontSize: 13,
-              padding: 16, textAlign: "center",
+              width: "min(88vw, 300px)",
+              aspectRatio: "63/88",
+              background: "var(--panel)",
+              borderRadius: 14,
+              border: "1px dashed rgba(255,255,255,0.1)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
             }}>
-              {card?.name}
+              <div style={{
+                fontSize: 28,
+                fontFamily: "'Bebas Neue', sans-serif",
+                letterSpacing: 3,
+                color: "rgba(255,255,255,0.2)",
+              }}>
+                {catMeta?.emoji ?? ""} DONE
+              </div>
+              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: 2 }}>
+                ALL {TAB_LABELS[activeTab]} CARDS SEEN
+              </div>
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1 }}>
+              Pick another tab or refetch with a new query ↓
+            </div>
+          </div>
+        ) : (
+          /* Swipeable card */
+          <div
+            style={{
+              transform: `translateX(${tx}px) rotate(${rotation}deg)`,
+              transition: animOut
+                ? "transform 0.26s ease, opacity 0.26s ease"
+                : dragging ? "none" : "transform 0.18s ease",
+              opacity: cardOpacity,
+              cursor: dragging ? "grabbing" : "grab",
+              touchAction: "none",
+              userSelect: "none",
+              position: "relative",
+              flexShrink: 0,
+            }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+          >
+            {badge === "keep" && (
+              <div style={{
+                position: "absolute", top: 14, right: 14, zIndex: 20,
+                padding: "6px 14px",
+                border: "3px solid var(--success)", borderRadius: 8,
+                color: "var(--success)",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 26, letterSpacing: 4,
+                transform: "rotate(-15deg)",
+                background: "rgba(0,0,0,0.55)",
+              }}>KEEP</div>
+            )}
+            {badge === "pass" && (
+              <div style={{
+                position: "absolute", top: 14, left: 14, zIndex: 20,
+                padding: "6px 14px",
+                border: "3px solid var(--danger)", borderRadius: 8,
+                color: "var(--danger)",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 26, letterSpacing: 4,
+                transform: "rotate(15deg)",
+                background: "rgba(0,0,0,0.55)",
+              }}>PASS</div>
+            )}
+
+            {mainUrl ? (
+              <img
+                src={mainUrl}
+                alt={card?.name}
+                draggable={false}
+                style={{
+                  maxHeight: "68dvh",
+                  width: "auto",
+                  maxWidth: "min(88vw, 350px)",
+                  borderRadius: 14,
+                  boxShadow: "0 18px 56px rgba(0,0,0,0.8)",
+                  display: "block",
+                  pointerEvents: "none",
+                }}
+              />
+            ) : (
+              <div style={{
+                width: 260, height: 362,
+                background: "var(--panel)", borderRadius: 14,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--muted)", fontSize: 13,
+                padding: 16, textAlign: "center",
+              }}>
+                {card?.name}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Card info */}
-        <div style={{ textAlign: "center", marginTop: 12, padding: "0 16px", flexShrink: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{card?.name}</div>
-          <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 3 }}>
-            {card?.type_line}
-            {card?.mana_cost ? ` · ${formatManaCost(card.mana_cost)}` : ""}
-            {price ? ` · ${price}` : ""}
-          </div>
-          {catLabel && (
-            <div style={{
-              fontSize: 9,
-              color: "rgba(255,255,255,0.2)",
-              marginTop: 3,
-              letterSpacing: 2,
-              textTransform: "uppercase",
-            }}>
-              {catLabel}
+        {card && !tabDone && (
+          <div style={{ textAlign: "center", marginTop: 10, padding: "0 16px", flexShrink: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{card.name}</div>
+            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+              {card.type_line}
+              {card.mana_cost ? ` · ${formatManaCost(card.mana_cost)}` : ""}
+              {price ? ` · ${price}` : ""}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Buttons */}
+        {/* Action buttons */}
         <div style={{
           display: "flex",
           alignItems: "center",
           gap: 24,
-          marginTop: 14,
+          marginTop: 12,
           flexShrink: 0,
         }}>
           <button
             onClick={() => doResolve(false)}
+            disabled={tabDone || !!animOut}
             style={{
-              width: 56, height: 56, borderRadius: "50%",
+              width: 52, height: 52, borderRadius: "50%",
               border: "2px solid var(--danger)",
-              background: "rgba(255,77,109,0.1)",
-              color: "var(--danger)", fontSize: 22,
-              cursor: "pointer",
+              background: tabDone ? "rgba(255,77,109,0.04)" : "rgba(255,77,109,0.1)",
+              color: tabDone ? "rgba(255,77,109,0.3)" : "var(--danger)",
+              fontSize: 20,
+              cursor: tabDone ? "default" : "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >✕</button>
@@ -583,12 +577,14 @@ export default function SwipeScreen({
 
           <button
             onClick={() => doResolve(true)}
+            disabled={tabDone || !!animOut}
             style={{
-              width: 56, height: 56, borderRadius: "50%",
+              width: 52, height: 52, borderRadius: "50%",
               border: "2px solid var(--success)",
-              background: "rgba(52,211,153,0.1)",
-              color: "var(--success)", fontSize: 22,
-              cursor: "pointer",
+              background: tabDone ? "rgba(52,211,153,0.04)" : "rgba(52,211,153,0.1)",
+              color: tabDone ? "rgba(52,211,153,0.3)" : "var(--success)",
+              fontSize: 20,
+              cursor: tabDone ? "default" : "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >♥</button>
@@ -596,7 +592,7 @@ export default function SwipeScreen({
 
         {/* Keyboard hint */}
         <div style={{
-          marginTop: 8,
+          marginTop: 6,
           fontSize: 9,
           color: "rgba(255,255,255,0.16)",
           letterSpacing: 2,
@@ -604,6 +600,83 @@ export default function SwipeScreen({
         }}>
           ← PASS &nbsp;&nbsp; KEEP → &nbsp;&nbsp; Z UNDO
         </div>
+      </div>
+
+      {/* ── Syntax inspector toggle row ── */}
+      <div style={{
+        position: "relative",
+        zIndex: 20,
+        flexShrink: 0,
+        background: "rgba(13,13,15,0.95)",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <button
+          onClick={() => setInspOpen(v => !v)}
+          style={{
+            width: "100%",
+            padding: "7px 14px",
+            background: "transparent",
+            border: "none",
+            borderBottom: inspOpen ? "1px solid rgba(255,255,255,0.06)" : "none",
+            color: "var(--muted)",
+            fontSize: 10,
+            letterSpacing: 2,
+            cursor: "pointer",
+            textAlign: "left",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span>⌕ QUERY</span>
+          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.5 }}>
+            {!inspOpen && queryText}
+          </span>
+          <span>{inspOpen ? "▼" : "▶"}</span>
+        </button>
+
+        {inspOpen && (
+          <div style={{ padding: "8px 12px 10px", display: "flex", flexDirection: "column", gap: 7 }}>
+            <textarea
+              value={queryText}
+              onChange={e => setQueryText(e.target.value)}
+              rows={2}
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 6,
+                color: "var(--text)",
+                fontSize: 10,
+                fontFamily: "'IBM Plex Mono', monospace",
+                letterSpacing: 0.5,
+                padding: "6px 8px",
+                resize: "vertical",
+                outline: "none",
+                caretColor: "var(--primary)",
+                boxSizing: "border-box",
+              }}
+            />
+            <button
+              onClick={handleRefetch}
+              disabled={refetching || !queryText.trim()}
+              style={{
+                alignSelf: "flex-end",
+                padding: "5px 14px",
+                borderRadius: 6,
+                border: "1px solid rgba(91,143,255,0.3)",
+                background: "rgba(91,143,255,0.08)",
+                color: refetching ? "var(--muted)" : "var(--primary)",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 12,
+                letterSpacing: 2,
+                cursor: refetching ? "default" : "pointer",
+              }}
+            >
+              {refetching ? "FETCHING…" : "REFETCH ↺"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Fixed bottom search bar ── */}
@@ -629,14 +702,13 @@ export default function SwipeScreen({
             background: "var(--panel)",
             borderTop: "1px solid rgba(91,143,255,0.15)",
             boxShadow: "0 -8px 24px rgba(0,0,0,0.5)",
-            overflow: "hidden",
-            maxHeight: 280,
+            maxHeight: 260,
             overflowY: "auto",
           }}>
             {searchSuggs.map(name => (
               <button
                 key={name}
-                onMouseDown={e => { e.preventDefault(); addCardToFront(name); }}
+                onMouseDown={e => { e.preventDefault(); addCardToQueue(name); }}
                 style={{
                   width: "100%",
                   display: "block",
@@ -664,7 +736,7 @@ export default function SwipeScreen({
           onChange={e => setSearchVal(e.target.value)}
           onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
           onFocus={() => searchSuggs.length > 0 && setSearchOpen(true)}
-          placeholder="Add a card to your queue…"
+          placeholder="Add a card to this tab's queue…"
           autoComplete="off"
           spellCheck={false}
           style={{
@@ -677,10 +749,11 @@ export default function SwipeScreen({
             caretColor: "var(--primary)",
           }}
         />
-        {searchBusy && (
-          <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0 }}>…</span>
-        )}
+        {searchBusy && <span style={{ color: "var(--muted)", fontSize: 11, flexShrink: 0 }}>…</span>}
       </div>
+
+      {/* DeckReviewPill */}
+      <DeckReviewPill pile={pile} onRemove={handlePileRemove} />
     </div>
   );
 }
