@@ -1,13 +1,5 @@
 const UA = "DeckStack/1.0 (deck-stack.vercel.app)";
 
-// ── Tag slugs belonging to known categories — exclude from tagger "plan" fetch
-const VEGGIE_SLUGS = new Set([
-  "ramp", "mana-rock", "mana-dork",
-  "card-draw", "card-advantage",
-  "removal", "targeted-removal",
-  "wrath", "fetchland", "shockland",
-]);
-
 // ── Sleep helper ──────────────────────────────────────────────────────────────
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -138,6 +130,58 @@ function buildPoolQueries(colorId) {
   ];
 }
 
+function getCommanderPlanTags(commander) {
+  const oracle = (commander.oracle_text || '').toLowerCase();
+  const tags = new Set();
+
+  // Reanimation
+  if (oracle.includes('graveyard') && oracle.includes('battlefield')) tags.add('reanimate-creature');
+  if (oracle.includes('reanimate-from-any') || (oracle.includes('graveyard') && oracle.includes('any player'))) tags.add('reanimate-from-any');
+
+  // Protection
+  if (oracle.includes('hexproof')) tags.add('gives-hexproof');
+  if (oracle.includes('indestructible')) tags.add('gives-indestructible');
+  if (oracle.includes('protection from')) tags.add('gives-protection');
+  if (oracle.includes('phase') && oracle.includes('out')) tags.add('phasing');
+
+  // Tokens
+  if (oracle.includes('create') && oracle.includes('token')) tags.add('token-maker');
+  if (oracle.includes('token') && oracle.includes('twice that many')) tags.add('token-doubler');
+
+  // Counters
+  if (oracle.includes('proliferate')) tags.add('proliferate');
+  if (oracle.includes('+1/+1 counter')) tags.add('plus-counter');
+  if (oracle.includes('would put') && oracle.includes('counter') && oracle.includes('instead')) tags.add('counter-doubler');
+
+  // Sacrifice synergy
+  if (oracle.includes('whenever') && oracle.includes('dies')) tags.add('death-trigger');
+  if (oracle.includes('whenever you sacrifice')) tags.add('sacrifice-payoff');
+  if (oracle.includes('sacrifice') && oracle.includes(':') && !oracle.includes('as an additional cost')) tags.add('sacrifice-outlet');
+
+  // Recursion
+  if (oracle.includes('graveyard') && oracle.includes('hand') && oracle.includes('return')) tags.add('recursion');
+  if (oracle.includes('flashback') || oracle.includes('escape') || oracle.includes('retrace')) tags.add('self-recursion');
+
+  // Stax
+  if (oracle.includes('unless') && oracle.includes('pay') && oracle.includes('attack')) tags.add('tax');
+  if (oracle.includes('spells cost') && oracle.includes('more')) tags.add('spell-tax');
+
+  // Tribal
+  if (oracle.includes('creatures you control') && oracle.includes('get +')) tags.add('tribal-lord');
+
+  // Copy
+  if (oracle.includes('copy target') && oracle.includes('spell')) tags.add('spell-copy');
+  if (oracle.includes('create a token') && oracle.includes('copy')) tags.add('copy-token');
+
+  // Enchantress
+  if (oracle.includes('whenever') && oracle.includes('enchantment') && oracle.includes('draw')) tags.add('enchantress-trigger');
+
+  // Haste / combat
+  if (oracle.includes('haste') && (oracle.includes('creatures you control') || oracle.includes('each creature'))) tags.add('haste-grant');
+
+  return tags;
+}
+
 export async function fetchCommanderPool(commander, options = {}) {
   const { signal } = options;
 
@@ -162,34 +206,18 @@ export async function fetchCommanderPool(commander, options = {}) {
       })
     ),
 
-    // Tagger API — affiliated oracle tags → "plan"
+    // Oracle text plan matcher — no external API needed
     (async () => {
       try {
-        const res = await fetch(
-          `https://taggerapi.scryfall.com/tags/card/${commander.id}`,
-          { signal }
-        );
-        if (!res.ok) return [];
-        const data = await res.json();
+        const tags = getCommanderPlanTags(commander);
+        if (!tags.size) return [];
 
-        // Handle multiple possible response shapes
-        const rawTags = Array.isArray(data)       ? data
-                      : Array.isArray(data.tags)   ? data.tags
-                      : Array.isArray(data.data)   ? data.data
-                      : [];
-
-        const slugs = rawTags
-          .map(t => t.slug ?? t.name ?? "")
-          .filter(s => s && !VEGGIE_SLUGS.has(s))
-          .slice(0, 6);
-
-        if (!slugs.length) return [];
-
-        const aQ = `(${slugs.map(s => `oracletag:${s}`).join(" OR ")}) id<=${colorId}`;
-        const cards = await fetchFirstPage(aQ, { signal });
-        return cards.map(c => ({ ...c, _deckCategory: "plan" }));
+        const tagQuery = [...tags].map(s => `oracletag:${s}`).join(' OR ');
+        const q = `(${tagQuery}) id<=${colorId}`;
+        const cards = await fetchFirstPage(q, { signal });
+        return cards.map(c => ({ ...c, _deckCategory: 'plan' }));
       } catch (e) {
-        if (e.name === "AbortError") throw e;
+        if (e.name === 'AbortError') throw e;
         return [];
       }
     })(),
