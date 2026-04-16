@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { getCardImage, formatManaCost, formatPrice } from "../lib/scryfall.js";
+import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 const SWIPE_THRESHOLD = 60;
 
-export default function SwipeScreen({ cards, pile, onPileChange }) {
+export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch }) {
   const [idx,     setIdx]     = useState(0);
   const [history, setHistory] = useState([]);
 
@@ -83,7 +83,6 @@ export default function SwipeScreen({ cards, pile, onPileChange }) {
   // Display values
   const artUrl  = card ? getCardImage(card, "art_crop") : null;
   const mainUrl = card ? getCardImage(card, "normal")   : null;
-  const price   = card ? formatPrice(card) : null;
 
   const rotation    = animOut ? (animOut === "right" ? 14 : -14) : offset / 22;
   const tx          = animOut ? (animOut === "right" ? 560 : -560) : offset;
@@ -147,6 +146,21 @@ export default function SwipeScreen({ cards, pile, onPileChange }) {
         }}>
           DECK STACK
         </span>
+        <button
+          onClick={onOpenSearch}
+          style={{
+            background: "transparent", border: "none",
+            color: "rgba(255,255,255,0.55)", cursor: "pointer",
+            padding: "8px", display: "flex", alignItems: "center",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
       </div>
 
       {/* ── Card area ── */}
@@ -290,17 +304,6 @@ export default function SwipeScreen({ cards, pile, onPileChange }) {
           </div>
         )}
 
-        {/* Card info */}
-        {card && !done && (
-          <div style={{ textAlign: "center", marginTop: 10, padding: "0 16px", flexShrink: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{card.name}</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
-              {card.type_line}
-              {card.mana_cost ? ` · ${formatManaCost(card.mana_cost)}` : ""}
-              {price ? ` · ${price}` : ""}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Action buttons ── */}

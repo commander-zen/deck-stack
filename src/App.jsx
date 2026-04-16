@@ -3,6 +3,7 @@ import SearchScreen from "./screens/SearchScreen.jsx";
 import SwipeScreen  from "./screens/SwipeScreen.jsx";
 import PileScreen   from "./screens/PileScreen.jsx";
 import BottomNav    from "./components/BottomNav.jsx";
+import SearchSheet  from "./components/SearchSheet.jsx";
 import { fetchForSwipe } from "./lib/scryfall.js";
 
 function readSavedPile() {
@@ -20,42 +21,40 @@ export default function App() {
   const [query,         setQuery]         = useState(() => localStorage.getItem("deckstack_query") || "");
   const [swipeCards,    setSwipeCards]    = useState(() => readSavedCards());
   const [swipeMounted,  setSwipeMounted]  = useState(() => readSavedCards().length > 0);
+  const [swipeKey,      setSwipeKey]      = useState(0);
   const [screen,        setScreen]        = useState(() => {
     const hasSavedCards = readSavedCards().length > 0;
     const savedScreen   = localStorage.getItem("deckstack_screen");
-    if (hasSavedCards) {
-      return savedScreen === "pile" ? "pile" : "swipe";
-    }
+    if (hasSavedCards) return savedScreen === "pile" ? "pile" : "swipe";
     if (readSavedPile().length > 0 && savedScreen === "pile") return "pile";
     return "search";
   });
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
+  const [sheetOpen,     setSheetOpen]     = useState(false);
 
-  // Persist pile
+  // Persistence
   useEffect(() => {
     localStorage.setItem("deckstack_pile", JSON.stringify(pile));
   }, [pile]);
 
-  // Persist screen
   useEffect(() => {
     localStorage.setItem("deckstack_screen", screen);
   }, [screen]);
 
-  // Persist query
   useEffect(() => {
     localStorage.setItem("deckstack_query", query);
   }, [query]);
 
-  // Persist cards (may fail with QuotaExceededError — skip silently)
   useEffect(() => {
     try {
       localStorage.setItem("deckstack_cards", JSON.stringify(swipeCards));
     } catch {
-      // silently skip if storage is full
+      // QuotaExceededError — silently skip
     }
   }, [swipeCards]);
 
+  // Search from SearchScreen (navigates away from session, preserves pile)
   async function handleSearch(q) {
     setLoading(true);
     setError(null);
@@ -64,6 +63,7 @@ export default function App() {
       setQuery(q);
       setSwipeCards(cards);
       setSwipeMounted(true);
+      setSwipeKey(k => k + 1);
       setScreen("swipe");
     } catch (err) {
       setError(err.message);
@@ -72,7 +72,27 @@ export default function App() {
     }
   }
 
-  function handleNewSearch() {
+  // Search from the sheet (stays in session, keeps pile intact)
+  async function handleSheetSearch(q) {
+    setLoading(true);
+    setError(null);
+    try {
+      const cards = await fetchForSwipe(q);
+      setQuery(q);
+      setSwipeCards(cards);
+      setSwipeMounted(true);
+      setSwipeKey(k => k + 1);
+      setScreen("swipe");
+      setSheetOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Clears everything and returns to search (CLEAR PILE)
+  function handleClearPile() {
     setPile([]);
     setSwipeCards([]);
     setQuery("");
@@ -85,6 +105,16 @@ export default function App() {
     setScreen("search");
   }
 
+  // Just navigates to search, keeps pile and card queue intact (← SEARCH)
+  function handleGoToSearch() {
+    setScreen("search");
+  }
+
+  function openSheet() {
+    setError(null);
+    setSheetOpen(true);
+  }
+
   const inSession = screen === "swipe" || screen === "pile";
 
   return (
@@ -93,20 +123,40 @@ export default function App() {
         <SearchScreen onSearch={handleSearch} loading={loading} error={error} />
       )}
 
-      {/* Keep SwipeScreen mounted while in a session so state (idx, history) survives tab switches */}
+      {/* Keep SwipeScreen mounted while in a session so idx/history survive tab switches */}
       {swipeMounted && (
         <div style={{ display: screen === "swipe" ? "block" : "none" }}>
-          <SwipeScreen cards={swipeCards} pile={pile} onPileChange={setPile} />
+          <SwipeScreen
+            key={swipeKey}
+            cards={swipeCards}
+            pile={pile}
+            onPileChange={setPile}
+            onOpenSearch={openSheet}
+          />
         </div>
       )}
 
       {screen === "pile" && (
-        <PileScreen pile={pile} onPileChange={setPile} onNewSearch={handleNewSearch} />
+        <PileScreen
+          pile={pile}
+          onPileChange={setPile}
+          onClearPile={handleClearPile}
+          onGoToSearch={handleGoToSearch}
+          onOpenSearch={openSheet}
+        />
       )}
 
-      {/* BottomNav only when there's an active swipe session */}
       {inSession && swipeMounted && (
-        <BottomNav screen={screen} pileCount={pile.length} onTab={setScreen} />
+        <>
+          <BottomNav screen={screen} pileCount={pile.length} onTab={setScreen} />
+          <SearchSheet
+            open={sheetOpen}
+            onClose={() => setSheetOpen(false)}
+            onSearch={handleSheetSearch}
+            loading={loading}
+            error={error}
+          />
+        </>
       )}
     </>
   );

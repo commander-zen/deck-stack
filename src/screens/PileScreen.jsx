@@ -5,7 +5,7 @@ function buildExportText(pile) {
   return pile.map(c => `1 ${c.name}`).join("\n");
 }
 
-export default function PileScreen({ pile, onPileChange, onNewSearch }) {
+export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSearch, onOpenSearch }) {
   const [copied, setCopied] = useState(false);
 
   function handleRemove(cardId) {
@@ -51,10 +51,8 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
         <div style={{ flex: 1 }}>
           <div style={{
             fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 24,
-            letterSpacing: 5,
-            color: "var(--primary)",
-            lineHeight: 1,
+            fontSize: 24, letterSpacing: 5,
+            color: "var(--primary)", lineHeight: 1,
           }}>
             DECK STACK
           </div>
@@ -62,6 +60,21 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
             {pile.length} card{pile.length !== 1 ? "s" : ""}
           </div>
         </div>
+        <button
+          onClick={onOpenSearch}
+          style={{
+            background: "transparent", border: "none",
+            color: "rgba(255,255,255,0.55)", cursor: "pointer",
+            padding: "8px", display: "flex", alignItems: "center",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
       </div>
 
       {/* ── Content ── */}
@@ -72,21 +85,17 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
         paddingBottom: bottomPad,
       }}>
 
-        {/* Action buttons row */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {/* Row 1: export actions */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <button
             onClick={handleCopy}
             style={{
-              flex: 1,
-              padding: "12px 12px",
-              borderRadius: 10,
+              flex: 1, padding: "12px 12px", borderRadius: 10,
               border: `1px solid ${copied ? "var(--success)" : "rgba(91,143,255,0.3)"}`,
               background: copied ? "rgba(52,211,153,0.08)" : "rgba(91,143,255,0.06)",
               color: copied ? "var(--success)" : "var(--primary)",
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 14, letterSpacing: 3,
-              cursor: "pointer",
-              transition: "all 0.2s",
+              fontSize: 14, letterSpacing: 3, cursor: "pointer", transition: "all 0.2s",
             }}
           >
             {copied ? "COPIED ✓" : "COPY"}
@@ -96,9 +105,7 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
             onClick={handleMoxfield}
             disabled={pile.length === 0}
             style={{
-              flex: 1,
-              padding: "12px 12px",
-              borderRadius: 10,
+              flex: 1, padding: "12px 12px", borderRadius: 10,
               border: "1px solid rgba(167,139,250,0.3)",
               background: "rgba(167,139,250,0.06)",
               color: "var(--secondary)",
@@ -110,32 +117,44 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
           >
             COPY + MOXFIELD ↗
           </button>
+        </div>
 
+        {/* Row 2: navigation actions */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <button
-            onClick={onNewSearch}
+            onClick={onGoToSearch}
             style={{
-              flex: 1,
-              padding: "12px 12px",
-              borderRadius: 10,
+              flex: 1, padding: "12px 12px", borderRadius: 10,
               border: "1px solid rgba(255,255,255,0.1)",
               background: "transparent",
               color: "rgba(255,255,255,0.5)",
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 14, letterSpacing: 2,
-              cursor: "pointer",
+              fontSize: 14, letterSpacing: 2, cursor: "pointer",
             }}
           >
-            ← NEW
+            ← SEARCH
+          </button>
+
+          <button
+            onClick={onClearPile}
+            style={{
+              flex: 1, padding: "12px 12px", borderRadius: 10,
+              border: "1px solid rgba(255,77,109,0.3)",
+              background: "rgba(255,77,109,0.06)",
+              color: "var(--danger)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 14, letterSpacing: 2, cursor: "pointer",
+            }}
+          >
+            CLEAR PILE
           </button>
         </div>
 
         {/* Empty state */}
         {pile.length === 0 && (
           <div style={{
-            textAlign: "center",
-            padding: "48px 20px",
-            color: "rgba(255,255,255,0.35)",
-            fontSize: 14,
+            textAlign: "center", padding: "48px 20px",
+            color: "rgba(255,255,255,0.35)", fontSize: 14,
           }}>
             Your stack is empty
             <br />
@@ -152,9 +171,7 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
               <div
                 key={`${card.id}-${i}`}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "7px 0",
+                  display: "flex", alignItems: "center", padding: "7px 0",
                   borderBottom: i < pile.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                 }}
               >
@@ -164,14 +181,10 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
                 <button
                   onClick={() => handleRemove(card.id)}
                   style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "rgba(255,255,255,0.2)",
-                    fontSize: 14,
-                    cursor: "pointer",
-                    padding: "0 4px",
-                    lineHeight: 1,
-                    flexShrink: 0,
+                    background: "transparent", border: "none",
+                    color: "rgba(255,255,255,0.2)", fontSize: 14,
+                    cursor: "pointer", padding: "0 4px",
+                    lineHeight: 1, flexShrink: 0,
                   }}
                 >
                   ✕
