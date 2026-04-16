@@ -159,6 +159,7 @@ export default function SwipeScreen({ cards, pile, onPileChange }) {
         alignItems: "center",
         justifyContent: "center",
         overflow: "hidden",
+        paddingTop: 14,
         paddingBottom: 8,
       }}>
 

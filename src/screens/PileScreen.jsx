@@ -22,11 +22,8 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
 
   function handleMoxfield() {
     const text = buildExportText(pile);
-    window.open(
-      `https://www.moxfield.com/import?list=${encodeURIComponent(text)}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    navigator.clipboard?.writeText(text);
+    window.open("https://www.moxfield.com/import", "_blank", "noopener,noreferrer");
   }
 
   const bottomPad = `calc(${NAV_HEIGHT}px + max(16px, env(safe-area-inset-bottom)))`;
@@ -111,7 +108,7 @@ export default function PileScreen({ pile, onPileChange, onNewSearch }) {
               opacity: pile.length === 0 ? 0.4 : 1,
             }}
           >
-            MOXFIELD ↗
+            COPY + MOXFIELD ↗
           </button>
 
           <button

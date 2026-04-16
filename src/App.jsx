@@ -10,32 +10,58 @@ function readSavedPile() {
   catch { return []; }
 }
 
+function readSavedCards() {
+  try { return JSON.parse(localStorage.getItem("deckstack_cards")) || []; }
+  catch { return []; }
+}
+
 export default function App() {
   const [pile,          setPile]          = useState(() => readSavedPile());
+  const [query,         setQuery]         = useState(() => localStorage.getItem("deckstack_query") || "");
+  const [swipeCards,    setSwipeCards]    = useState(() => readSavedCards());
+  const [swipeMounted,  setSwipeMounted]  = useState(() => readSavedCards().length > 0);
   const [screen,        setScreen]        = useState(() => {
-    const saved = readSavedPile();
-    if (saved.length > 0 && localStorage.getItem("deckstack_screen") === "pile") return "pile";
+    const hasSavedCards = readSavedCards().length > 0;
+    const savedScreen   = localStorage.getItem("deckstack_screen");
+    if (hasSavedCards) {
+      return savedScreen === "pile" ? "pile" : "swipe";
+    }
+    if (readSavedPile().length > 0 && savedScreen === "pile") return "pile";
     return "search";
   });
-  const [swipeCards,    setSwipeCards]    = useState([]);
-  const [swipeMounted,  setSwipeMounted]  = useState(false);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
 
-  // Persist pile and screen
+  // Persist pile
   useEffect(() => {
     localStorage.setItem("deckstack_pile", JSON.stringify(pile));
   }, [pile]);
 
+  // Persist screen
   useEffect(() => {
     localStorage.setItem("deckstack_screen", screen);
   }, [screen]);
 
-  async function handleSearch(query) {
+  // Persist query
+  useEffect(() => {
+    localStorage.setItem("deckstack_query", query);
+  }, [query]);
+
+  // Persist cards (may fail with QuotaExceededError — skip silently)
+  useEffect(() => {
+    try {
+      localStorage.setItem("deckstack_cards", JSON.stringify(swipeCards));
+    } catch {
+      // silently skip if storage is full
+    }
+  }, [swipeCards]);
+
+  async function handleSearch(q) {
     setLoading(true);
     setError(null);
     try {
-      const cards = await fetchForSwipe(query);
+      const cards = await fetchForSwipe(q);
+      setQuery(q);
       setSwipeCards(cards);
       setSwipeMounted(true);
       setScreen("swipe");
@@ -49,10 +75,13 @@ export default function App() {
   function handleNewSearch() {
     setPile([]);
     setSwipeCards([]);
+    setQuery("");
     setSwipeMounted(false);
     setError(null);
     localStorage.removeItem("deckstack_pile");
     localStorage.removeItem("deckstack_screen");
+    localStorage.removeItem("deckstack_query");
+    localStorage.removeItem("deckstack_cards");
     setScreen("search");
   }
 
