@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
+import { getCardImage } from "../lib/scryfall.js";
 
 function buildExportText(pile) {
   return pile.map(c => `1 ${c.name}`).join("\n");
 }
 
 export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSearch, onOpenSearch }) {
-  const [copied, setCopied] = useState(false);
+  const [copied,    setCopied]    = useState(false);
+  const [lightbox,  setLightbox]  = useState(null);  // card object or null
 
-  function handleRemove(cardId) {
+  // Lightbox swipe-down dismiss
+  const lbDragStartY = useRef(null);
+  const [lbDragY,    setLbDragY]   = useState(0);
+  const [lbDragging, setLbDragging] = useState(false);
+
+  function handleRemove(cardId, e) {
+    e.stopPropagation();
     onPileChange(pile.filter(c => c.id !== cardId));
+    if (lightbox?.id === cardId) setLightbox(null);
   }
 
   function handleCopy() {
@@ -24,6 +33,41 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
     const text = buildExportText(pile);
     navigator.clipboard?.writeText(text);
     window.open("https://www.moxfield.com/import", "_blank", "noopener,noreferrer");
+  }
+
+  function openLightbox(card) {
+    setLightbox(card);
+    setLbDragY(0);
+  }
+
+  function closeLightbox() {
+    setLightbox(null);
+    setLbDragY(0);
+    setLbDragging(false);
+    lbDragStartY.current = null;
+  }
+
+  function onLbPointerDown(e) {
+    lbDragStartY.current = e.clientY;
+    setLbDragging(true);
+    setLbDragY(0);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onLbPointerMove(e) {
+    if (!lbDragging || lbDragStartY.current === null) return;
+    const dy = e.clientY - lbDragStartY.current;
+    setLbDragY(Math.max(0, dy));
+  }
+
+  function onLbPointerUp() {
+    lbDragStartY.current = null;
+    setLbDragging(false);
+    if (lbDragY > 100) {
+      closeLightbox();
+    } else {
+      setLbDragY(0);
+    }
   }
 
   const bottomPad = `calc(${NAV_HEIGHT}px + max(16px, env(safe-area-inset-bottom)))`;
@@ -164,36 +208,130 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
           </div>
         )}
 
-        {/* Card list */}
+        {/* Visual card grid */}
         {pile.length > 0 && (
-          <div style={{ background: "var(--panel)", borderRadius: 10, padding: "10px 14px" }}>
-            {pile.map((card, i) => (
-              <div
-                key={`${card.id}-${i}`}
-                style={{
-                  display: "flex", alignItems: "center", padding: "7px 0",
-                  borderBottom: i < pile.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                }}
-              >
-                <span style={{ flex: 1, fontSize: 14, color: "var(--text)" }}>
-                  1 {card.name}
-                </span>
-                <button
-                  onClick={() => handleRemove(card.id)}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+          }}>
+            {pile.map((card, i) => {
+              const imgUrl = getCardImage(card, "normal");
+              return (
+                <div
+                  key={`${card.id}-${i}`}
+                  onClick={() => openLightbox(card)}
                   style={{
-                    background: "transparent", border: "none",
-                    color: "rgba(255,255,255,0.2)", fontSize: 14,
-                    cursor: "pointer", padding: "0 4px",
-                    lineHeight: 1, flexShrink: 0,
+                    position: "relative",
+                    aspectRatio: "63 / 88",
+                    borderRadius: 10,
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    background: "var(--panel)",
                   }}
                 >
-                  ✕
-                </button>
-              </div>
-            ))}
+                  {imgUrl ? (
+                    <img
+                      src={imgUrl}
+                      alt={card.name}
+                      draggable={false}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: "100%", height: "100%",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, color: "rgba(255,255,255,0.4)",
+                      padding: 8, textAlign: "center",
+                    }}>
+                      {card.name}
+                    </div>
+                  )}
+
+                  {/* Remove button */}
+                  <button
+                    onClick={(e) => handleRemove(card.id, e)}
+                    style={{
+                      position: "absolute", top: 5, right: 5,
+                      width: 22, height: 22, borderRadius: "50%",
+                      background: "rgba(0,0,0,0.7)",
+                      border: "none",
+                      color: "rgba(255,255,255,0.7)",
+                      fontSize: 10, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      lineHeight: 1,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* ── Lightbox ── */}
+      {lightbox && (
+        <div
+          onClick={closeLightbox}
+          style={{
+            position: "fixed", inset: 0, zIndex: 500,
+            background: `rgba(0,0,0,${Math.max(0.92 - lbDragY / 300, 0.3)})`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            style={{
+              position: "absolute", top: 20, right: 20,
+              background: "rgba(255,255,255,0.12)",
+              border: "none", borderRadius: "50%",
+              width: 36, height: 36,
+              color: "rgba(255,255,255,0.8)",
+              fontSize: 16, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 10,
+            }}
+          >
+            ✕
+          </button>
+
+          {/* Card image — drag to dismiss */}
+          <img
+            src={getCardImage(lightbox, "normal")}
+            alt={lightbox.name}
+            draggable={false}
+            onPointerDown={onLbPointerDown}
+            onPointerMove={onLbPointerMove}
+            onPointerUp={onLbPointerUp}
+            onPointerCancel={onLbPointerUp}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "min(90vw, 400px)",
+              maxHeight: "85dvh",
+              objectFit: "contain",
+              borderRadius: 16,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.9)",
+              transform: `translateY(${lbDragY}px)`,
+              transition: lbDragging ? "none" : "transform 0.22s ease",
+              cursor: lbDragging ? "grabbing" : "grab",
+              touchAction: "none",
+              userSelect: "none",
+              opacity: Math.max(1 - lbDragY / 250, 0.2),
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
