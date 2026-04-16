@@ -1,15 +1,15 @@
 import { useState } from "react";
+import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 function buildExportText(pile) {
   return pile.map(c => `1 ${c.name}`).join("\n");
 }
 
-export default function PileScreen({ pile: initialPile, onNewSearch }) {
-  const [pile,   setPile]   = useState(initialPile);
+export default function PileScreen({ pile, onPileChange, onNewSearch }) {
   const [copied, setCopied] = useState(false);
 
   function handleRemove(cardId) {
-    setPile(prev => prev.filter(c => c.id !== cardId));
+    onPileChange(pile.filter(c => c.id !== cardId));
   }
 
   function handleCopy() {
@@ -29,12 +29,14 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
     );
   }
 
+  const bottomPad = `calc(${NAV_HEIGHT}px + max(16px, env(safe-area-inset-bottom)))`;
+
   return (
     <div style={{
-      minHeight: "100vh",
+      minHeight: "100dvh",
       background: "var(--bg)",
       color: "var(--text)",
-      fontFamily: "'IBM Plex Mono', monospace",
+      fontFamily: "'DM Sans', sans-serif",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -47,7 +49,6 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
         padding: "20px 20px 14px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
         borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
         <div style={{ flex: 1 }}>
@@ -60,14 +61,19 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
           }}>
             DECK STACK
           </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
             {pile.length} card{pile.length !== 1 ? "s" : ""}
           </div>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div style={{ width: "100%", maxWidth: 600, padding: "18px 20px 100px" }}>
+      <div style={{
+        width: "100%",
+        maxWidth: 600,
+        padding: "18px 20px",
+        paddingBottom: bottomPad,
+      }}>
 
         {/* Action buttons row */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -75,13 +81,13 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
             onClick={handleCopy}
             style={{
               flex: 1,
-              padding: "11px 12px",
+              padding: "12px 12px",
               borderRadius: 10,
               border: `1px solid ${copied ? "var(--success)" : "rgba(91,143,255,0.3)"}`,
               background: copied ? "rgba(52,211,153,0.08)" : "rgba(91,143,255,0.06)",
               color: copied ? "var(--success)" : "var(--primary)",
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 13, letterSpacing: 3,
+              fontSize: 14, letterSpacing: 3,
               cursor: "pointer",
               transition: "all 0.2s",
             }}
@@ -94,13 +100,13 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
             disabled={pile.length === 0}
             style={{
               flex: 1,
-              padding: "11px 12px",
+              padding: "12px 12px",
               borderRadius: 10,
               border: "1px solid rgba(167,139,250,0.3)",
               background: "rgba(167,139,250,0.06)",
               color: "var(--secondary)",
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 13, letterSpacing: 3,
+              fontSize: 14, letterSpacing: 3,
               cursor: pile.length > 0 ? "pointer" : "default",
               opacity: pile.length === 0 ? 0.4 : 1,
             }}
@@ -112,13 +118,13 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
             onClick={onNewSearch}
             style={{
               flex: 1,
-              padding: "11px 12px",
+              padding: "12px 12px",
               borderRadius: 10,
               border: "1px solid rgba(255,255,255,0.1)",
               background: "transparent",
-              color: "var(--muted)",
+              color: "rgba(255,255,255,0.5)",
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 13, letterSpacing: 2,
+              fontSize: 14, letterSpacing: 2,
               cursor: "pointer",
             }}
           >
@@ -131,30 +137,31 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
           <div style={{
             textAlign: "center",
             padding: "48px 20px",
-            color: "var(--muted)",
-            fontSize: 12,
-            letterSpacing: 2,
+            color: "rgba(255,255,255,0.35)",
+            fontSize: 14,
           }}>
-            YOUR STACK IS EMPTY
+            Your stack is empty
             <br />
-            <span style={{ opacity: 0.5, fontSize: 10 }}>go back and keep some cards</span>
+            <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
+              Go back to swipe and keep some cards
+            </span>
           </div>
         )}
 
         {/* Card list */}
         {pile.length > 0 && (
-          <div style={{ background: "var(--panel)", borderRadius: 10, padding: "12px 16px" }}>
+          <div style={{ background: "var(--panel)", borderRadius: 10, padding: "10px 14px" }}>
             {pile.map((card, i) => (
               <div
                 key={`${card.id}-${i}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  padding: "5px 0",
-                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                  padding: "7px 0",
+                  borderBottom: i < pile.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                 }}
               >
-                <span style={{ flex: 1, fontSize: 12, color: "var(--text)", letterSpacing: 0.3 }}>
+                <span style={{ flex: 1, fontSize: 14, color: "var(--text)" }}>
                   1 {card.name}
                 </span>
                 <button
@@ -176,7 +183,6 @@ export default function PileScreen({ pile: initialPile, onNewSearch }) {
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

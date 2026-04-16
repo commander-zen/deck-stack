@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { getCardImage, formatManaCost, formatPrice } from "../lib/scryfall.js";
+import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 const SWIPE_THRESHOLD = 60;
 
-export default function SwipeScreen({ cards, onComplete }) {
+export default function SwipeScreen({ cards, pile, onPileChange }) {
   const [idx,     setIdx]     = useState(0);
-  const [pile,    setPile]    = useState([]);
   const [history, setHistory] = useState([]);
 
   // drag / animation
@@ -18,13 +18,6 @@ export default function SwipeScreen({ cards, onComplete }) {
 
   const card = cards[idx] ?? null;
   const done = idx >= cards.length;
-
-  // Auto-complete: show done state briefly then call onComplete
-  useEffect(() => {
-    if (!done) return;
-    const t = setTimeout(() => onComplete(pile), 1200);
-    return () => clearTimeout(t);
-  }, [done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -44,7 +37,7 @@ export default function SwipeScreen({ cards, onComplete }) {
     setBadge(keep ? "keep" : "pass");
     setTimeout(() => {
       setHistory(h => [...h, { card, kept: keep }]);
-      if (keep) setPile(p => [...p, card]);
+      if (keep) onPileChange([...pile, card]);
       setIdx(i => i + 1);
       setOffset(0);
       setBadge(null);
@@ -56,12 +49,8 @@ export default function SwipeScreen({ cards, onComplete }) {
     if (history.length === 0 || animOut) return;
     const last = history[history.length - 1];
     setHistory(h => h.slice(0, -1));
-    if (last.kept) setPile(p => p.filter(c => c !== last.card));
+    if (last.kept) onPileChange(pile.filter(c => c !== last.card));
     setIdx(i => Math.max(0, i - 1));
-  }
-
-  function handleDone() {
-    onComplete(pile);
   }
 
   // Pointer drag
@@ -96,13 +85,15 @@ export default function SwipeScreen({ cards, onComplete }) {
   const mainUrl = card ? getCardImage(card, "normal")   : null;
   const price   = card ? formatPrice(card) : null;
 
-  const rotation   = animOut ? (animOut === "right" ? 14 : -14) : offset / 22;
-  const tx         = animOut ? (animOut === "right" ? 560 : -560) : offset;
+  const rotation    = animOut ? (animOut === "right" ? 14 : -14) : offset / 22;
+  const tx          = animOut ? (animOut === "right" ? 560 : -560) : offset;
   const cardOpacity = animOut ? 0 : 1;
 
   const counterStr = done
     ? `${pile.length} KEPT`
     : `${idx + 1} / ${cards.length} · ${pile.length} KEPT`;
+
+  const NAV_BOTTOM_PAD = `calc(${NAV_HEIGHT}px + max(10px, env(safe-area-inset-bottom)))`;
 
   return (
     <div style={{
@@ -111,7 +102,7 @@ export default function SwipeScreen({ cards, onComplete }) {
       background: "var(--bg)",
       display: "flex",
       flexDirection: "column",
-      fontFamily: "'IBM Plex Mono', monospace",
+      fontFamily: "'DM Sans', sans-serif",
       overflow: "hidden",
       position: "relative",
       maxWidth: 600,
@@ -142,7 +133,6 @@ export default function SwipeScreen({ cards, onComplete }) {
         display: "flex",
         alignItems: "center",
         padding: "0 14px",
-        gap: 10,
         height: 52,
         background: "rgba(13,13,15,0.9)",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
@@ -157,23 +147,6 @@ export default function SwipeScreen({ cards, onComplete }) {
         }}>
           DECK STACK
         </span>
-        <button
-          onClick={handleDone}
-          style={{
-            padding: "7px 14px",
-            borderRadius: 8,
-            border: "1px solid var(--success)",
-            background: "rgba(52,211,153,0.08)",
-            color: "var(--success)",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 13,
-            letterSpacing: 3,
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          ✓ I'M DONE
-        </button>
       </div>
 
       {/* ── Card area ── */}
@@ -191,17 +164,17 @@ export default function SwipeScreen({ cards, onComplete }) {
 
         {/* Counter */}
         <div style={{
-          fontSize: 10,
-          color: done ? "var(--success)" : "var(--muted)",
+          fontSize: 12,
+          color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
           letterSpacing: 2,
           marginBottom: 8,
           flexShrink: 0,
+          fontFamily: "'Bebas Neue', sans-serif",
         }}>
           {counterStr}
         </div>
 
         {done ? (
-          /* All cards exhausted */
           <div style={{
             display: "flex",
             flexDirection: "column",
@@ -227,10 +200,18 @@ export default function SwipeScreen({ cards, onComplete }) {
                 letterSpacing: 3,
                 color: "var(--success)",
               }}>
-                ALL DONE
+                ALL CARDS SEEN
               </div>
-              <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 2 }}>
-                {pile.length} CARD{pile.length !== 1 ? "S" : ""} KEPT
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+                {pile.length} card{pile.length !== 1 ? "s" : ""} kept
+              </div>
+              <div style={{
+                fontSize: 11,
+                color: "rgba(255,255,255,0.3)",
+                letterSpacing: 1,
+                fontFamily: "'Bebas Neue', sans-serif",
+              }}>
+                TAP PILE TO VIEW YOUR DECK
               </div>
             </div>
           </div>
@@ -285,7 +266,7 @@ export default function SwipeScreen({ cards, onComplete }) {
                 alt={card?.name}
                 draggable={false}
                 style={{
-                  maxHeight: "68dvh",
+                  maxHeight: "65dvh",
                   width: "auto",
                   maxWidth: "min(88vw, 350px)",
                   borderRadius: 14,
@@ -299,7 +280,7 @@ export default function SwipeScreen({ cards, onComplete }) {
                 width: 260, height: 362,
                 background: "var(--panel)", borderRadius: 14,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: "var(--muted)", fontSize: 13,
+                color: "rgba(255,255,255,0.5)", fontSize: 14,
                 padding: 16, textAlign: "center",
               }}>
                 {card?.name}
@@ -311,8 +292,8 @@ export default function SwipeScreen({ cards, onComplete }) {
         {/* Card info */}
         {card && !done && (
           <div style={{ textAlign: "center", marginTop: 10, padding: "0 16px", flexShrink: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{card.name}</div>
-            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{card.name}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
               {card.type_line}
               {card.mana_cost ? ` · ${formatManaCost(card.mana_cost)}` : ""}
               {price ? ` · ${price}` : ""}
@@ -330,13 +311,14 @@ export default function SwipeScreen({ cards, onComplete }) {
         alignItems: "center",
         justifyContent: "center",
         gap: 24,
-        padding: "10px 0 max(18px, env(safe-area-inset-bottom))",
+        paddingTop: 10,
+        paddingBottom: NAV_BOTTOM_PAD,
       }}>
         <button
           onClick={() => doResolve(false)}
           disabled={done || !!animOut}
           style={{
-            width: 52, height: 52, borderRadius: "50%",
+            width: 54, height: 54, borderRadius: "50%",
             border: "2px solid var(--danger)",
             background: done ? "rgba(255,77,109,0.04)" : "rgba(255,77,109,0.1)",
             color: done ? "rgba(255,77,109,0.3)" : "var(--danger)",
@@ -350,12 +332,14 @@ export default function SwipeScreen({ cards, onComplete }) {
           onClick={doUndo}
           disabled={history.length === 0}
           style={{
-            padding: "6px 14px",
+            padding: "8px 16px",
             borderRadius: 8,
             border: "1px solid rgba(255,255,255,0.1)",
             background: "transparent",
             color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
-            fontSize: 11, letterSpacing: 1,
+            fontSize: 13,
+            fontFamily: "'Bebas Neue', sans-serif",
+            letterSpacing: 2,
             cursor: history.length > 0 ? "pointer" : "default",
           }}
         >UNDO</button>
@@ -364,7 +348,7 @@ export default function SwipeScreen({ cards, onComplete }) {
           onClick={() => doResolve(true)}
           disabled={done || !!animOut}
           style={{
-            width: 52, height: 52, borderRadius: "50%",
+            width: 54, height: 54, borderRadius: "50%",
             border: "2px solid var(--success)",
             background: done ? "rgba(52,211,153,0.04)" : "rgba(52,211,153,0.1)",
             color: done ? "rgba(52,211,153,0.3)" : "var(--success)",
