@@ -14,7 +14,7 @@ export default function ConfirmScreen({
 
   return (
     <div style={{
-      minHeight: "100vh",
+      minHeight: "100dvh",
       background: "var(--bg)",
       display: "flex",
       flexDirection: "column",
@@ -127,7 +127,7 @@ export default function ConfirmScreen({
         width: "100%",
         maxWidth: 480,
         padding: "24px 20px",
-        paddingBottom: "max(40px, env(safe-area-inset-bottom))",
+        paddingBottom: "max(60px, env(safe-area-inset-bottom))",
         marginTop: "auto",
       }}>
         {loadError && (

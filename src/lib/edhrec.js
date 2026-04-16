@@ -11,7 +11,7 @@ export const THEMES = [
   { name: "Tokens",       slug: "tokens",       criteria: `(o:"create" o:"token")` },
   { name: "Counters",     slug: "counters",     criteria: `(o:"+1/+1 counter" o:"whenever")` },
   { name: "Graveyard",    slug: "graveyard",    criteria: `(o:"from your graveyard" o:"battlefield")` },
-  { name: "Artifacts",    slug: "artifacts",    criteria: `(o:"artifact" o:"whenever" o:"enters")` },
+  { name: "Artifacts",    slug: "artifacts",    criteria: `(o:"artifacts you control" OR o:"artifact token" OR (o:"whenever" o:"artifact enters the battlefield"))` },
   { name: "Enchantress",  slug: "enchantress",  criteria: `o:"whenever you cast an enchantment"` },
   { name: "Spellslinger", slug: "spellslinger", criteria: `(o:"whenever you cast" (o:"instant" OR o:"sorcery"))` },
   { name: "Voltron",      slug: "voltron",      criteria: `(o:"equipped creature gets" OR o:"enchanted creature gets")` },

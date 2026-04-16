@@ -9,7 +9,6 @@ import {
   formatScore,
   buildExport,
 } from "../lib/wrec.js";
-import DeckReviewPill from "../components/DeckReviewPill.jsx";
 
 // ── WREC Score Panel (collapsible) ────────────────────────────────────────────
 
@@ -277,10 +276,6 @@ export default function PileScreen({ commander, pile: initialPile, onNewSearch, 
     setPile(prev => prev.filter(c => !(c.id === cardId && (c._deckCategory ?? "plan") === cat)));
   }
 
-  function handlePillRemove(cardId, cat) {
-    handleRemove(cat, cardId);
-  }
-
   function handleCopy() {
     const text = buildExport(commander, pile);
     navigator.clipboard?.writeText(text).then(() => {
@@ -334,22 +329,24 @@ export default function PileScreen({ commander, pile: initialPile, onNewSearch, 
             {commander && <span style={{ opacity: 0.6 }}> · {commander.name}</span>}
           </div>
         </div>
-        <button
-          onClick={onNewSearch}
-          style={{
-            padding: "7px 12px",
-            borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.1)",
-            background: "transparent",
-            color: "var(--muted)",
-            fontSize: 11,
-            letterSpacing: 2,
-            cursor: "pointer",
-            fontFamily: "'Bebas Neue', sans-serif",
-          }}
-        >
-          ← NEW SEARCH
-        </button>
+        {onAddMore && (
+          <button
+            onClick={() => onAddMore(pile)}
+            style={{
+              padding: "7px 12px",
+              borderRadius: 8,
+              border: "1px solid rgba(245,158,11,0.3)",
+              background: "rgba(245,158,11,0.06)",
+              color: "var(--active)",
+              fontSize: 11,
+              letterSpacing: 2,
+              cursor: "pointer",
+              fontFamily: "'Bebas Neue', sans-serif",
+            }}
+          >
+            + MORE
+          </button>
+        )}
       </div>
 
       {/* ── Content ── */}
@@ -397,24 +394,22 @@ export default function PileScreen({ commander, pile: initialPile, onNewSearch, 
             MOXFIELD ↗
           </button>
 
-          {onAddMore && (
-            <button
-              onClick={() => onAddMore(pile)}
-              style={{
-                flex: 1,
-                padding: "11px 12px",
-                borderRadius: 10,
-                border: "1px solid rgba(245,158,11,0.3)",
-                background: "rgba(245,158,11,0.06)",
-                color: "var(--active)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 13, letterSpacing: 2,
-                cursor: "pointer",
-              }}
-            >
-              + MORE
-            </button>
-          )}
+          <button
+            onClick={onNewSearch}
+            style={{
+              flex: 1,
+              padding: "11px 12px",
+              borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "transparent",
+              color: "var(--muted)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 13, letterSpacing: 2,
+              cursor: "pointer",
+            }}
+          >
+            ← NEW
+          </button>
         </div>
 
         {/* Text / Visual toggle */}
@@ -476,8 +471,6 @@ export default function PileScreen({ commander, pile: initialPile, onNewSearch, 
         )}
       </div>
 
-      {/* DeckReviewPill */}
-      <DeckReviewPill pile={pile} onRemove={handlePillRemove} />
     </div>
   );
 }

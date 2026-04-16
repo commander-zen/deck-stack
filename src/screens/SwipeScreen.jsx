@@ -344,8 +344,6 @@ export default function SwipeScreen({
         flexShrink: 0,
         display: "flex",
         alignItems: "stretch",
-        overflowX: "auto",
-        scrollbarWidth: "none",
         background: "rgba(13,13,15,0.85)",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
@@ -360,8 +358,9 @@ export default function SwipeScreen({
               key={cat}
               onClick={() => setActiveTab(cat)}
               style={{
-                flexShrink: 0,
-                padding: "10px 12px",
+                flex: 1,
+                minWidth: 0,
+                padding: "10px 4px",
                 border: "none",
                 borderBottom: `2px solid ${active ? "var(--primary)" : "transparent"}`,
                 background: "transparent",
@@ -369,18 +368,19 @@ export default function SwipeScreen({
                   ? "var(--primary)"
                   : exhausted ? "rgba(255,255,255,0.2)" : "var(--muted)",
                 fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 12,
-                letterSpacing: 2,
+                fontSize: 11,
+                letterSpacing: 1,
                 cursor: "pointer",
                 position: "relative",
                 transition: "color 0.12s, border-color 0.12s",
+                textAlign: "center",
               }}
             >
               {TAB_LABELS[cat]}
               {!exhausted && (
                 <span style={{
-                  marginLeft: 4,
-                  fontSize: 9,
+                  marginLeft: 3,
+                  fontSize: 8,
                   opacity: active ? 0.8 : 0.4,
                 }}>
                   {remaining}
@@ -538,68 +538,60 @@ export default function SwipeScreen({
             </div>
           </div>
         )}
+      </div>
 
-        {/* Action buttons */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 24,
-          marginTop: 12,
-          flexShrink: 0,
-        }}>
-          <button
-            onClick={() => doResolve(false)}
-            disabled={tabDone || !!animOut}
-            style={{
-              width: 52, height: 52, borderRadius: "50%",
-              border: "2px solid var(--danger)",
-              background: tabDone ? "rgba(255,77,109,0.04)" : "rgba(255,77,109,0.1)",
-              color: tabDone ? "rgba(255,77,109,0.3)" : "var(--danger)",
-              fontSize: 20,
-              cursor: tabDone ? "default" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >✕</button>
+      {/* ── Action buttons (always visible, outside scrollable card area) ── */}
+      <div style={{
+        position: "relative",
+        zIndex: 10,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 24,
+        padding: "10px 0 6px",
+      }}>
+        <button
+          onClick={() => doResolve(false)}
+          disabled={tabDone || !!animOut}
+          style={{
+            width: 52, height: 52, borderRadius: "50%",
+            border: "2px solid var(--danger)",
+            background: tabDone ? "rgba(255,77,109,0.04)" : "rgba(255,77,109,0.1)",
+            color: tabDone ? "rgba(255,77,109,0.3)" : "var(--danger)",
+            fontSize: 20,
+            cursor: tabDone ? "default" : "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >✕</button>
 
-          <button
-            onClick={doUndo}
-            disabled={history.length === 0}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 8,
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "transparent",
-              color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
-              fontSize: 11, letterSpacing: 1,
-              cursor: history.length > 0 ? "pointer" : "default",
-            }}
-          >UNDO</button>
+        <button
+          onClick={doUndo}
+          disabled={history.length === 0}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.1)",
+            background: "transparent",
+            color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
+            fontSize: 11, letterSpacing: 1,
+            cursor: history.length > 0 ? "pointer" : "default",
+          }}
+        >UNDO</button>
 
-          <button
-            onClick={() => doResolve(true)}
-            disabled={tabDone || !!animOut}
-            style={{
-              width: 52, height: 52, borderRadius: "50%",
-              border: "2px solid var(--success)",
-              background: tabDone ? "rgba(52,211,153,0.04)" : "rgba(52,211,153,0.1)",
-              color: tabDone ? "rgba(52,211,153,0.3)" : "var(--success)",
-              fontSize: 20,
-              cursor: tabDone ? "default" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >♥</button>
-        </div>
-
-        {/* Keyboard hint */}
-        <div style={{
-          marginTop: 6,
-          fontSize: 9,
-          color: "rgba(255,255,255,0.16)",
-          letterSpacing: 2,
-          flexShrink: 0,
-        }}>
-          ← PASS &nbsp;&nbsp; KEEP → &nbsp;&nbsp; Z UNDO
-        </div>
+        <button
+          onClick={() => doResolve(true)}
+          disabled={tabDone || !!animOut}
+          style={{
+            width: 52, height: 52, borderRadius: "50%",
+            border: "2px solid var(--success)",
+            background: tabDone ? "rgba(52,211,153,0.04)" : "rgba(52,211,153,0.1)",
+            color: tabDone ? "rgba(52,211,153,0.3)" : "var(--success)",
+            fontSize: 20,
+            cursor: tabDone ? "default" : "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >♥</button>
       </div>
 
       {/* ── Syntax inspector toggle row ── */}
@@ -736,7 +728,7 @@ export default function SwipeScreen({
           onChange={e => setSearchVal(e.target.value)}
           onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
           onFocus={() => searchSuggs.length > 0 && setSearchOpen(true)}
-          placeholder="Add a card to this tab's queue…"
+          placeholder=""
           autoComplete="off"
           spellCheck={false}
           style={{

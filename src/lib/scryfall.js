@@ -109,7 +109,7 @@ function buildPoolQueries(colorId) {
   return [
     {
       cat: "ramp",
-      q:   `(oracletag:ramp OR oracletag:mana-rock OR oracletag:mana-dork) id<=${id}`,
+      q:   `(oracletag:ramp OR oracletag:mana-rock OR oracletag:mana-dork) -oracletag:removal -oracletag:targeted-removal id<=${id}`,
     },
     {
       cat: "card-advantage",

@@ -104,7 +104,7 @@ export default function App() {
   const handleSwipeComplete = useCallback((pile, savedState) => {
     setFinalPile(pile);
     setSwipeState(savedState);
-    setScreen("done");
+    setScreen("pile");
   }, []);
 
   // ── Done → Pile ──────────────────────────────────────────────────────────
