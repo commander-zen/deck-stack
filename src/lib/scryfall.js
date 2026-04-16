@@ -6,7 +6,6 @@ function sleep(ms) {
 }
 
 // ── Image helpers ─────────────────────────────────────────────────────────────
-// size: "small" | "normal" | "large" | "art_crop" | "border_crop" | "png"
 export function getCardImage(card, size = "normal") {
   if (card.image_uris) return card.image_uris[size] ?? card.image_uris.normal;
   if (card.card_faces?.[0]?.image_uris)
@@ -14,7 +13,7 @@ export function getCardImage(card, size = "normal") {
   return null;
 }
 
-// ── Mana cost → plain text, e.g. {2}{U}{B} → "2UB" ──────────────────────────
+// ── Mana cost → plain text ────────────────────────────────────────────────────
 export function formatManaCost(cost) {
   if (!cost) return "";
   return cost.replace(/\{([^}]+)\}/g, (_, m) => m).replace(/\//g, "");
@@ -27,7 +26,7 @@ export function formatPrice(card) {
   return `$${parseFloat(usd).toFixed(2)}`;
 }
 
-// ── Autocomplete card names (debounce in the component) ───────────────────────
+// ── Autocomplete card names ───────────────────────────────────────────────────
 export async function autocompleteCardNames(query, options = {}) {
   if (!query.trim()) return [];
   try {
@@ -43,7 +42,7 @@ export async function autocompleteCardNames(query, options = {}) {
   }
 }
 
-// ── Commander name search (type-ahead, returns full card objects) ──────────────
+// ── Commander name search ─────────────────────────────────────────────────────
 export async function searchCommanders(query, options = {}) {
   if (!query.trim()) return [];
   try {
@@ -82,7 +81,7 @@ export async function fetchCardByName(name, options = {}) {
   return res.json();
 }
 
-// ── Single page fetch (order=edhrec, unique=cards) ────────────────────────────
+// ── Single page fetch ─────────────────────────────────────────────────────────
 export async function fetchFirstPage(query, options = {}) {
   const { signal } = options;
   const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&order=edhrec&unique=cards`;
@@ -100,146 +99,37 @@ export async function fetchFirstPage(query, options = {}) {
   return json.data ?? [];
 }
 
-// ── Commander card pool fetch ─────────────────────────────────────────────────
-// Runs category queries in parallel, hits tagger API, deduplicates, caps at 120.
-// Returns array of card objects with _deckCategory set.
-
-function buildPoolQueries(colorId) {
-  const id = colorId || "C";
-  return [
-    {
-      cat: "ramp",
-      q:   `(oracletag:ramp OR oracletag:mana-rock OR oracletag:mana-dork) -oracletag:removal -oracletag:targeted-removal id<=${id}`,
-    },
-    {
-      cat: "card-advantage",
-      q:   `(oracletag:card-draw OR oracletag:card-advantage) id<=${id}`,
-    },
-    {
-      cat: "disruption",
-      q:   `(oracletag:removal OR oracletag:targeted-removal) id<=${id}`,
-    },
-    {
-      cat: "mass-disruption",
-      q:   `oracletag:wrath id<=${id}`,
-    },
-    {
-      cat: "mana-base",
-      q:   `(oracletag:fetchland OR oracletag:shockland OR (t:land -is:basic)) id<=${id}`,
-    },
-  ];
-}
-
-function getCommanderPlanTags(commander) {
-  const oracle = (commander.oracle_text || '').toLowerCase();
-  const tags = new Set();
-
-  // Reanimation
-  if (oracle.includes('graveyard') && oracle.includes('battlefield')) tags.add('reanimate-creature');
-  if (oracle.includes('reanimate-from-any') || (oracle.includes('graveyard') && oracle.includes('any player'))) tags.add('reanimate-from-any');
-
-  // Protection
-  if (oracle.includes('hexproof')) tags.add('gives-hexproof');
-  if (oracle.includes('indestructible')) tags.add('gives-indestructible');
-  if (oracle.includes('protection from')) tags.add('gives-protection');
-  if (oracle.includes('phase') && oracle.includes('out')) tags.add('phasing');
-
-  // Tokens
-  if (oracle.includes('create') && oracle.includes('token')) tags.add('token-maker');
-  if (oracle.includes('token') && oracle.includes('twice that many')) tags.add('token-doubler');
-
-  // Counters
-  if (oracle.includes('proliferate')) tags.add('proliferate');
-  if (oracle.includes('+1/+1 counter')) tags.add('plus-counter');
-  if (oracle.includes('would put') && oracle.includes('counter') && oracle.includes('instead')) tags.add('counter-doubler');
-
-  // Sacrifice synergy
-  if (oracle.includes('whenever') && oracle.includes('dies')) tags.add('death-trigger');
-  if (oracle.includes('whenever you sacrifice')) tags.add('sacrifice-payoff');
-  if (oracle.includes('sacrifice') && oracle.includes(':') && !oracle.includes('as an additional cost')) tags.add('sacrifice-outlet');
-
-  // Recursion
-  if (oracle.includes('graveyard') && oracle.includes('hand') && oracle.includes('return')) tags.add('recursion');
-  if (oracle.includes('flashback') || oracle.includes('escape') || oracle.includes('retrace')) tags.add('self-recursion');
-
-  // Stax
-  if (oracle.includes('unless') && oracle.includes('pay') && oracle.includes('attack')) tags.add('tax');
-  if (oracle.includes('spells cost') && oracle.includes('more')) tags.add('spell-tax');
-
-  // Tribal
-  if (oracle.includes('creatures you control') && oracle.includes('get +')) tags.add('tribal-lord');
-
-  // Copy
-  if (oracle.includes('copy target') && oracle.includes('spell')) tags.add('spell-copy');
-  if (oracle.includes('create a token') && oracle.includes('copy')) tags.add('copy-token');
-
-  // Enchantress
-  if (oracle.includes('whenever') && oracle.includes('enchantment') && oracle.includes('draw')) tags.add('enchantress-trigger');
-
-  // Haste / combat
-  if (oracle.includes('haste') && (oracle.includes('creatures you control') || oracle.includes('each creature'))) tags.add('haste-grant');
-
-  return tags;
-}
-
-export async function fetchCommanderPool(commander, options = {}) {
+// ── Swipe screen fetch — up to 175 cards, paginated ──────────────────────────
+export async function fetchForSwipe(query, options = {}) {
   const { signal } = options;
+  const CAP = 175;
+  const results = [];
+  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&order=edhrec&unique=cards`;
 
-  const colorId = commander.color_identity?.length
-    ? commander.color_identity.join("")
-    : "C";
-
-  const queries = buildPoolQueries(colorId);
-
-  // ── Parallel: category queries + tagger API ──────────────────────────────
-  const [catResults, planCards] = await Promise.all([
-    // 5 category fetches
-    Promise.all(
-      queries.map(async ({ cat, q }) => {
-        try {
-          const cards = await fetchFirstPage(q, { signal });
-          return cards.map(c => ({ ...c, _deckCategory: cat }));
-        } catch (e) {
-          if (e.name === "AbortError") throw e;
-          return [];
-        }
-      })
-    ),
-
-    // Oracle text plan matcher — no external API needed
-    (async () => {
-      try {
-        const tags = getCommanderPlanTags(commander);
-        if (!tags.size) return [];
-
-        const tagQuery = [...tags].map(s => `oracletag:${s}`).join(' OR ');
-        const q = `(${tagQuery}) id<=${colorId}`;
-        const cards = await fetchFirstPage(q, { signal });
-        return cards.map(c => ({ ...c, _deckCategory: 'plan' }));
-      } catch (e) {
-        if (e.name === 'AbortError') throw e;
-        return [];
-      }
-    })(),
-  ]);
-
-  // ── Merge, deduplicate, exclude commander, cap at 120 ────────────────────
-  const all  = [...catResults.flat(), ...planCards];
-  const seen = new Set([commander.id]);
-  const out  = [];
-
-  for (const card of all) {
-    if (!seen.has(card.id)) {
-      seen.add(card.id);
-      out.push(card);
+  while (url && results.length < CAP) {
+    let res;
+    try {
+      res = await fetch(url, { headers: { "User-Agent": UA }, signal });
+    } catch (err) {
+      if (err.name === "AbortError") throw err;
+      throw new Error("Network error.");
     }
+    if (res.status === 404) throw new Error("No cards found for that query.");
+    if (res.status === 422) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.details ?? "Invalid query syntax.");
+    }
+    if (!res.ok) throw new Error(`Scryfall error: ${res.status}`);
+    const json = await res.json();
+    results.push(...(json.data ?? []));
+    url = json.has_more && results.length < CAP ? json.next_page : null;
+    if (url) await sleep(100);
   }
 
-  return out.slice(0, 120);
+  return results.slice(0, CAP);
 }
 
-// ── Legacy full-paginator (kept for any existing usage) ──────────────────────
-
+// ── Full paginator (kept for existing usage) ──────────────────────────────────
 const BACKOFF_429 = 30000;
 const PAGE_DELAY  = 500;
 export const EJECT_THRESHOLD = 500;
@@ -282,25 +172,7 @@ export async function fetchAllCards(query, onProgress, options = {}) {
   return all;
 }
 
-// ── Category query helpers for SwipeScreen syntax inspector ──────────────────
-export function buildCategoryQueries(colorId) {
-  const id = colorId || "C";
-  const map = {};
-  for (const { cat, q } of buildPoolQueries(id)) {
-    map[cat] = q;
-  }
-  return map;
-}
-
-export function buildPlanQuery(commander, colorId) {
-  const id = colorId || "C";
-  const tags = getCommanderPlanTags(commander);
-  if (!tags.size) return null;
-  const tagQuery = [...tags].map(s => `oracletag:${s}`).join(" OR ");
-  return `(${tagQuery}) id<=${id}`;
-}
-
-// ── Legacy query builder (kept for SearchScreen compatibility) ────────────────
+// ── Query builder ─────────────────────────────────────────────────────────────
 export function buildQuery(filters) {
   const parts = [];
   if (filters.name?.trim())   parts.push(`name:"${filters.name.trim()}"`);
