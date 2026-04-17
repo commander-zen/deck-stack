@@ -35,9 +35,10 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch })
     if (!card || animOut || done) return;
     setAnimOut(keep ? "right" : "left");
     setBadge(keep ? "keep" : "pass");
+    const cardEntry = keep ? { ...card, instanceId: crypto.randomUUID() } : card;
     setTimeout(() => {
-      setHistory(h => [...h, { card, kept: keep }]);
-      if (keep) onPileChange([...pile, card]);
+      setHistory(h => [...h, { card: cardEntry, kept: keep }]);
+      if (keep) onPileChange([...pile, cardEntry]);
       setIdx(i => i + 1);
       setOffset(0);
       setBadge(null);

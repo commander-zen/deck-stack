@@ -11,6 +11,10 @@ function readSavedPile() {
   catch { return []; }
 }
 
+function readSavedCommander() {
+  return localStorage.getItem("deckstack_commander") || null;
+}
+
 function readSavedCards() {
   try { return JSON.parse(localStorage.getItem("deckstack_cards")) || []; }
   catch { return []; }
@@ -18,6 +22,7 @@ function readSavedCards() {
 
 export default function App() {
   const [pile,          setPile]          = useState(() => readSavedPile());
+  const [commander,     setCommander]     = useState(() => readSavedCommander());
   const [query,         setQuery]         = useState(() => localStorage.getItem("deckstack_query") || "");
   const [swipeCards,    setSwipeCards]    = useState(() => readSavedCards());
   const [swipeMounted,  setSwipeMounted]  = useState(() => readSavedCards().length > 0);
@@ -37,6 +42,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("deckstack_pile", JSON.stringify(pile));
   }, [pile]);
+
+  useEffect(() => {
+    if (commander) localStorage.setItem("deckstack_commander", commander);
+    else localStorage.removeItem("deckstack_commander");
+  }, [commander]);
 
   useEffect(() => {
     localStorage.setItem("deckstack_screen", screen);
@@ -94,11 +104,13 @@ export default function App() {
   // Clears everything and returns to search (CLEAR PILE)
   function handleClearPile() {
     setPile([]);
+    setCommander(null);
     setSwipeCards([]);
     setQuery("");
     setSwipeMounted(false);
     setError(null);
     localStorage.removeItem("deckstack_pile");
+    localStorage.removeItem("deckstack_commander");
     localStorage.removeItem("deckstack_screen");
     localStorage.removeItem("deckstack_query");
     localStorage.removeItem("deckstack_cards");
@@ -143,6 +155,8 @@ export default function App() {
           onClearPile={handleClearPile}
           onGoToSearch={handleGoToSearch}
           onOpenSearch={openSheet}
+          commander={commander}
+          onCommanderChange={setCommander}
         />
       )}
 

@@ -2,11 +2,16 @@ import { useState, useRef } from "react";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { getCardImage } from "../lib/scryfall.js";
 
-function buildExportText(pile) {
+function buildExportText(pile, commander) {
+  const cmdCard = commander ? pile.find(c => c.instanceId === commander) : null;
+  const rest = cmdCard ? pile.filter(c => c.instanceId !== commander) : pile;
+  if (cmdCard) {
+    return `Commander: ${cmdCard.name}\n\n${rest.map(c => `1 ${c.name}`).join("\n")}`;
+  }
   return pile.map(c => `1 ${c.name}`).join("\n");
 }
 
-export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSearch, onOpenSearch }) {
+export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSearch, onOpenSearch, commander, onCommanderChange }) {
   const [copied,    setCopied]    = useState(false);
   const [lightbox,  setLightbox]  = useState(null);  // card object or null
 
@@ -15,14 +20,19 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
   const [lbDragY,    setLbDragY]   = useState(0);
   const [lbDragging, setLbDragging] = useState(false);
 
-  function handleRemove(cardId, e) {
+  // Long-press for commander
+  const lpTimerRef   = useRef(null);
+  const lpFiredRef   = useRef(false);
+
+  function handleRemove(instanceId, e) {
     e.stopPropagation();
-    onPileChange(pile.filter(c => c.id !== cardId));
-    if (lightbox?.id === cardId) setLightbox(null);
+    onPileChange(pile.filter(c => c.instanceId !== instanceId));
+    if (lightbox?.instanceId === instanceId) setLightbox(null);
+    if (commander === instanceId) onCommanderChange(null);
   }
 
   function handleCopy() {
-    const text = buildExportText(pile);
+    const text = buildExportText(pile, commander);
     navigator.clipboard?.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -30,9 +40,26 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
   }
 
   function handleMoxfield() {
-    const text = buildExportText(pile);
+    const text = buildExportText(pile, commander);
     navigator.clipboard?.writeText(text);
     window.open("https://www.moxfield.com/import", "_blank", "noopener,noreferrer");
+  }
+
+  function onCardPointerDown(card) {
+    lpFiredRef.current = false;
+    lpTimerRef.current = setTimeout(() => {
+      lpFiredRef.current = true;
+      onCommanderChange(commander === card.instanceId ? null : card.instanceId);
+    }, 500);
+  }
+
+  function onCardPointerUp() {
+    clearTimeout(lpTimerRef.current);
+  }
+
+  function onCardClick(card) {
+    if (lpFiredRef.current) { lpFiredRef.current = false; return; }
+    openLightbox(card);
   }
 
   function openLightbox(card) {
@@ -217,10 +244,14 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
           }}>
             {pile.map((card, i) => {
               const imgUrl = getCardImage(card, "normal");
+              const isCommander = commander === card.instanceId;
               return (
                 <div
-                  key={`${card.id}-${i}`}
-                  onClick={() => openLightbox(card)}
+                  key={card.instanceId || `${card.id}-${i}`}
+                  onPointerDown={() => onCardPointerDown(card)}
+                  onPointerUp={onCardPointerUp}
+                  onPointerCancel={onCardPointerUp}
+                  onClick={() => onCardClick(card)}
                   style={{
                     position: "relative",
                     aspectRatio: "63 / 88",
@@ -228,6 +259,8 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
                     overflow: "hidden",
                     cursor: "pointer",
                     background: "var(--panel)",
+                    outline: isCommander ? "2px solid gold" : "none",
+                    outlineOffset: isCommander ? "2px" : "0",
                   }}
                 >
                   {imgUrl ? (
@@ -254,9 +287,21 @@ export default function PileScreen({ pile, onPileChange, onClearPile, onGoToSear
                     </div>
                   )}
 
+                  {/* Commander crown */}
+                  {isCommander && (
+                    <div style={{
+                      position: "absolute", top: 4, left: 5,
+                      fontSize: 14, lineHeight: 1,
+                      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))",
+                      pointerEvents: "none",
+                    }}>
+                      👑
+                    </div>
+                  )}
+
                   {/* Remove button */}
                   <button
-                    onClick={(e) => handleRemove(card.id, e)}
+                    onClick={(e) => handleRemove(card.instanceId, e)}
                     style={{
                       position: "absolute", top: 5, right: 5,
                       width: 22, height: 22, borderRadius: "50%",
