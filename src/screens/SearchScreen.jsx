@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import SearchForm from "../components/SearchForm.jsx";
+import ImportSheet from "../components/ImportSheet.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
 
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
@@ -46,12 +47,13 @@ function StepLabel({ number, children }) {
   );
 }
 
-export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange }) {
+export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange, onImport }) {
   const [cmdQuery,      setCmdQuery]      = useState("");
   const [cmdResults,    setCmdResults]    = useState([]);
   const [cmdOpen,       setCmdOpen]       = useState(false);
   const [cmdFocused,    setCmdFocused]    = useState(false);
   const [currentQuery,  setCurrentQuery]  = useState("f:commander");
+  const [importOpen,    setImportOpen]    = useState(false);
   const abortRef = useRef(null);
 
   useEffect(() => {
@@ -89,6 +91,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   const hasCommander = !!commanderCard || cmdQuery.trim().length > 0;
 
   return (
+    <>
     <div style={{
       minHeight: "100dvh",
       background: "var(--bg)",
@@ -295,6 +298,34 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           />
         </div>
 
+        {/* ── Import ── */}
+        <div style={{ marginBottom: 20 }}>
+          <button
+            onClick={() => setImportOpen(true)}
+            style={{
+              width: "100%",
+              background: "transparent",
+              border: "1.5px solid rgba(167,139,250,0.35)",
+              borderRadius: 14,
+              padding: "14px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ fontSize: 15, color: "var(--secondary)", opacity: 0.8 }}>↓</span>
+            <span style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 16, letterSpacing: "0.12em",
+              color: "var(--secondary)",
+            }}>
+              IMPORT DECK
+            </span>
+          </button>
+        </div>
+
         {/* ── CTA ── */}
         <div style={{ marginTop: "auto", padding: "16px 0 28px" }}>
           <button
@@ -354,5 +385,12 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
 
       </div>
     </div>
+
+    <ImportSheet
+      open={importOpen}
+      onClose={() => setImportOpen(false)}
+      onImport={onImport}
+    />
+    </>
   );
 }

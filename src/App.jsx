@@ -145,6 +145,16 @@ export default function App() {
     setScreen("search");
   }
 
+  // Import a full deck directly into the pile
+  function handleImport(importedPile, commanderCard) {
+    setPile(importedPile);
+    if (commanderCard) {
+      setCommanderCard(commanderCard);
+      setCommander(commanderCard.name);
+    }
+    setScreen("pile");
+  }
+
   // Just navigates to search, keeps pile and card queue intact (← SEARCH)
   function handleGoToSearch() {
     setScreen("search");
@@ -166,6 +176,7 @@ export default function App() {
           error={error}
           commanderCard={commanderCard}
           onCommanderCardChange={setCommanderCard}
+          onImport={handleImport}
         />
       )}
 
