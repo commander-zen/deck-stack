@@ -6,7 +6,10 @@
       "Bash(kill %1)",
       "Bash(npm install *)",
       "Bash(python3 -c \"import json; d=json.load\\(open\\('package-lock.json'\\)\\); root=d['packages']['']; print\\(json.dumps\\({k:v for k,v in root.items\\(\\) if k in \\('dependencies','devDependencies','name','version'\\)}, indent=2\\)\\)\")",
-      "Bash(node node_modules/vite/bin/vite.js build)"
+      "Bash(node node_modules/vite/bin/vite.js build)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require\\('sharp'\\)\")",
+      "Bash(node -e \"require\\('canvas'\\)\")"
     ]
   }
 }
