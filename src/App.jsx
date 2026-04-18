@@ -15,14 +15,26 @@ function readSavedCommander() {
   return localStorage.getItem("deckstack_commander") || null;
 }
 
+function readSavedCommanderCard() {
+  try { return JSON.parse(localStorage.getItem("deckstack_commander_card")) || null; }
+  catch { return null; }
+}
+
 function readSavedCards() {
   try { return JSON.parse(localStorage.getItem("deckstack_cards")) || []; }
+  catch { return []; }
+}
+
+function readSavedMaybeboard() {
+  try { return JSON.parse(localStorage.getItem("deckstack_maybeboard")) || []; }
   catch { return []; }
 }
 
 export default function App() {
   const [pile,          setPile]          = useState(() => readSavedPile());
   const [commander,     setCommander]     = useState(() => readSavedCommander());
+  const [commanderCard, setCommanderCard] = useState(() => readSavedCommanderCard());
+  const [maybeboard,    setMaybeboard]    = useState(() => readSavedMaybeboard());
   const [query,         setQuery]         = useState(() => localStorage.getItem("deckstack_query") || "");
   const [swipeCards,    setSwipeCards]    = useState(() => readSavedCards());
   const [swipeMounted,  setSwipeMounted]  = useState(() => readSavedCards().length > 0);
@@ -49,6 +61,19 @@ export default function App() {
   }, [commander]);
 
   useEffect(() => {
+    if (commanderCard) localStorage.setItem("deckstack_commander_card", JSON.stringify(commanderCard));
+    else localStorage.removeItem("deckstack_commander_card");
+  }, [commanderCard]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("deckstack_maybeboard", JSON.stringify(maybeboard));
+    } catch {
+      // QuotaExceededError — silently skip
+    }
+  }, [maybeboard]);
+
+  useEffect(() => {
     localStorage.setItem("deckstack_screen", screen);
   }, [screen]);
 
@@ -69,7 +94,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const cards = await fetchForSwipe(q);
+      const cards = await fetchForSwipe(q, commanderCard);
       setQuery(q);
       setSwipeCards(cards);
       setSwipeMounted(true);
@@ -87,7 +112,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const cards = await fetchForSwipe(q);
+      const cards = await fetchForSwipe(q, commanderCard);
       setQuery(q);
       setSwipeCards(cards);
       setSwipeMounted(true);
@@ -105,12 +130,16 @@ export default function App() {
   function handleClearPile() {
     setPile([]);
     setCommander(null);
+    setCommanderCard(null);
+    setMaybeboard([]);
     setSwipeCards([]);
     setQuery("");
     setSwipeMounted(false);
     setError(null);
     localStorage.removeItem("deckstack_pile");
     localStorage.removeItem("deckstack_commander");
+    localStorage.removeItem("deckstack_commander_card");
+    localStorage.removeItem("deckstack_maybeboard");
     localStorage.removeItem("deckstack_screen");
     localStorage.removeItem("deckstack_query");
     localStorage.removeItem("deckstack_cards");
@@ -132,7 +161,13 @@ export default function App() {
   return (
     <>
       {screen === "search" && (
-        <SearchScreen onSearch={handleSearch} loading={loading} error={error} />
+        <SearchScreen
+          onSearch={handleSearch}
+          loading={loading}
+          error={error}
+          commanderCard={commanderCard}
+          onCommanderCardChange={setCommanderCard}
+        />
       )}
 
       {/* Keep SwipeScreen mounted while in a session so idx/history survive tab switches */}
@@ -144,6 +179,7 @@ export default function App() {
             pile={pile}
             onPileChange={setPile}
             onOpenSearch={openSheet}
+            commanderCard={commanderCard}
           />
         </div>
       )}
@@ -157,6 +193,9 @@ export default function App() {
           onOpenSearch={openSheet}
           commander={commander}
           onCommanderChange={setCommander}
+          commanderCard={commanderCard}
+          maybeboard={maybeboard}
+          onMaybeboardChange={setMaybeboard}
         />
       )}
 

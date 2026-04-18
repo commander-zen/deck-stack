@@ -100,11 +100,15 @@ export async function fetchFirstPage(query, options = {}) {
 }
 
 // ── Swipe screen fetch — up to 175 cards, paginated ──────────────────────────
-export async function fetchForSwipe(query, options = {}) {
+export async function fetchForSwipe(query, commanderCard = null, options = {}) {
   const { signal } = options;
   const CAP = 175;
   const results = [];
-  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&order=edhrec&unique=cards`;
+  let baseQuery = query;
+  if (commanderCard?.color_identity?.length > 0) {
+    baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
+  }
+  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=edhrec&unique=cards`;
 
   while (url && results.length < CAP) {
     let res;

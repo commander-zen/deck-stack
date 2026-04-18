@@ -4,7 +4,9 @@ import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 const SWIPE_THRESHOLD = 60;
 
-export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch }) {
+const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
+
+export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, commanderCard }) {
   const [idx,     setIdx]     = useState(0);
   const [history, setHistory] = useState([]);
 
@@ -163,6 +165,44 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch })
           </svg>
         </button>
       </div>
+
+      {/* ── Commander banner ── */}
+      {commanderCard && (
+        <div style={{
+          position: "relative", zIndex: 20, flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "6px 14px",
+          background: "rgba(13,13,15,0.85)",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          backdropFilter: "blur(10px)",
+        }}>
+          {getCardImage(commanderCard, "art_crop") && (
+            <img
+              src={getCardImage(commanderCard, "art_crop")}
+              alt={commanderCard.name}
+              draggable={false}
+              style={{ width: 52, height: 36, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+            />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+              COMMANDER
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {commanderCard.name}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+            {commanderCard.color_identity?.map(c => (
+              <div key={c} style={{
+                width: 12, height: 12, borderRadius: "50%",
+                background: COLOR_DOT[c] ?? "#888",
+                border: "1px solid rgba(255,255,255,0.2)",
+              }} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Card area ── */}
       <div style={{
