@@ -5,13 +5,20 @@ import PileScreen   from "./screens/PileScreen.jsx";
 import SearchSheet  from "./components/SearchSheet.jsx";
 import { fetchForSwipe } from "./lib/scryfall.js";
 
+function ensureInstanceIds(cards) {
+  return cards.map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
+}
+
 function readSavedPile() {
-  try { return JSON.parse(localStorage.getItem("deckstack_pile")) || []; }
+  try { return ensureInstanceIds(JSON.parse(localStorage.getItem("deckstack_pile")) || []); }
   catch { return []; }
 }
 
-function readSavedCommander() {
-  return localStorage.getItem("deckstack_commander") || null;
+function readSavedCommander(pile) {
+  const stored = localStorage.getItem("deckstack_commander");
+  if (!stored) return null;
+  // Reset if the instanceId is no longer in the pile (dangling reference)
+  return pile.some(c => c.instanceId === stored) ? stored : null;
 }
 
 function readSavedCommanderCard() {
@@ -20,18 +27,18 @@ function readSavedCommanderCard() {
 }
 
 function readSavedCards() {
-  try { return JSON.parse(localStorage.getItem("deckstack_cards")) || []; }
+  try { return ensureInstanceIds(JSON.parse(localStorage.getItem("deckstack_cards")) || []); }
   catch { return []; }
 }
 
 function readSavedMaybeboard() {
-  try { return JSON.parse(localStorage.getItem("deckstack_maybeboard")) || []; }
+  try { return ensureInstanceIds(JSON.parse(localStorage.getItem("deckstack_maybeboard")) || []); }
   catch { return []; }
 }
 
 export default function App() {
   const [pile,          setPile]          = useState(() => readSavedPile());
-  const [commander,     setCommander]     = useState(() => readSavedCommander());
+  const [commander,     setCommander]     = useState(() => readSavedCommander(readSavedPile()));
   const [commanderCard, setCommanderCard] = useState(() => readSavedCommanderCard());
   const [maybeboard,    setMaybeboard]    = useState(() => readSavedMaybeboard());
   const [query,         setQuery]         = useState(() => localStorage.getItem("deckstack_query") || "");
@@ -146,11 +153,11 @@ export default function App() {
   }
 
   // Import a full deck directly into the pile
-  function handleImport(importedPile, commanderCard) {
+  function handleImport(importedPile, importedCommanderCard) {
     setPile(importedPile);
-    if (commanderCard) {
-      setCommanderCard(commanderCard);
-      setCommander(commanderCard.name);
+    if (importedCommanderCard) {
+      setCommanderCard(importedCommanderCard);
+      setCommander(importedCommanderCard.instanceId);
     }
     setScreen("pile");
   }
