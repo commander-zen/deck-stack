@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const COLORS = ["W", "U", "B", "R", "G", "C"];
@@ -25,16 +25,16 @@ const STATS_LIST = [
 ];
 
 // ── Style helpers ──────────────────────────────────────────────────────────────
-export const inputStyle = {
+const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
   background: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 10,
   color: "var(--text)",
-  fontSize: 16,
+  fontSize: 15,
   fontFamily: "'DM Sans', sans-serif",
-  padding: "12px 14px",
+  padding: "11px 13px",
   outline: "none",
   caretColor: "var(--primary)",
 };
@@ -68,11 +68,15 @@ function opBtn(active) {
   };
 }
 
-function SectionLabel({ children }) {
+function FilterSectionLabel({ children }) {
   return (
     <div style={{
-      fontSize: 13, fontFamily: "'Bebas Neue', sans-serif",
-      letterSpacing: 2, color: "var(--text)", marginBottom: 10,
+      fontSize: 11, fontWeight: 600,
+      fontFamily: "'DM Sans', sans-serif",
+      letterSpacing: "0.1em",
+      textTransform: "uppercase",
+      color: "var(--muted)",
+      marginBottom: 10,
     }}>
       {children}
     </div>
@@ -171,9 +175,10 @@ function buildQuery({
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
-export default function SearchForm({ onSearch, loading, error }) {
+export default function SearchForm({ onSearch, onQueryChange, loading, error }) {
   const [rawQuery,         setRawQuery]         = useState("");
   const [advOpen,          setAdvOpen]          = useState(false);
+  const [searchFocused,    setSearchFocused]    = useState(false);
   const [selectedColors,   setSelectedColors]   = useState([]);
   const [colorMode,        setColorMode]        = useState("at");
   const [typeText,         setTypeText]         = useState("");
@@ -204,6 +209,22 @@ export default function SearchForm({ onSearch, loading, error }) {
     ? `${rawQuery.trim()} ${advancedQuery}`
     : advancedQuery;
 
+  useEffect(() => {
+    onQueryChange?.(assembledQuery);
+  }, [assembledQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const activeFilterCount =
+    selectedColors.length +
+    (typeText.trim() ? 1 : 0) +
+    oracleTerms.length +
+    (manaCost.trim() ? 1 : 0) +
+    cmcConditions.length +
+    selectedRarities.length +
+    (priceVal.trim() ? 1 : 0) +
+    (statVal.trim() ? 1 : 0) +
+    (setCode.trim() ? 1 : 0) +
+    (artist.trim() ? 1 : 0);
+
   function toggleColor(c) {
     setSelectedColors(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
   }
@@ -228,38 +249,94 @@ export default function SearchForm({ onSearch, loading, error }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Hidden submit so Enter key works in inputs */}
+      <button type="submit" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" />
 
-      {/* Raw query input */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Search input with icon */}
+      <div
+        onFocus={() => setSearchFocused(true)}
+        onBlur={() => setSearchFocused(false)}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          background: "var(--panel)",
+          border: `1px solid ${searchFocused ? "rgba(91,143,255,0.4)" : "rgba(255,255,255,0.07)"}`,
+          borderRadius: 14,
+          padding: "14px 16px",
+          transition: "border-color 0.15s",
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flexShrink: 0, opacity: 0.5 }}>
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
         <input
           value={rawQuery}
           onChange={e => setRawQuery(e.target.value)}
-          placeholder="Search cards… (Scryfall syntax)"
+          placeholder="ramp, draw, removal… or Scryfall syntax"
           autoComplete="off"
           spellCheck={false}
-          style={{ ...inputStyle, fontSize: 18 }}
+          style={{
+            flex: 1, background: "none", border: "none", outline: "none",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 15, color: "var(--text)",
+            caretColor: "var(--primary)",
+          }}
         />
-        {error && (
-          <div style={{ fontSize: 14, color: "var(--danger)", paddingLeft: 2 }}>{error}</div>
-        )}
       </div>
+
+      {error && (
+        <div style={{ fontSize: 13, color: "var(--danger)", paddingLeft: 2 }}>{error}</div>
+      )}
 
       {/* Filters toggle */}
       <button
         type="button"
         onClick={() => setAdvOpen(v => !v)}
         style={{
-          alignSelf: "flex-start",
-          padding: "8px 16px", borderRadius: 8,
-          border: advOpen ? "1px solid rgba(255,255,255,0.2)" : "1px solid rgba(255,255,255,0.1)",
-          background: advOpen ? "var(--panel)" : "transparent",
-          color: advOpen ? "var(--text)" : "rgba(255,255,255,0.6)",
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 16, letterSpacing: 2, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%",
+          background: "var(--panel)",
+          border: `1px solid ${advOpen ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)"}`,
+          borderRadius: 14,
+          padding: "12px 16px",
+          cursor: "pointer",
         }}
       >
-        FILTERS {advOpen ? "▼" : "▶"}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M1 3h12M3 7h8M5 11h4" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13, fontWeight: 500,
+            color: "var(--text2)",
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+          }}>
+            Filters
+          </span>
+          {activeFilterCount > 0 && (
+            <span style={{
+              background: "rgba(91,143,255,0.2)",
+              color: "var(--primary)",
+              borderRadius: 10,
+              padding: "1px 7px",
+              fontSize: 11, fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </div>
+        <span style={{
+          fontSize: 10, color: "var(--muted)",
+          transform: advOpen ? "rotate(90deg)" : "rotate(0deg)",
+          transition: "transform 0.2s",
+          display: "inline-block",
+        }}>▶</span>
       </button>
 
       {/* Filters panel */}
@@ -273,7 +350,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* COLORS */}
           <div>
-            <SectionLabel>COLORS</SectionLabel>
+            <FilterSectionLabel>Colors</FilterSectionLabel>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
               {COLORS.map(c => {
                 const active = selectedColors.includes(c);
@@ -304,7 +381,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* TYPE LINE */}
           <div>
-            <SectionLabel>TYPE LINE</SectionLabel>
+            <FilterSectionLabel>Type Line</FilterSectionLabel>
             <input value={typeText} onChange={e => setTypeText(e.target.value)}
               placeholder="Legendary, Creature, Enchantment…" autoComplete="off"
               style={inputStyle} />
@@ -312,7 +389,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* ORACLE TEXT */}
           <div>
-            <SectionLabel>ORACLE TEXT</SectionLabel>
+            <FilterSectionLabel>Oracle Text</FilterSectionLabel>
             {oracleTerms.length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
                 {oracleTerms.map((t, i) => (
@@ -327,7 +404,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* MANA COST */}
           <div>
-            <SectionLabel>MANA COST</SectionLabel>
+            <FilterSectionLabel>Mana Cost</FilterSectionLabel>
             <input value={manaCost} onChange={e => setManaCost(e.target.value)}
               placeholder="{2}{G}{W}" autoComplete="off"
               style={{ ...inputStyle, fontFamily: "'IBM Plex Mono', monospace" }} />
@@ -335,7 +412,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* CMC */}
           <div>
-            <SectionLabel>CMC</SectionLabel>
+            <FilterSectionLabel>CMC</FilterSectionLabel>
             {cmcConditions.length > 0 && (
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
                 {cmcConditions.map((c, i) => (
@@ -372,7 +449,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* RARITY */}
           <div>
-            <SectionLabel>RARITY</SectionLabel>
+            <FilterSectionLabel>Rarity</FilterSectionLabel>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {RARITIES.map(({ id, label }) => (
                 <button key={id} type="button" onClick={() => toggleRarity(id)} style={chip(selectedRarities.includes(id))}>
@@ -384,7 +461,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* PRICE (USD) */}
           <div>
-            <SectionLabel>PRICE (USD)</SectionLabel>
+            <FilterSectionLabel>Price (USD)</FilterSectionLabel>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <div style={{ display: "flex", gap: 4 }}>
                 {OPERATORS.map(op => (
@@ -401,7 +478,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* STATS */}
           <div>
-            <SectionLabel>STATS</SectionLabel>
+            <FilterSectionLabel>Stats</FilterSectionLabel>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <div style={{ display: "flex", gap: 4 }}>
                 {STATS_LIST.map(({ id, label }) => (
@@ -426,7 +503,7 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* SET */}
           <div>
-            <SectionLabel>SET</SectionLabel>
+            <FilterSectionLabel>Set</FilterSectionLabel>
             <input value={setCode} onChange={e => setSetCode(e.target.value)}
               placeholder="e.g. dsk, otj, mkm" autoComplete="off"
               style={{ ...inputStyle, fontFamily: "'IBM Plex Mono', monospace" }} />
@@ -434,48 +511,13 @@ export default function SearchForm({ onSearch, loading, error }) {
 
           {/* ARTIST */}
           <div>
-            <SectionLabel>ARTIST</SectionLabel>
+            <FilterSectionLabel>Artist</FilterSectionLabel>
             <input value={artist} onChange={e => setArtist(e.target.value)}
               placeholder="Artist name" autoComplete="off" style={inputStyle} />
           </div>
 
         </div>
       )}
-
-      {/* Query preview */}
-      <div style={{ background: "var(--panel)", borderRadius: 10, padding: "12px 14px" }}>
-        <div style={{
-          fontSize: 11, fontFamily: "'Bebas Neue', sans-serif",
-          letterSpacing: 2, color: "rgba(255,255,255,0.5)", marginBottom: 6,
-        }}>
-          QUERY PREVIEW
-        </div>
-        <div style={{
-          fontSize: 13, fontFamily: "'IBM Plex Mono', monospace",
-          color: "rgba(255,255,255,0.7)", wordBreak: "break-all",
-        }}>
-          {assembledQuery}
-        </div>
-      </div>
-
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={loading}
-        style={{
-          width: "100%", padding: "18px 24px", borderRadius: 12,
-          border: !loading ? "1px solid var(--primary)" : "1px solid rgba(255,255,255,0.1)",
-          background: !loading ? "rgba(91,143,255,0.14)" : "transparent",
-          color: !loading ? "var(--primary)" : "rgba(255,255,255,0.2)",
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 22, letterSpacing: 5,
-          cursor: !loading ? "pointer" : "default",
-          transition: "all 0.15s",
-        }}
-      >
-        {loading ? "LOADING…" : "SWIPE →"}
-      </button>
-
     </form>
   );
 }

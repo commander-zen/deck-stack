@@ -15,10 +15,43 @@ function ColorPip({ color }) {
   );
 }
 
+function StepLabel({ number, children }) {
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "baseline",
+      gap: 6,
+      marginBottom: 8,
+      paddingLeft: 2,
+    }}>
+      <span style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 10, fontWeight: 600,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        color: "var(--muted)",
+      }}>
+        {number} —
+      </span>
+      <span style={{
+        fontFamily: "'DM Sans', sans-serif",
+        fontSize: 10, fontWeight: 600,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        color: "var(--muted)",
+      }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
 export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange }) {
-  const [cmdQuery,   setCmdQuery]   = useState("");
-  const [cmdResults, setCmdResults] = useState([]);
-  const [cmdOpen,    setCmdOpen]    = useState(false);
+  const [cmdQuery,      setCmdQuery]      = useState("");
+  const [cmdResults,    setCmdResults]    = useState([]);
+  const [cmdOpen,       setCmdOpen]       = useState(false);
+  const [cmdFocused,    setCmdFocused]    = useState(false);
+  const [currentQuery,  setCurrentQuery]  = useState("f:commander");
   const abortRef = useRef(null);
 
   useEffect(() => {
@@ -47,201 +80,262 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     setCmdOpen(false);
   }
 
+  function handleSwipe() {
+    if (loading) return;
+    onSearch(currentQuery.trim());
+  }
+
   const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
+  const hasCommander = !!commanderCard || cmdQuery.trim().length > 0;
 
   return (
     <div style={{
       minHeight: "100dvh",
       background: "var(--bg)",
       color: "var(--text)",
+      fontFamily: "'DM Sans', sans-serif",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
     }}>
       <div style={{
         width: "100%",
-        maxWidth: 480,
-        padding: "56px 20px 80px",
+        maxWidth: 430,
+        padding: "0 20px",
         display: "flex",
         flexDirection: "column",
-        gap: 22,
+        flex: 1,
       }}>
 
-        {/* ── Logo ── */}
-        <div>
+        {/* ── Header ── */}
+        <div style={{ padding: "52px 0 32px" }}>
           <div style={{
             fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 52, letterSpacing: 6,
-            color: "var(--primary)", lineHeight: 1,
+            fontSize: 56, lineHeight: 1,
+            letterSpacing: "0.04em",
+            color: "var(--text)",
+            marginBottom: 6,
           }}>
             DECK STACK
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 5 }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", letterSpacing: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 13, color: "var(--text2)", letterSpacing: "0.01em" }}>
               Swipe cards · Build your deck
-            </div>
-            <div style={{
-              padding: "2px 8px", borderRadius: 4,
-              background: "rgba(91,143,255,0.15)",
-              border: "1px solid rgba(91,143,255,0.35)",
+            </span>
+            <span style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 10, fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
               color: "var(--primary)",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 11, letterSpacing: 2,
+              border: "1px solid rgba(91,143,255,0.35)",
+              borderRadius: 4,
+              padding: "2px 7px",
             }}>
-              COMMANDER
-            </div>
+              Commander
+            </span>
           </div>
         </div>
 
-        {/* ── Commander picker ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 2, fontFamily: "'Bebas Neue', sans-serif" }}>
-            COMMANDER (OPTIONAL)
-          </div>
+        {/* ── Step 1: Commander ── */}
+        <div style={{ marginBottom: 20 }}>
+          <StepLabel number="1">
+            Commander{" "}
+            <span style={{ color: "rgba(85,85,102,0.7)", fontWeight: 400, letterSpacing: 0, textTransform: "none" }}>
+              (optional)
+            </span>
+          </StepLabel>
 
-          {commanderCard ? (
-            /* Selected commander banner */
-            <div style={{
-              display: "flex", alignItems: "center", gap: 10,
-              background: "var(--panel)", borderRadius: 10,
-              padding: "8px 12px",
-              border: "1px solid rgba(91,143,255,0.2)",
-            }}>
-              {artUrl && (
-                <img
-                  src={artUrl}
-                  alt={commanderCard.name}
-                  draggable={false}
-                  style={{ width: 68, height: 48, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
-                />
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: 14, color: "var(--text)", fontWeight: 500,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
-                  {commanderCard.name}
+          {/* Commander card */}
+          <div style={{
+            background: hasCommander
+              ? "linear-gradient(135deg, #1a1730 0%, #16161a 60%)"
+              : "var(--panel)",
+            border: `1px solid ${hasCommander ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.07)"}`,
+            borderRadius: 14,
+            overflow: "visible",
+            transition: "border-color 0.2s, background 0.2s",
+          }}>
+            {commanderCard ? (
+              /* Selected state */
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
+                {artUrl && (
+                  <img
+                    src={artUrl}
+                    alt={commanderCard.name}
+                    draggable={false}
+                    style={{ width: 68, height: 48, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
+                  />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 14, color: "var(--text)", fontWeight: 500,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {commanderCard.name}
+                  </div>
+                  <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
+                    {commanderCard.color_identity?.length > 0
+                      ? commanderCard.color_identity.map(c => <ColorPip key={c} color={c} />)
+                      : <span style={{ fontSize: 11, color: "var(--muted)" }}>Colorless</span>
+                    }
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
-                  {commanderCard.color_identity?.length > 0
-                    ? commanderCard.color_identity.map(c => <ColorPip key={c} color={c} />)
-                    : <span style={{ fontSize: 11, color: "var(--muted)" }}>Colorless</span>
+                <button
+                  onClick={() => onCommanderCardChange(null)}
+                  style={{
+                    background: "transparent", border: "none",
+                    color: "var(--muted)", cursor: "pointer",
+                    fontSize: 16, padding: "4px", lineHeight: 1, flexShrink: 0,
+                  }}
+                >✕</button>
+              </div>
+            ) : (
+              /* Search input state */
+              <div style={{ position: "relative" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
+                  <span style={{
+                    fontSize: 18, flexShrink: 0,
+                    opacity: cmdFocused || cmdQuery ? 1 : 0.45,
+                    transition: "opacity 0.15s",
+                  }}>
+                    👑
+                  </span>
+                  <input
+                    type="text"
+                    value={cmdQuery}
+                    onChange={e => setCmdQuery(e.target.value)}
+                    onFocus={() => { setCmdFocused(true); cmdResults.length > 0 && setCmdOpen(true); }}
+                    onBlur={() => { setCmdFocused(false); setTimeout(() => setCmdOpen(false), 150); }}
+                    placeholder="Search for a commander…"
+                    autoComplete="off"
+                    style={{
+                      flex: 1,
+                      background: "none", border: "none", outline: "none",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 15, color: "var(--text)",
+                      caretColor: "var(--secondary)",
+                    }}
+                  />
+                </div>
+
+                {/* Dropdown */}
+                {cmdOpen && cmdResults.length > 0 && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+                    background: "var(--panel2)", borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    overflow: "hidden", zIndex: 50,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                  }}>
+                    {cmdResults.map(card => {
+                      const thumb = getCardImage(card, "art_crop");
+                      return (
+                        <div
+                          key={card.id}
+                          onMouseDown={() => selectCommander(card)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "8px 12px", cursor: "pointer",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                          onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                        >
+                          {thumb && (
+                            <img
+                              src={thumb}
+                              alt={card.name}
+                              draggable={false}
+                              style={{ width: 48, height: 34, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+                            />
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: 13, color: "var(--text)",
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>
+                              {card.name}
+                            </div>
+                            <div style={{ display: "flex", gap: 3, marginTop: 3 }}>
+                              {card.color_identity?.map(c => <ColorPip key={c} color={c} />)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Hint text */}
+                <div style={{
+                  fontSize: 11.5,
+                  color: cmdQuery.trim() ? "var(--secondary)" : "var(--text2)",
+                  padding: "0 16px 12px",
+                  transition: "color 0.15s",
+                }}>
+                  {cmdQuery.trim()
+                    ? "✦ Color identity filter will be applied"
+                    : "Sets color identity filter — only matching cards will appear"
                   }
                 </div>
               </div>
-              <button
-                onClick={() => onCommanderCardChange(null)}
-                style={{
-                  background: "transparent", border: "none",
-                  color: "var(--muted)", cursor: "pointer",
-                  fontSize: 16, padding: "4px", lineHeight: 1, flexShrink: 0,
-                }}
-              >✕</button>
-            </div>
-          ) : (
-            /* Commander search input + dropdown */
-            <div style={{ position: "relative" }}>
-              <input
-                type="text"
-                value={cmdQuery}
-                onChange={e => setCmdQuery(e.target.value)}
-                onFocus={() => cmdResults.length > 0 && setCmdOpen(true)}
-                onBlur={() => setTimeout(() => setCmdOpen(false), 150)}
-                placeholder="Search for a commander…"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  background: "var(--panel)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "var(--text)",
-                  fontSize: 14,
-                  fontFamily: "'DM Sans', sans-serif",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-
-              {cmdOpen && cmdResults.length > 0 && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
-                  background: "var(--panel2)", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  overflow: "hidden", zIndex: 50,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-                }}>
-                  {cmdResults.map(card => {
-                    const thumb = getCardImage(card, "art_crop");
-                    return (
-                      <div
-                        key={card.id}
-                        onMouseDown={() => selectCommander(card)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "8px 12px", cursor: "pointer",
-                          borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                        onMouseOut={e => e.currentTarget.style.background = "transparent"}
-                      >
-                        {thumb && (
-                          <img
-                            src={thumb}
-                            alt={card.name}
-                            draggable={false}
-                            style={{ width: 48, height: 34, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
-                          />
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontSize: 13, color: "var(--text)",
-                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                          }}>
-                            {card.name}
-                          </div>
-                          <div style={{ display: "flex", gap: 3, marginTop: 3 }}>
-                            {card.color_identity?.map(c => <ColorPip key={c} color={c} />)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {cmdQuery === "" && (
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, paddingLeft: 2 }}>
-                  Leave blank to search all Commander-legal cards
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        <SearchForm onSearch={onSearch} loading={loading} error={error} />
+        {/* ── Step 2: Search ── */}
+        <div style={{ marginBottom: 20 }}>
+          <StepLabel number="2">What cards to swipe</StepLabel>
+          <SearchForm
+            onSearch={onSearch}
+            onQueryChange={setCurrentQuery}
+            loading={loading}
+            error={error}
+          />
+        </div>
 
-      </div>
+        {/* ── CTA ── */}
+        <div style={{ marginTop: "auto", padding: "16px 0 28px" }}>
+          <button
+            onClick={handleSwipe}
+            disabled={loading}
+            style={{
+              width: "100%",
+              background: loading ? "transparent" : "rgba(91,143,255,0.12)",
+              border: loading ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
+              borderRadius: 16,
+              padding: "18px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              cursor: loading ? "default" : "pointer",
+              transition: "background 0.15s",
+            }}
+          >
+            <span style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 22, letterSpacing: "0.12em",
+              color: loading ? "rgba(255,255,255,0.2)" : "var(--primary)",
+            }}>
+              {loading ? "LOADING…" : "SWIPE"}
+            </span>
+            {!loading && (
+              <span style={{ fontSize: 18, color: "var(--primary)" }}>→</span>
+            )}
+          </button>
+        </div>
 
-      {/* ── Footer ── */}
-      <footer style={{
-        width: "100%",
-        maxWidth: 480,
-        padding: "0 20px 32px",
-        marginTop: "auto",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 16,
-      }}>
-        {/* Linktree */}
+        {/* ── Footer ── */}
         <div style={{
           display: "flex",
-          gap: 20,
-          flexWrap: "wrap",
           justifyContent: "center",
+          gap: 20,
+          paddingBottom: 28,
         }}>
           {[
-            { label: "GitHub", href: "https://github.com/commander-zen/deck-stack" },
+            { label: "GitHub",       href: "https://github.com/commander-zen/deck-stack" },
             { label: "Report a Bug", href: "https://github.com/commander-zen/deck-stack/issues/new?labels=bug&template=bug_report.md" },
           ].map(({ label, href }) => (
             <a
@@ -249,25 +343,16 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                fontSize: 12,
-                color: "var(--primary)",
-                textDecoration: "none",
-                opacity: 0.7,
-                letterSpacing: 0.5,
-              }}
-              onMouseOver={e => e.currentTarget.style.opacity = "1"}
-              onMouseOut={e => e.currentTarget.style.opacity = "0.7"}
+              style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
+              onMouseOver={e => e.currentTarget.style.color = "var(--text2)"}
+              onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
             >
               {label}
             </a>
           ))}
         </div>
 
-        <div style={{ fontSize: 11, color: "var(--muted)", letterSpacing: 0.5 }}>
-          DECK STACK · MTG Commander Deck Builder
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }

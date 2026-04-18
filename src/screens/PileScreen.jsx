@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
 
@@ -22,15 +21,14 @@ export default function PileScreen({
   const [lightbox,  setLightbox]  = useState(null);
   const [activeTab, setActiveTab] = useState("deck");
   const [reviewMode,setReviewMode]= useState(null);
+  const [menuOpen,  setMenuOpen]  = useState(false);
 
-  // Lightbox swipe-down dismiss
   const lbDragStartY = useRef(null);
   const [lbDragY,    setLbDragY]   = useState(0);
   const [lbDragging, setLbDragging] = useState(false);
 
-  // Long-press for commander
-  const lpTimerRef   = useRef(null);
-  const lpFiredRef   = useRef(false);
+  const lpTimerRef = useRef(null);
+  const lpFiredRef = useRef(false);
 
   function handleRemove(instanceId, e) {
     e.stopPropagation();
@@ -45,12 +43,19 @@ export default function PileScreen({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
+    setMenuOpen(false);
   }
 
   function handleMoxfield() {
     const text = buildExportText(pile, commander);
     navigator.clipboard?.writeText(text);
     window.open("https://www.moxfield.com/import", "_blank", "noopener,noreferrer");
+    setMenuOpen(false);
+  }
+
+  function handleClearPileClick() {
+    setMenuOpen(false);
+    onClearPile();
   }
 
   function onCardPointerDown(card) {
@@ -98,18 +103,14 @@ export default function PileScreen({
   function onLbPointerUp() {
     lbDragStartY.current = null;
     setLbDragging(false);
-    if (lbDragY > 100) {
-      closeLightbox();
-    } else {
-      setLbDragY(0);
-    }
+    if (lbDragY > 100) closeLightbox();
+    else setLbDragY(0);
   }
 
   function handleReviewKeep(card) {
     if (reviewMode === "deck") {
       // no-op: card stays in deck
     } else {
-      // promote from maybeboard to deck
       onMaybeboardChange(m => m.filter(c => c.instanceId !== card.instanceId));
       onPileChange(p => [...p, card]);
     }
@@ -117,20 +118,24 @@ export default function PileScreen({
 
   function handleReviewPass(card) {
     if (reviewMode === "deck") {
-      // move to maybeboard
       onPileChange(p => p.filter(c => c.instanceId !== card.instanceId));
       onMaybeboardChange(m => [...m, card]);
     } else {
-      // cut entirely from maybeboard
       onMaybeboardChange(m => m.filter(c => c.instanceId !== card.instanceId));
     }
   }
 
-  const bottomPad = `calc(${NAV_HEIGHT}px + max(16px, env(safe-area-inset-bottom)))`;
-
   const reviewCommanderCard =
     commanderCard ??
     (commander ? pile.find(c => c.instanceId === commander) : null);
+
+  const activeCards = activeTab === "deck" ? pile : maybeboard;
+  const fabColor    = activeTab === "deck" ? "var(--primary)"   : "var(--secondary)";
+  const fabBg       = activeTab === "deck" ? "rgba(91,143,255,0.14)" : "rgba(167,139,250,0.14)";
+  const fabBorder   = activeTab === "deck" ? "rgba(91,143,255,0.38)" : "rgba(167,139,250,0.38)";
+
+  const fabBottom  = `calc(max(18px, env(safe-area-inset-bottom)) + 18px)`;
+  const bottomPad  = `calc(max(18px, env(safe-area-inset-bottom)) + 84px)`;
 
   return (
     <div style={{
@@ -138,9 +143,6 @@ export default function PileScreen({
       background: "var(--bg)",
       color: "var(--text)",
       fontFamily: "'DM Sans', sans-serif",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
     }}>
 
       {/* PileSwipeScreen overlay */}
@@ -155,181 +157,207 @@ export default function PileScreen({
         />
       )}
 
-      {/* ── Header ── */}
+      {/* Backdrop to close overflow menu */}
+      {menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 90 }}
+        />
+      )}
+
+      {/* ── Sticky header: top bar + tabs ── */}
       <div style={{
-        width: "100%",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
         maxWidth: 600,
-        padding: "20px 20px 14px",
-        display: "flex",
-        alignItems: "center",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        margin: "0 auto",
+        width: "100%",
+        background: "rgba(13,13,15,0.96)",
+        backdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>
-        <div style={{ flex: 1 }}>
-          <div style={{
+
+        {/* Top bar */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          padding: "0 8px 0 4px",
+          height: 52,
+          gap: 2,
+        }}>
+
+          {/* ← back */}
+          <button
+            onClick={onGoToSearch}
+            style={{
+              background: "transparent", border: "none",
+              color: "rgba(255,255,255,0.55)", cursor: "pointer",
+              padding: "10px", display: "flex", alignItems: "center",
+              borderRadius: 8, flexShrink: 0,
+            }}
+            aria-label="Back to search"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+
+          {/* Title */}
+          <span style={{
+            flex: 1,
             fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 24, letterSpacing: 5,
-            color: "var(--primary)", lineHeight: 1,
+            fontSize: 20, letterSpacing: 4,
+            color: "var(--primary)",
+            paddingLeft: 2,
           }}>
             DECK STACK
-          </div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 3 }}>
-            {pile.length} card{pile.length !== 1 ? "s" : ""}
+          </span>
+
+          {/* Search icon */}
+          <button
+            onClick={onOpenSearch}
+            style={{
+              background: "transparent", border: "none",
+              color: "rgba(255,255,255,0.55)", cursor: "pointer",
+              padding: "10px", display: "flex", alignItems: "center",
+              borderRadius: 8,
+            }}
+            aria-label="Search cards"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+          </button>
+
+          {/* ··· overflow */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setMenuOpen(o => !o)}
+              style={{
+                background: menuOpen ? "rgba(255,255,255,0.08)" : "transparent",
+                border: "none",
+                color: "rgba(255,255,255,0.55)", cursor: "pointer",
+                padding: "10px 12px", display: "flex", alignItems: "center",
+                borderRadius: 8,
+                fontSize: 20, letterSpacing: 3, lineHeight: 0.5,
+              }}
+              aria-label="More options"
+            >
+              ···
+            </button>
+
+            {menuOpen && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 4px)", right: 0,
+                background: "var(--panel2, #1a1a20)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                overflow: "hidden",
+                zIndex: 110,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
+                minWidth: 210,
+              }}>
+                <MenuBtn
+                  onClick={handleCopy}
+                  color={copied ? "var(--success)" : "var(--primary)"}
+                  border
+                >
+                  {copied ? "COPIED ✓" : "COPY LIST"}
+                </MenuBtn>
+                <MenuBtn
+                  onClick={handleMoxfield}
+                  color="var(--secondary)"
+                  disabled={pile.length === 0}
+                  border
+                >
+                  COPY + MOXFIELD ↗
+                </MenuBtn>
+                <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+                <MenuBtn onClick={handleClearPileClick} color="var(--danger)">
+                  CLEAR PILE
+                </MenuBtn>
+              </div>
+            )}
           </div>
         </div>
-        <button
-          onClick={onOpenSearch}
-          style={{
-            background: "transparent", border: "none",
-            color: "rgba(255,255,255,0.55)", cursor: "pointer",
-            padding: "8px", display: "flex", alignItems: "center",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-        </button>
+
+        {/* Tabs */}
+        <div style={{ display: "flex" }}>
+          {[
+            { key: "deck",  label: "DECK",  count: pile.length },
+            { key: "maybe", label: "MAYBE", count: maybeboard.length },
+          ].map(({ key, label, count }) => {
+            const active = activeTab === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                style={{
+                  flex: 1,
+                  padding: "9px 12px",
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: active
+                    ? "2px solid var(--primary)"
+                    : "2px solid transparent",
+                  color: active ? "var(--primary)" : "rgba(255,255,255,0.35)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 13, letterSpacing: 2,
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  transition: "color 0.15s, border-color 0.15s",
+                }}
+              >
+                {label}
+                <span style={{
+                  fontSize: 11,
+                  background: active ? "rgba(91,143,255,0.2)" : "rgba(255,255,255,0.07)",
+                  color: active ? "var(--primary)" : "rgba(255,255,255,0.35)",
+                  padding: "1px 7px",
+                  borderRadius: 10,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 600,
+                  letterSpacing: 0,
+                }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── Content ── */}
+      {/* ── Scrollable content ── */}
       <div style={{
-        width: "100%",
         maxWidth: 600,
-        padding: "18px 20px",
+        margin: "0 auto",
+        width: "100%",
+        padding: "14px 14px",
         paddingBottom: bottomPad,
       }}>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          {[
-            { key: "deck",  label: `DECK (${pile.length})` },
-            { key: "maybe", label: `MAYBE (${maybeboard.length})` },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              style={{
-                flex: 1, padding: "10px 12px", borderRadius: 8,
-                border: activeTab === key
-                  ? "1px solid var(--primary)"
-                  : "1px solid rgba(255,255,255,0.08)",
-                background: activeTab === key ? "rgba(91,143,255,0.12)" : "transparent",
-                color: activeTab === key ? "var(--primary)" : "rgba(255,255,255,0.4)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 13, letterSpacing: 2, cursor: "pointer",
-              }}
-            >{label}</button>
-          ))}
-        </div>
-
-        {/* ── DECK TAB ── */}
+        {/* DECK tab */}
         {activeTab === "deck" && (
           <>
-            {/* Row 1: export actions */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <button
-                onClick={handleCopy}
-                style={{
-                  flex: 1, padding: "12px 12px", borderRadius: 10,
-                  border: `1px solid ${copied ? "var(--success)" : "rgba(91,143,255,0.3)"}`,
-                  background: copied ? "rgba(52,211,153,0.08)" : "rgba(91,143,255,0.06)",
-                  color: copied ? "var(--success)" : "var(--primary)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 14, letterSpacing: 3, cursor: "pointer", transition: "all 0.2s",
-                }}
-              >
-                {copied ? "COPIED ✓" : "COPY"}
-              </button>
-
-              <button
-                onClick={handleMoxfield}
-                disabled={pile.length === 0}
-                style={{
-                  flex: 1, padding: "12px 12px", borderRadius: 10,
-                  border: "1px solid rgba(167,139,250,0.3)",
-                  background: "rgba(167,139,250,0.06)",
-                  color: "var(--secondary)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 14, letterSpacing: 3,
-                  cursor: pile.length > 0 ? "pointer" : "default",
-                  opacity: pile.length === 0 ? 0.4 : 1,
-                }}
-              >
-                COPY + MOXFIELD ↗
-              </button>
-            </div>
-
-            {/* Row 2: navigation actions */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-              <button
-                onClick={onGoToSearch}
-                style={{
-                  flex: 1, padding: "12px 12px", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  background: "transparent",
-                  color: "rgba(255,255,255,0.5)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 14, letterSpacing: 2, cursor: "pointer",
-                }}
-              >
-                ← SEARCH
-              </button>
-
-              <button
-                onClick={onClearPile}
-                style={{
-                  flex: 1, padding: "12px 12px", borderRadius: 10,
-                  border: "1px solid rgba(255,77,109,0.3)",
-                  background: "rgba(255,77,109,0.06)",
-                  color: "var(--danger)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 14, letterSpacing: 2, cursor: "pointer",
-                }}
-              >
-                CLEAR PILE
-              </button>
-            </div>
-
-            {/* Swipe to review */}
-            <button
-              onClick={() => setReviewMode("deck")}
-              disabled={pile.length === 0}
-              style={{
-                width: "100%", padding: "12px", borderRadius: 10, marginBottom: 16,
-                border: "1px solid rgba(91,143,255,0.25)",
-                background: "rgba(91,143,255,0.05)",
-                color: pile.length === 0 ? "rgba(91,143,255,0.3)" : "var(--primary)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 13, letterSpacing: 3,
-                cursor: pile.length > 0 ? "pointer" : "default",
-              }}
-            >
-              SWIPE TO REVIEW
-            </button>
-
-            {/* Empty state */}
-            {pile.length === 0 && (
+            {pile.length === 0 ? (
               <div style={{
-                textAlign: "center", padding: "48px 20px",
+                textAlign: "center", padding: "72px 20px",
                 color: "rgba(255,255,255,0.35)", fontSize: 14,
               }}>
                 Your stack is empty
                 <br />
                 <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
-                  Go back to swipe and keep some cards
+                  Swipe right to keep cards
                 </span>
               </div>
-            )}
-
-            {/* Visual card grid */}
-            {pile.length > 0 && (
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 8,
-              }}>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {pile.map((card, i) => {
                   const imgUrl = getCardImage(card, "normal");
                   const isCommander = commander === card.instanceId;
@@ -357,10 +385,8 @@ export default function PileScreen({
                           alt={card.name}
                           draggable={false}
                           style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
+                            width: "100%", height: "100%",
+                            objectFit: "cover", display: "block",
                             pointerEvents: "none",
                           }}
                         />
@@ -375,7 +401,6 @@ export default function PileScreen({
                         </div>
                       )}
 
-                      {/* Commander crown */}
                       {isCommander && (
                         <div style={{
                           position: "absolute", top: 4, left: 5,
@@ -387,22 +412,18 @@ export default function PileScreen({
                         </div>
                       )}
 
-                      {/* Remove button */}
                       <button
-                        onClick={(e) => handleRemove(card.instanceId, e)}
+                        onClick={e => handleRemove(card.instanceId, e)}
                         style={{
                           position: "absolute", top: 5, right: 5,
                           width: 22, height: 22, borderRadius: "50%",
-                          background: "rgba(0,0,0,0.7)",
-                          border: "none",
+                          background: "rgba(0,0,0,0.7)", border: "none",
                           color: "rgba(255,255,255,0.7)",
                           fontSize: 10, cursor: "pointer",
                           display: "flex", alignItems: "center", justifyContent: "center",
                           lineHeight: 1,
                         }}
-                      >
-                        ✕
-                      </button>
+                      >✕</button>
                     </div>
                   );
                 })}
@@ -411,47 +432,22 @@ export default function PileScreen({
           </>
         )}
 
-        {/* ── MAYBE TAB ── */}
+        {/* MAYBE tab */}
         {activeTab === "maybe" && (
           <>
-            {/* Swipe to review */}
-            <button
-              onClick={() => setReviewMode("maybe")}
-              disabled={maybeboard.length === 0}
-              style={{
-                width: "100%", padding: "12px", borderRadius: 10, marginBottom: 16,
-                border: "1px solid rgba(167,139,250,0.25)",
-                background: "rgba(167,139,250,0.05)",
-                color: maybeboard.length === 0 ? "rgba(167,139,250,0.3)" : "var(--secondary)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 13, letterSpacing: 3,
-                cursor: maybeboard.length > 0 ? "pointer" : "default",
-              }}
-            >
-              SWIPE TO REVIEW
-            </button>
-
-            {/* Empty state */}
-            {maybeboard.length === 0 && (
+            {maybeboard.length === 0 ? (
               <div style={{
-                textAlign: "center", padding: "48px 20px",
+                textAlign: "center", padding: "72px 20px",
                 color: "rgba(255,255,255,0.35)", fontSize: 14,
               }}>
                 Your maybeboard is empty
                 <br />
                 <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
-                  Swipe left while reviewing your deck to move cards here
+                  Swipe left while reviewing your deck to send cards here
                 </span>
               </div>
-            )}
-
-            {/* Maybeboard card grid */}
-            {maybeboard.length > 0 && (
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 8,
-              }}>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {maybeboard.map((card, i) => {
                   const imgUrl = getCardImage(card, "normal");
                   return (
@@ -473,10 +469,8 @@ export default function PileScreen({
                           alt={card.name}
                           draggable={false}
                           style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
+                            width: "100%", height: "100%",
+                            objectFit: "cover", display: "block",
                             pointerEvents: "none",
                           }}
                         />
@@ -491,7 +485,6 @@ export default function PileScreen({
                         </div>
                       )}
 
-                      {/* Remove button */}
                       <button
                         onClick={e => {
                           e.stopPropagation();
@@ -501,16 +494,13 @@ export default function PileScreen({
                         style={{
                           position: "absolute", top: 5, right: 5,
                           width: 22, height: 22, borderRadius: "50%",
-                          background: "rgba(0,0,0,0.7)",
-                          border: "none",
+                          background: "rgba(0,0,0,0.7)", border: "none",
                           color: "rgba(255,255,255,0.7)",
                           fontSize: 10, cursor: "pointer",
                           display: "flex", alignItems: "center", justifyContent: "center",
                           lineHeight: 1,
                         }}
-                      >
-                        ✕
-                      </button>
+                      >✕</button>
                     </div>
                   );
                 })}
@@ -519,6 +509,37 @@ export default function PileScreen({
           </>
         )}
       </div>
+
+      {/* ── FAB: Review ── */}
+      {activeCards.length > 0 && (
+        <button
+          onClick={() => setReviewMode(activeTab)}
+          style={{
+            position: "fixed",
+            right: 18,
+            bottom: fabBottom,
+            zIndex: 80,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "11px 20px",
+            borderRadius: 28,
+            border: `1px solid ${fabBorder}`,
+            background: fabBg,
+            color: fabColor,
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 14, letterSpacing: 2,
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 3l14 9-14 9V3z"/>
+          </svg>
+          REVIEW
+        </button>
+      )}
 
       {/* ── Lightbox ── */}
       {lightbox && (
@@ -532,7 +553,6 @@ export default function PileScreen({
             justifyContent: "center",
           }}
         >
-          {/* Close button */}
           <button
             onClick={closeLightbox}
             style={{
@@ -545,11 +565,8 @@ export default function PileScreen({
               display: "flex", alignItems: "center", justifyContent: "center",
               zIndex: 10,
             }}
-          >
-            ✕
-          </button>
+          >✕</button>
 
-          {/* Card image — drag to dismiss */}
           <img
             src={getCardImage(lightbox, "normal")}
             alt={lightbox.name}
@@ -558,7 +575,7 @@ export default function PileScreen({
             onPointerMove={onLbPointerMove}
             onPointerUp={onLbPointerUp}
             onPointerCancel={onLbPointerUp}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
             style={{
               maxWidth: "min(90vw, 400px)",
               maxHeight: "85dvh",
@@ -576,5 +593,28 @@ export default function PileScreen({
         </div>
       )}
     </div>
+  );
+}
+
+function MenuBtn({ onClick, color, disabled, border, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: "100%", padding: "13px 18px",
+        background: "transparent", border: "none",
+        borderBottom: border ? "1px solid rgba(255,255,255,0.06)" : "none",
+        color,
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: 14, letterSpacing: 2,
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        textAlign: "left",
+        display: "block",
+      }}
+    >
+      {children}
+    </button>
   );
 }

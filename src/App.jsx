@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import SearchScreen from "./screens/SearchScreen.jsx";
 import SwipeScreen  from "./screens/SwipeScreen.jsx";
 import PileScreen   from "./screens/PileScreen.jsx";
-import BottomNav    from "./components/BottomNav.jsx";
 import SearchSheet  from "./components/SearchSheet.jsx";
 import { fetchForSwipe } from "./lib/scryfall.js";
 
@@ -179,6 +178,7 @@ export default function App() {
             pile={pile}
             onPileChange={setPile}
             onOpenSearch={openSheet}
+            onGoToPile={() => setScreen("pile")}
             commanderCard={commanderCard}
           />
         </div>
@@ -189,7 +189,7 @@ export default function App() {
           pile={pile}
           onPileChange={setPile}
           onClearPile={handleClearPile}
-          onGoToSearch={handleGoToSearch}
+          onGoToSearch={() => setScreen("swipe")}
           onOpenSearch={openSheet}
           commander={commander}
           onCommanderChange={setCommander}
@@ -200,16 +200,13 @@ export default function App() {
       )}
 
       {inSession && swipeMounted && (
-        <>
-          <BottomNav screen={screen} pileCount={pile.length} onTab={setScreen} />
-          <SearchSheet
-            open={sheetOpen}
-            onClose={() => setSheetOpen(false)}
-            onSearch={handleSheetSearch}
-            loading={loading}
-            error={error}
-          />
-        </>
+        <SearchSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onSearch={handleSheetSearch}
+          loading={loading}
+          error={error}
+        />
       )}
     </>
   );

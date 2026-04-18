@@ -1,27 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
-import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 const SWIPE_THRESHOLD = 60;
-
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 
-export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, commanderCard }) {
+export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, onGoToPile, commanderCard }) {
   const [idx,     setIdx]     = useState(0);
   const [history, setHistory] = useState([]);
 
-  // drag / animation
   const [offset,   setOffset]  = useState(0);
   const [dragging, setDragging]= useState(false);
-  const [badge,    setBadge]   = useState(null);   // "keep" | "pass" | null
-  const [animOut,  setAnimOut] = useState(null);   // "right" | "left" | null
+  const [badge,    setBadge]   = useState(null);
+  const [animOut,  setAnimOut] = useState(null);
 
   const dragStartRef = useRef(null);
 
   const card = cards[idx] ?? null;
   const done = idx >= cards.length;
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
@@ -31,7 +27,7 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }); // re-registers each render so callbacks close over fresh state
+  });
 
   function doResolve(keep) {
     if (!card || animOut || done) return;
@@ -56,7 +52,6 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
     setIdx(i => Math.max(0, i - 1));
   }
 
-  // Pointer drag
   function onPointerDown(e) {
     if (animOut || done) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -83,7 +78,6 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
     else { setOffset(0); setBadge(null); }
   }
 
-  // Display values
   const artUrl  = card ? getCardImage(card, "art_crop") : null;
   const mainUrl = card ? getCardImage(card, "normal")   : null;
 
@@ -94,8 +88,6 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
   const counterStr = done
     ? `${pile.length} KEPT`
     : `${idx + 1} / ${cards.length} · ${pile.length} KEPT`;
-
-  const NAV_BOTTOM_PAD = `calc(${NAV_HEIGHT}px + max(10px, env(safe-area-inset-bottom)))`;
 
   return (
     <div style={{
@@ -204,6 +196,58 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
         </div>
       )}
 
+      {/* ── Tab bar: SWIPE / PILE ── */}
+      <div style={{
+        position: "relative", zIndex: 20, flexShrink: 0,
+        display: "flex",
+        background: "rgba(13,13,15,0.88)",
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        {/* SWIPE — always active */}
+        <div style={{
+          flex: 1,
+          padding: "9px 12px",
+          textAlign: "center",
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 13, letterSpacing: 2,
+          color: "var(--primary)",
+          borderBottom: "2px solid var(--primary)",
+        }}>
+          SWIPE
+        </div>
+
+        {/* PILE — navigates away */}
+        <button
+          onClick={onGoToPile}
+          style={{
+            flex: 1,
+            padding: "9px 12px",
+            background: "transparent", border: "none",
+            borderBottom: "2px solid transparent",
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 13, letterSpacing: 2,
+            color: "rgba(255,255,255,0.35)",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+          }}
+        >
+          PILE
+          <span style={{
+            fontSize: 11,
+            background: "rgba(255,255,255,0.07)",
+            color: "rgba(255,255,255,0.35)",
+            padding: "1px 7px",
+            borderRadius: 10,
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 600,
+            letterSpacing: 0,
+          }}>
+            {pile.length}
+          </span>
+        </button>
+      </div>
+
       {/* ── Card area ── */}
       <div style={{
         position: "relative",
@@ -215,19 +259,39 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
         justifyContent: "center",
         overflow: "hidden",
         paddingTop: 14,
-        paddingBottom: 8,
+        paddingBottom: 14,
       }}>
 
-        {/* Counter */}
+        {/* Counter + Undo */}
         <div style={{
-          fontSize: 12,
-          color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
-          letterSpacing: 2,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
           marginBottom: 8,
           flexShrink: 0,
-          fontFamily: "'Bebas Neue', sans-serif",
         }}>
-          {counterStr}
+          <div style={{
+            fontSize: 12,
+            color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
+            letterSpacing: 2,
+            fontFamily: "'Bebas Neue', sans-serif",
+          }}>
+            {counterStr}
+          </div>
+          <button
+            onClick={doUndo}
+            disabled={history.length === 0 || !!animOut}
+            style={{
+              background: "transparent", border: "none",
+              color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 11, letterSpacing: 2,
+              cursor: history.length > 0 ? "pointer" : "default",
+              padding: "2px 6px",
+            }}
+          >
+            UNDO
+          </button>
         </div>
 
         {done ? (
@@ -261,18 +325,22 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
                 {pile.length} card{pile.length !== 1 ? "s" : ""} kept
               </div>
-              <div style={{
-                fontSize: 11,
-                color: "rgba(255,255,255,0.3)",
-                letterSpacing: 1,
-                fontFamily: "'Bebas Neue', sans-serif",
-              }}>
-                TAP PILE TO VIEW YOUR DECK
-              </div>
+              <button
+                onClick={onGoToPile}
+                style={{
+                  padding: "10px 24px", borderRadius: 8,
+                  border: "1px solid var(--primary)",
+                  background: "rgba(91,143,255,0.1)",
+                  color: "var(--primary)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 15, letterSpacing: 3, cursor: "pointer",
+                }}
+              >
+                VIEW PILE
+              </button>
             </div>
           </div>
         ) : (
-          /* Swipeable card */
           <div
             style={{
               transform: `translateX(${tx}px) rotate(${rotation}deg)`,
@@ -346,64 +414,6 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, c
         )}
 
       </div>
-
-      {/* ── Action buttons ── */}
-      <div style={{
-        position: "relative",
-        zIndex: 10,
-        flexShrink: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 24,
-        paddingTop: 10,
-        paddingBottom: NAV_BOTTOM_PAD,
-      }}>
-        <button
-          onClick={() => doResolve(false)}
-          disabled={done || !!animOut}
-          style={{
-            width: 54, height: 54, borderRadius: "50%",
-            border: "2px solid var(--danger)",
-            background: done ? "rgba(255,77,109,0.04)" : "rgba(255,77,109,0.1)",
-            color: done ? "rgba(255,77,109,0.3)" : "var(--danger)",
-            fontSize: 20,
-            cursor: done ? "default" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >✕</button>
-
-        <button
-          onClick={doUndo}
-          disabled={history.length === 0}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.1)",
-            background: "transparent",
-            color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
-            fontSize: 13,
-            fontFamily: "'Bebas Neue', sans-serif",
-            letterSpacing: 2,
-            cursor: history.length > 0 ? "pointer" : "default",
-          }}
-        >UNDO</button>
-
-        <button
-          onClick={() => doResolve(true)}
-          disabled={done || !!animOut}
-          style={{
-            width: 54, height: 54, borderRadius: "50%",
-            border: "2px solid var(--success)",
-            background: done ? "rgba(52,211,153,0.04)" : "rgba(52,211,153,0.1)",
-            color: done ? "rgba(52,211,153,0.3)" : "var(--success)",
-            fontSize: 20,
-            cursor: done ? "default" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >♥</button>
-      </div>
-
     </div>
   );
 }
