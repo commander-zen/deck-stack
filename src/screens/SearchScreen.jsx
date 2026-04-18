@@ -68,8 +68,8 @@ export default function SearchScreen({ onSearch, loading, error }) {
           justifyContent: "center",
         }}>
           {[
-            { label: "GitHub", href: "https://github.com/kylo-ben/deck-swipe" },
-            { label: "Report a Bug", href: "https://github.com/kylo-ben/deck-swipe/issues/new?labels=bug&template=bug_report.md" },
+            { label: "GitHub", href: "https://github.com/commander-zen/deck-stack" },
+            { label: "Report a Bug", href: "https://github.com/commander-zen/deck-stack/issues/new?labels=bug&template=bug_report.md" },
           ].map(({ label, href }) => (
             <a
               key={label}
