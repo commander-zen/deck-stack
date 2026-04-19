@@ -17,10 +17,11 @@ export default function PileScreen({
   commander, onCommanderChange,
   commanderCard,
   maybeboard, onMaybeboardChange,
+  initialTab,
 }) {
   const [copied,    setCopied]    = useState(false);
   const [lightbox,  setLightbox]  = useState(null);
-  const [activeTab, setActiveTab] = useState("deck");
+  const [activeTab, setActiveTab] = useState(initialTab ?? "deck");
   const [reviewMode,setReviewMode]= useState(null);
   const [menuOpen,  setMenuOpen]  = useState(false);
 

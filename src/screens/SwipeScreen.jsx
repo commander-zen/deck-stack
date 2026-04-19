@@ -148,21 +148,6 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, o
         }}>
           DECK STACK
         </span>
-        <button
-          onClick={onOpenSearch}
-          style={{
-            background: "transparent", border: "none",
-            color: "rgba(255,255,255,0.55)", cursor: "pointer",
-            padding: "8px", display: "flex", alignItems: "center",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-        </button>
       </div>
 
       {/* ── Commander banner ── */}
@@ -203,57 +188,6 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, o
         </div>
       )}
 
-      {/* ── Tab bar: SWIPE / PILE ── */}
-      <div style={{
-        position: "relative", zIndex: 20, flexShrink: 0,
-        display: "flex",
-        background: "rgba(13,13,15,0.88)",
-        backdropFilter: "blur(10px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-      }}>
-        {/* SWIPE — always active */}
-        <div style={{
-          flex: 1,
-          padding: "9px 12px",
-          textAlign: "center",
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 13, letterSpacing: 2,
-          color: "var(--primary)",
-          borderBottom: "2px solid var(--primary)",
-        }}>
-          SWIPE
-        </div>
-
-        {/* PILE — navigates away */}
-        <button
-          onClick={onGoToPile}
-          style={{
-            flex: 1,
-            padding: "9px 12px",
-            background: "transparent", border: "none",
-            borderBottom: "2px solid transparent",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 13, letterSpacing: 2,
-            color: "rgba(255,255,255,0.35)",
-            cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-          }}
-        >
-          PILE
-          <span style={{
-            fontSize: 11,
-            background: "rgba(255,255,255,0.07)",
-            color: "rgba(255,255,255,0.35)",
-            padding: "1px 7px",
-            borderRadius: 10,
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 600,
-            letterSpacing: 0,
-          }}>
-            {pile.length}
-          </span>
-        </button>
-      </div>
 
       {/* ── Card area ── */}
       <div style={{

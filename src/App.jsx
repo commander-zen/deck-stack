@@ -37,11 +37,12 @@ export default function App() {
   const [swipeMounted,  setSwipeMounted]  = useState(false);
   const [swipeKey,      setSwipeKey]      = useState(0);
   const [screen,        setScreen]        = useState("search");
-  const [loading,       setLoading]       = useState(false);
-  const [error,         setError]         = useState(null);
-  const [sheetOpen,     setSheetOpen]     = useState(false);
-  const [authUser,      setAuthUser]      = useState(null);
-  const [authSheetOpen, setAuthSheetOpen] = useState(false);
+  const [loading,        setLoading]        = useState(false);
+  const [error,          setError]          = useState(null);
+  const [sheetOpen,      setSheetOpen]      = useState(false);
+  const [authUser,       setAuthUser]       = useState(null);
+  const [authSheetOpen,  setAuthSheetOpen]  = useState(false);
+  const [pileInitialTab, setPileInitialTab] = useState("deck");
 
   // Stable refs so restoreDeck / handleSwitchDeck closures don't go stale
   const stateRef = useRef({});
@@ -419,6 +420,7 @@ export default function App() {
           commanderCard={commanderCard}
           maybeboard={maybeboard}
           onMaybeboardChange={setMaybeboard}
+          initialTab={pileInitialTab}
         />
       )}
 
@@ -426,8 +428,11 @@ export default function App() {
         <BottomNav
           screen={screen}
           pileCount={pile.length}
-          onTab={setScreen}
-          onBrews={() => setQuiverOpen(true)}
+          maybeCount={maybeboard.length}
+          onGoToStack={() => setScreen("swipe")}
+          onGoToPile={(tab) => { setPileInitialTab(tab); setScreen("pile"); }}
+          onSearch={openSheet}
+          onProfile={() => setQuiverOpen(true)}
         />
       )}
 
