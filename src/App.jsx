@@ -1,111 +1,178 @@
-import { useState, useEffect } from "react";
-import SearchScreen from "./screens/SearchScreen.jsx";
-import SwipeScreen  from "./screens/SwipeScreen.jsx";
-import PileScreen   from "./screens/PileScreen.jsx";
-import SearchSheet  from "./components/SearchSheet.jsx";
+import { useState, useEffect, useRef } from "react";
+import SearchScreen  from "./screens/SearchScreen.jsx";
+import SwipeScreen   from "./screens/SwipeScreen.jsx";
+import PileScreen    from "./screens/PileScreen.jsx";
+import SearchSheet   from "./components/SearchSheet.jsx";
+import BottomNav     from "./components/BottomNav.jsx";
+import QuiverDrawer  from "./components/QuiverDrawer.jsx";
 import { fetchForSwipe } from "./lib/scryfall.js";
+import { getOrCreateSession, loadDecks, saveDeck, deleteDeck } from "./lib/db.js";
 
 function ensureInstanceIds(cards) {
-  return cards.map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
+  return (cards || []).map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
 }
 
-function readSavedPile() {
-  try { return ensureInstanceIds(JSON.parse(localStorage.getItem("deckstack_pile")) || []); }
-  catch { return []; }
-}
-
-function readSavedCommander(pile) {
-  const stored = localStorage.getItem("deckstack_commander");
-  if (!stored) return null;
-  // Reset if the instanceId is no longer in the pile (dangling reference)
-  return pile.some(c => c.instanceId === stored) ? stored : null;
-}
-
-function readSavedCommanderCard() {
-  try { return JSON.parse(localStorage.getItem("deckstack_commander_card")) || null; }
-  catch { return null; }
-}
-
-function readSavedCards() {
-  try { return ensureInstanceIds(JSON.parse(localStorage.getItem("deckstack_cards")) || []); }
-  catch { return []; }
-}
-
-function readSavedMaybeboard() {
-  try { return ensureInstanceIds(JSON.parse(localStorage.getItem("deckstack_maybeboard")) || []); }
-  catch { return []; }
+function computeDeckName(commanderCard, query) {
+  if (commanderCard?.name) return commanderCard.name;
+  if (query?.trim()) return query.trim().split(/\s+/)[0];
+  return "Untitled Brew";
 }
 
 export default function App() {
-  const [pile,          setPile]          = useState(() => readSavedPile());
-  const [commander,     setCommander]     = useState(() => readSavedCommander(readSavedPile()));
-  const [commanderCard, setCommanderCard] = useState(() => readSavedCommanderCard());
-  const [maybeboard,    setMaybeboard]    = useState(() => readSavedMaybeboard());
-  const [query,         setQuery]         = useState(() => localStorage.getItem("deckstack_query") || "");
-  const [swipeCards,    setSwipeCards]    = useState(() => readSavedCards());
-  const [swipeMounted,  setSwipeMounted]  = useState(() => readSavedCards().length > 0);
+  const [appReady,     setAppReady]     = useState(false);
+  const [sessionId,    setSessionId]    = useState(null);
+  const [decks,        setDecks]        = useState([]);
+  const [activeDeckId, setActiveDeckId] = useState(null);
+  const [quiverOpen,   setQuiverOpen]   = useState(false);
+
+  const [pile,          setPile]          = useState([]);
+  const [commander,     setCommander]     = useState(null);
+  const [commanderCard, setCommanderCard] = useState(null);
+  const [maybeboard,    setMaybeboard]    = useState([]);
+  const [query,         setQuery]         = useState("");
+  const [swipeCards,    setSwipeCards]    = useState([]);
+  const [swipeIndex,    setSwipeIndex]    = useState(0);
+  const [swipeMounted,  setSwipeMounted]  = useState(false);
   const [swipeKey,      setSwipeKey]      = useState(0);
-  const [screen,        setScreen]        = useState(() => {
-    const hasSavedCards = readSavedCards().length > 0;
-    const savedScreen   = localStorage.getItem("deckstack_screen");
-    if (hasSavedCards) return savedScreen === "pile" ? "pile" : "swipe";
-    if (readSavedPile().length > 0 && savedScreen === "pile") return "pile";
-    return "search";
-  });
+  const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
   const [sheetOpen,     setSheetOpen]     = useState(false);
 
-  // Persistence
-  useEffect(() => {
-    localStorage.setItem("deckstack_pile", JSON.stringify(pile));
-  }, [pile]);
+  // Stable refs so restoreDeck / handleSwitchDeck closures don't go stale
+  const stateRef = useRef({});
+  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId };
 
+  // ── Init: load session and most-recent deck from Supabase ──
   useEffect(() => {
-    if (commander) localStorage.setItem("deckstack_commander", commander);
-    else localStorage.removeItem("deckstack_commander");
-  }, [commander]);
-
-  useEffect(() => {
-    if (commanderCard) localStorage.setItem("deckstack_commander_card", JSON.stringify(commanderCard));
-    else localStorage.removeItem("deckstack_commander_card");
-  }, [commanderCard]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("deckstack_maybeboard", JSON.stringify(maybeboard));
-    } catch {
-      // QuotaExceededError — silently skip
+    async function init() {
+      try {
+        const sid = await getOrCreateSession();
+        setSessionId(sid);
+        const dbDecks = await loadDecks(sid);
+        if (dbDecks.length > 0) {
+          setDecks(dbDecks);
+          const latest = dbDecks[0];
+          setActiveDeckId(latest.id);
+          restoreDeck(latest);
+        }
+      } catch (err) {
+        console.error("Failed to init from Supabase:", err);
+      } finally {
+        setAppReady(true);
+      }
     }
-  }, [maybeboard]);
+    init();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    localStorage.setItem("deckstack_screen", screen);
-  }, [screen]);
+  function restoreDeck(deck) {
+    const p  = ensureInstanceIds(deck.pile);
+    const sc = ensureInstanceIds(deck.swipe_cards);
+    const mb = ensureInstanceIds(deck.maybeboard);
+    const si = deck.swipe_index ?? 0;
+    const cid = deck.commander_instance_id;
 
-  useEffect(() => {
-    localStorage.setItem("deckstack_query", query);
-  }, [query]);
+    setPile(p);
+    setSwipeCards(sc);
+    setSwipeIndex(si);
+    setMaybeboard(mb);
+    setQuery(deck.query || "");
+    setCommanderCard(deck.commander_card || null);
+    setCommander(cid && p.some(c => c.instanceId === cid) ? cid : null);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("deckstack_cards", JSON.stringify(swipeCards));
-    } catch {
-      // QuotaExceededError — silently skip
+    if (sc.length > 0) {
+      setSwipeMounted(true);
+      setSwipeKey(k => k + 1);
+      setScreen("swipe");
+    } else if (p.length > 0) {
+      setSwipeMounted(false);
+      setScreen("pile");
+    } else {
+      setScreen("search");
     }
-  }, [swipeCards]);
+  }
 
-  // Search from SearchScreen (navigates away from session, preserves pile)
+  // ── Debounced auto-save ──
+  useEffect(() => {
+    if (!appReady || !sessionId || !activeDeckId) return;
+    const s = stateRef.current;
+    const timer = setTimeout(async () => {
+      const name = computeDeckName(s.commanderCard, s.query);
+      try {
+        await saveDeck(sessionId, {
+          id: s.activeDeckId,
+          name,
+          commander_name: s.commanderCard?.name ?? null,
+          commander_instance_id: s.commander ?? null,
+          commander_card: s.commanderCard ?? null,
+          pile: s.pile,
+          maybeboard: s.maybeboard,
+          swipe_cards: s.swipeCards,
+          swipe_index: s.swipeIndex,
+          query: s.query,
+        });
+        const now = new Date().toISOString();
+        setDecks(ds => ds.map(d =>
+          d.id === s.activeDeckId
+            ? { ...d, name, pile: s.pile, last_opened_at: now }
+            : d
+        ));
+      } catch (err) {
+        console.error("Auto-save failed:", err);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady]);
+
+  // ── Search from SearchScreen: saves current deck, creates a new one ──
   async function handleSearch(q) {
     setLoading(true);
     setError(null);
     try {
       const cards = await fetchForSwipe(q, commanderCard);
+
+      // Flush current deck before creating a new one
+      if (sessionId && activeDeckId) {
+        const s = stateRef.current;
+        saveDeck(sessionId, {
+          id: s.activeDeckId,
+          name: computeDeckName(s.commanderCard, s.query),
+          commander_name: s.commanderCard?.name ?? null,
+          commander_instance_id: s.commander ?? null,
+          commander_card: s.commanderCard ?? null,
+          pile: s.pile, maybeboard: s.maybeboard,
+          swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
+        }).catch(console.error);
+      }
+
+      const newDeckId = crypto.randomUUID();
+      const deckName  = computeDeckName(commanderCard, q);
+      const newDeck   = {
+        id: newDeckId, name: deckName,
+        commander_name: commanderCard?.name ?? null,
+        commander_instance_id: null,
+        commander_card: commanderCard ?? null,
+        pile: [], maybeboard: [], swipe_cards: cards,
+        swipe_index: 0, query: q,
+        last_opened_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+
+      setPile([]);
+      setCommander(null);
+      setMaybeboard([]);
       setQuery(q);
       setSwipeCards(cards);
+      setSwipeIndex(0);
+      setActiveDeckId(newDeckId);
+      setDecks(ds => [newDeck, ...ds]);
       setSwipeMounted(true);
       setSwipeKey(k => k + 1);
       setScreen("swipe");
+
+      if (sessionId) {
+        saveDeck(sessionId, newDeck).catch(console.error);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -113,7 +180,7 @@ export default function App() {
     }
   }
 
-  // Search from the sheet (stays in session, keeps pile intact)
+  // ── Search from sheet (in-session): updates current deck's swipe queue ──
   async function handleSheetSearch(q) {
     setLoading(true);
     setError(null);
@@ -121,6 +188,7 @@ export default function App() {
       const cards = await fetchForSwipe(q, commanderCard);
       setQuery(q);
       setSwipeCards(cards);
+      setSwipeIndex(0);
       setSwipeMounted(true);
       setSwipeKey(k => k + 1);
       setScreen("swipe");
@@ -132,39 +200,125 @@ export default function App() {
     }
   }
 
-  // Clears everything and returns to search (CLEAR PILE)
-  function handleClearPile() {
+  // ── Clear pile (deletes current deck from DB) ──
+  async function handleClearPile() {
+    if (sessionId && activeDeckId) {
+      deleteDeck(sessionId, activeDeckId).catch(console.error);
+      setDecks(ds => ds.filter(d => d.id !== activeDeckId));
+    }
     setPile([]);
     setCommander(null);
     setCommanderCard(null);
     setMaybeboard([]);
     setSwipeCards([]);
+    setSwipeIndex(0);
     setQuery("");
     setSwipeMounted(false);
+    setActiveDeckId(null);
     setError(null);
-    localStorage.removeItem("deckstack_pile");
-    localStorage.removeItem("deckstack_commander");
-    localStorage.removeItem("deckstack_commander_card");
-    localStorage.removeItem("deckstack_maybeboard");
-    localStorage.removeItem("deckstack_screen");
-    localStorage.removeItem("deckstack_query");
-    localStorage.removeItem("deckstack_cards");
     setScreen("search");
   }
 
-  // Import a full deck directly into the pile
-  function handleImport(importedPile, importedCommanderCard) {
+  // ── Import deck ──
+  async function handleImport(importedPile, importedCommanderCard) {
+    const newDeckId = crypto.randomUUID();
+    const deckName  = importedCommanderCard?.name || "Imported Deck";
+    const newDeck   = {
+      id: newDeckId, name: deckName,
+      commander_name: importedCommanderCard?.name ?? null,
+      commander_instance_id: importedCommanderCard?.instanceId ?? null,
+      commander_card: importedCommanderCard ?? null,
+      pile: importedPile, maybeboard: [],
+      swipe_cards: [], swipe_index: 0, query: "",
+      last_opened_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+
     setPile(importedPile);
-    if (importedCommanderCard) {
-      setCommanderCard(importedCommanderCard);
-      setCommander(importedCommanderCard.instanceId);
-    }
+    setCommander(importedCommanderCard?.instanceId ?? null);
+    setCommanderCard(importedCommanderCard ?? null);
+    setSwipeCards([]);
+    setSwipeIndex(0);
+    setMaybeboard([]);
+    setActiveDeckId(newDeckId);
+    setDecks(ds => [newDeck, ...ds]);
     setScreen("pile");
+
+    if (sessionId) {
+      saveDeck(sessionId, newDeck).catch(console.error);
+    }
   }
 
-  // Just navigates to search, keeps pile and card queue intact (← SEARCH)
-  function handleGoToSearch() {
+  // ── Switch to a saved deck ──
+  function handleSwitchDeck(deckId) {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck) return;
+
+    // Flush current state before switching
+    if (sessionId && activeDeckId) {
+      const s = stateRef.current;
+      saveDeck(sessionId, {
+        id: s.activeDeckId,
+        name: computeDeckName(s.commanderCard, s.query),
+        commander_name: s.commanderCard?.name ?? null,
+        commander_instance_id: s.commander ?? null,
+        commander_card: s.commanderCard ?? null,
+        pile: s.pile, maybeboard: s.maybeboard,
+        swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
+      }).catch(console.error);
+    }
+
+    setActiveDeckId(deckId);
+    const now = new Date().toISOString();
+    setDecks(ds =>
+      ds.map(d => d.id === deckId ? { ...d, last_opened_at: now } : d)
+        .sort((a, b) => new Date(b.last_opened_at) - new Date(a.last_opened_at))
+    );
+    restoreDeck(deck);
+  }
+
+  // ── Start a new brew (go back to search, preserve current deck in DB) ──
+  function handleNewDeck() {
+    if (sessionId && activeDeckId) {
+      const s = stateRef.current;
+      saveDeck(sessionId, {
+        id: s.activeDeckId,
+        name: computeDeckName(s.commanderCard, s.query),
+        commander_name: s.commanderCard?.name ?? null,
+        commander_instance_id: s.commander ?? null,
+        commander_card: s.commanderCard ?? null,
+        pile: s.pile, maybeboard: s.maybeboard,
+        swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
+      }).catch(console.error);
+    }
+    setPile([]);
+    setCommander(null);
+    setCommanderCard(null);
+    setMaybeboard([]);
+    setSwipeCards([]);
+    setSwipeIndex(0);
+    setQuery("");
+    setSwipeMounted(false);
+    setActiveDeckId(null);
     setScreen("search");
+  }
+
+  // ── Delete a saved deck ──
+  async function handleDeleteDeck(deckId) {
+    try {
+      await deleteDeck(sessionId, deckId);
+      const remaining = decks.filter(d => d.id !== deckId);
+      setDecks(remaining);
+      if (deckId === activeDeckId) {
+        if (remaining.length > 0) {
+          handleSwitchDeck(remaining[0].id);
+        } else {
+          handleNewDeck();
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete deck:", err);
+    }
   }
 
   function openSheet() {
@@ -173,6 +327,23 @@ export default function App() {
   }
 
   const inSession = screen === "swipe" || screen === "pile";
+
+  if (!appReady) {
+    return (
+      <div style={{
+        minHeight: "100dvh", background: "var(--bg)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <span style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 18, letterSpacing: 4,
+          color: "var(--muted)",
+        }}>
+          LOADING…
+        </span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -187,7 +358,6 @@ export default function App() {
         />
       )}
 
-      {/* Keep SwipeScreen mounted while in a session so idx/history survive tab switches */}
       {swipeMounted && (
         <div style={{ display: screen === "swipe" ? "block" : "none" }}>
           <SwipeScreen
@@ -198,6 +368,8 @@ export default function App() {
             onOpenSearch={openSheet}
             onGoToPile={() => setScreen("pile")}
             commanderCard={commanderCard}
+            initialIndex={swipeIndex}
+            onIndexChange={setSwipeIndex}
           />
         </div>
       )}
@@ -217,6 +389,15 @@ export default function App() {
         />
       )}
 
+      {inSession && (
+        <BottomNav
+          screen={screen}
+          pileCount={pile.length}
+          onTab={setScreen}
+          onBrews={() => setQuiverOpen(true)}
+        />
+      )}
+
       {inSession && swipeMounted && (
         <SearchSheet
           open={sheetOpen}
@@ -226,6 +407,16 @@ export default function App() {
           error={error}
         />
       )}
+
+      <QuiverDrawer
+        open={quiverOpen}
+        onClose={() => setQuiverOpen(false)}
+        decks={decks}
+        activeDeckId={activeDeckId}
+        onSwitch={handleSwitchDeck}
+        onNew={handleNewDeck}
+        onDelete={handleDeleteDeck}
+      />
     </>
   );
 }

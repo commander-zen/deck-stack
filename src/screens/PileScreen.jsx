@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
+import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 function buildExportText(pile, commander) {
   const cmdCard = commander ? pile.find(c => c.instanceId === commander) : null;
@@ -134,8 +135,8 @@ export default function PileScreen({
   const fabBg       = activeTab === "deck" ? "rgba(91,143,255,0.14)" : "rgba(167,139,250,0.14)";
   const fabBorder   = activeTab === "deck" ? "rgba(91,143,255,0.38)" : "rgba(167,139,250,0.38)";
 
-  const fabBottom  = `calc(max(18px, env(safe-area-inset-bottom)) + 18px)`;
-  const bottomPad  = `calc(max(18px, env(safe-area-inset-bottom)) + 84px)`;
+  const fabBottom  = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 18px)`;
+  const bottomPad  = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 84px)`;
 
   return (
     <div style={{

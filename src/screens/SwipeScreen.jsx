@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
+import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 const SWIPE_THRESHOLD = 60;
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 
-export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, onGoToPile, commanderCard }) {
-  const [idx,     setIdx]     = useState(0);
+export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, onGoToPile, commanderCard, initialIndex, onIndexChange }) {
+  const [idx,     setIdx]     = useState(initialIndex ?? 0);
   const [history, setHistory] = useState([]);
+
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) { didMountRef.current = true; return; }
+    onIndexChange?.(idx);
+  }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [offset,   setOffset]  = useState(0);
   const [dragging, setDragging]= useState(false);
@@ -91,8 +98,8 @@ export default function SwipeScreen({ cards, pile, onPileChange, onOpenSearch, o
 
   return (
     <div style={{
-      height: "100dvh",
-      maxHeight: "100vh",
+      height: `calc(100dvh - ${NAV_HEIGHT}px)`,
+      maxHeight: `calc(100vh - ${NAV_HEIGHT}px)`,
       background: "var(--bg)",
       display: "flex",
       flexDirection: "column",
