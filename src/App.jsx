@@ -2,10 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
-import SearchSheet   from "./components/SearchSheet.jsx";
+import BrewsScreen   from "./screens/BrewsScreen.jsx";
 import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav     from "./components/BottomNav.jsx";
-import QuiverDrawer  from "./components/QuiverDrawer.jsx";
 import { fetchForSwipe } from "./lib/scryfall.js";
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
 import { getSession, onAuthChange } from "./lib/auth.js";
@@ -25,7 +24,6 @@ export default function App() {
   const [sessionId,    setSessionId]    = useState(null);
   const [decks,        setDecks]        = useState([]);
   const [activeDeckId, setActiveDeckId] = useState(null);
-  const [quiverOpen,   setQuiverOpen]   = useState(false);
 
   const [pile,          setPile]          = useState([]);
   const [commander,     setCommander]     = useState(null);
@@ -36,19 +34,18 @@ export default function App() {
   const [swipeIndex,    setSwipeIndex]    = useState(0);
   const [swipeMounted,  setSwipeMounted]  = useState(false);
   const [swipeKey,      setSwipeKey]      = useState(0);
+  // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
   const [screen,        setScreen]        = useState("search");
-  const [loading,        setLoading]        = useState(false);
-  const [error,          setError]          = useState(null);
-  const [sheetOpen,      setSheetOpen]      = useState(false);
-  const [authUser,       setAuthUser]       = useState(null);
-  const [authSheetOpen,  setAuthSheetOpen]  = useState(false);
-  const [pileInitialTab, setPileInitialTab] = useState("deck");
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState(null);
+  const [authUser,      setAuthUser]      = useState(null);
+  const [authSheetOpen, setAuthSheetOpen] = useState(false);
 
-  // Stable refs so restoreDeck / handleSwitchDeck closures don't go stale
+  // Stable refs so closures don't go stale
   const stateRef = useRef({});
   stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser };
 
-  // ── Init: load session and most-recent deck from Supabase ──
+  // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     async function init() {
       try {
@@ -100,7 +97,7 @@ export default function App() {
     }
   }
 
-  // ── Auth state subscription ──
+  // ── Auth subscription ─────────────────────────────────────────────────────
   useEffect(() => {
     const unsubscribe = onAuthChange(async (event, session) => {
       const user = session?.user ?? null;
@@ -126,7 +123,7 @@ export default function App() {
     return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Debounced auto-save ──
+  // ── Debounced auto-save ───────────────────────────────────────────────────
   useEffect(() => {
     if (!appReady || !sessionId || !activeDeckId) return;
     const s = stateRef.current;
@@ -134,16 +131,12 @@ export default function App() {
       const name = computeDeckName(s.commanderCard, s.query);
       try {
         await saveDeck(sessionId, {
-          id: s.activeDeckId,
-          name,
+          id: s.activeDeckId, name,
           commander_name: s.commanderCard?.name ?? null,
           commander_instance_id: s.commander ?? null,
           commander_card: s.commanderCard ?? null,
-          pile: s.pile,
-          maybeboard: s.maybeboard,
-          swipe_cards: s.swipeCards,
-          swipe_index: s.swipeIndex,
-          query: s.query,
+          pile: s.pile, maybeboard: s.maybeboard,
+          swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
         }, s.authUser?.id ?? null);
         const now = new Date().toISOString();
         setDecks(ds => ds.map(d =>
@@ -158,14 +151,13 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady, authUser]);
 
-  // ── Search from SearchScreen: saves current deck, creates a new one ──
+  // ── Search: new deck ──────────────────────────────────────────────────────
   async function handleSearch(q) {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const cards = await fetchForSwipe(q, commanderCard);
 
-      // Flush current deck before creating a new one
+      // flush current deck
       if (sessionId && activeDeckId) {
         const s = stateRef.current;
         saveDeck(sessionId, {
@@ -192,21 +184,15 @@ export default function App() {
         created_at: new Date().toISOString(),
       };
 
-      setPile([]);
-      setCommander(null);
-      setMaybeboard([]);
-      setQuery(q);
-      setSwipeCards(cards);
-      setSwipeIndex(0);
+      setPile([]); setCommander(null); setMaybeboard([]);
+      setQuery(q); setSwipeCards(cards); setSwipeIndex(0);
       setActiveDeckId(newDeckId);
       setDecks(ds => [newDeck, ...ds]);
       setSwipeMounted(true);
       setSwipeKey(k => k + 1);
       setScreen("swipe");
 
-      if (sessionId) {
-        saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
-      }
+      if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -214,46 +200,19 @@ export default function App() {
     }
   }
 
-  // ── Search from sheet (in-session): updates current deck's swipe queue ──
-  async function handleSheetSearch(q) {
-    setLoading(true);
-    setError(null);
-    try {
-      const cards = await fetchForSwipe(q, commanderCard);
-      setQuery(q);
-      setSwipeCards(cards);
-      setSwipeIndex(0);
-      setSwipeMounted(true);
-      setSwipeKey(k => k + 1);
-      setScreen("swipe");
-      setSheetOpen(false);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── Clear pile (deletes current deck from DB) ──
+  // ── Clear pile ────────────────────────────────────────────────────────────
   async function handleClearPile() {
     if (sessionId && activeDeckId) {
       deleteDeck(sessionId, activeDeckId, authUser?.id ?? null).catch(console.error);
       setDecks(ds => ds.filter(d => d.id !== activeDeckId));
     }
-    setPile([]);
-    setCommander(null);
-    setCommanderCard(null);
-    setMaybeboard([]);
-    setSwipeCards([]);
-    setSwipeIndex(0);
-    setQuery("");
-    setSwipeMounted(false);
-    setActiveDeckId(null);
-    setError(null);
-    setScreen("search");
+    setPile([]); setCommander(null); setCommanderCard(null);
+    setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
+    setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
+    setError(null); setScreen("search");
   }
 
-  // ── Import deck ──
+  // ── Import deck ───────────────────────────────────────────────────────────
   async function handleImport(importedPile, importedCommanderCard) {
     const newDeckId = crypto.randomUUID();
     const deckName  = importedCommanderCard?.name || "Imported Deck";
@@ -271,24 +230,19 @@ export default function App() {
     setPile(importedPile);
     setCommander(importedCommanderCard?.instanceId ?? null);
     setCommanderCard(importedCommanderCard ?? null);
-    setSwipeCards([]);
-    setSwipeIndex(0);
-    setMaybeboard([]);
+    setSwipeCards([]); setSwipeIndex(0); setMaybeboard([]);
     setActiveDeckId(newDeckId);
     setDecks(ds => [newDeck, ...ds]);
     setScreen("pile");
 
-    if (sessionId) {
-      saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
-    }
+    if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
   }
 
-  // ── Switch to a saved deck ──
+  // ── Switch deck ───────────────────────────────────────────────────────────
   function handleSwitchDeck(deckId) {
     const deck = decks.find(d => d.id === deckId);
     if (!deck) return;
 
-    // Flush current state before switching
     if (sessionId && activeDeckId) {
       const s = stateRef.current;
       saveDeck(sessionId, {
@@ -311,7 +265,7 @@ export default function App() {
     restoreDeck(deck);
   }
 
-  // ── Start a new brew (go back to search, preserve current deck in DB) ──
+  // ── New brew ──────────────────────────────────────────────────────────────
   function handleNewDeck() {
     if (sessionId && activeDeckId) {
       const s = stateRef.current;
@@ -325,19 +279,13 @@ export default function App() {
         swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
       }, s.authUser?.id ?? null).catch(console.error);
     }
-    setPile([]);
-    setCommander(null);
-    setCommanderCard(null);
-    setMaybeboard([]);
-    setSwipeCards([]);
-    setSwipeIndex(0);
-    setQuery("");
-    setSwipeMounted(false);
-    setActiveDeckId(null);
+    setPile([]); setCommander(null); setCommanderCard(null);
+    setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
+    setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
     setScreen("search");
   }
 
-  // ── Delete a saved deck ──
+  // ── Delete deck ───────────────────────────────────────────────────────────
   async function handleDeleteDeck(deckId) {
     try {
       await deleteDeck(sessionId, deckId, authUser?.id ?? null);
@@ -355,12 +303,20 @@ export default function App() {
     }
   }
 
-  function openSheet() {
-    setError(null);
-    setSheetOpen(true);
+  // ── Nav helpers ───────────────────────────────────────────────────────────
+  function goToStack() {
+    if (swipeMounted) setScreen("swipe");
+    else setScreen("search");
   }
 
-  const inSession = screen === "swipe" || screen === "pile";
+  function goToPile() { setScreen("pile"); }
+
+  function goToMaybe() { setScreen("maybe"); }
+
+  function goToProfile() { setScreen("brews"); }
+
+  // Show nav whenever there is an active deck (even on search screen mid-session)
+  const showNav = activeDeckId !== null || swipeMounted || pile.length > 0 || decks.length > 0;
 
   if (!appReady) {
     return (
@@ -370,8 +326,7 @@ export default function App() {
       }}>
         <span style={{
           fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 18, letterSpacing: 4,
-          color: "var(--muted)",
+          fontSize: 18, letterSpacing: 4, color: "var(--muted)",
         }}>
           LOADING…
         </span>
@@ -381,6 +336,8 @@ export default function App() {
 
   return (
     <>
+      {/* ── Screens ── */}
+
       {screen === "search" && (
         <SearchScreen
           onSearch={handleSearch}
@@ -399,64 +356,51 @@ export default function App() {
             cards={swipeCards}
             pile={pile}
             onPileChange={setPile}
-            onOpenSearch={openSheet}
-            onGoToPile={() => setScreen("pile")}
+            onGoToPile={goToPile}
             commanderCard={commanderCard}
+            onCommanderCardChange={setCommanderCard}
             initialIndex={swipeIndex}
             onIndexChange={setSwipeIndex}
           />
         </div>
       )}
 
-      {screen === "pile" && (
+      {(screen === "pile" || screen === "maybe") && (
         <PileScreen
           pile={pile}
           onPileChange={setPile}
           onClearPile={handleClearPile}
-          onGoToSearch={() => setScreen("swipe")}
-          onOpenSearch={openSheet}
           commander={commander}
           onCommanderChange={setCommander}
           commanderCard={commanderCard}
           maybeboard={maybeboard}
           onMaybeboardChange={setMaybeboard}
-          initialTab={pileInitialTab}
+          initialTab={screen === "maybe" ? "maybe" : "deck"}
         />
       )}
 
-      {inSession && (
+      {screen === "brews" && (
+        <BrewsScreen
+          decks={decks}
+          activeDeckId={activeDeckId}
+          onSwitch={id => { handleSwitchDeck(id); }}
+          onNew={() => { handleNewDeck(); }}
+          onDelete={handleDeleteDeck}
+          authUser={authUser}
+          onOpenAuth={() => setAuthSheetOpen(true)}
+        />
+      )}
+
+      {/* ── Bottom nav ── */}
+      {showNav && (
         <BottomNav
           screen={screen}
-          pileCount={pile.length}
-          maybeCount={maybeboard.length}
-          onGoToStack={() => setScreen("swipe")}
-          onGoToPile={(tab) => { setPileInitialTab(tab); setScreen("pile"); }}
-          onSearch={openSheet}
-          onProfile={() => setQuiverOpen(true)}
+          onGoToStack={goToStack}
+          onGoToPile={goToPile}
+          onGoToMaybe={goToMaybe}
+          onGoToProfile={goToProfile}
         />
       )}
-
-      {inSession && swipeMounted && (
-        <SearchSheet
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          onSearch={handleSheetSearch}
-          loading={loading}
-          error={error}
-        />
-      )}
-
-      <QuiverDrawer
-        open={quiverOpen}
-        onClose={() => setQuiverOpen(false)}
-        decks={decks}
-        activeDeckId={activeDeckId}
-        onSwitch={handleSwitchDeck}
-        onNew={handleNewDeck}
-        onDelete={handleDeleteDeck}
-        authUser={authUser}
-        onOpenAuth={() => { setQuiverOpen(false); setAuthSheetOpen(true); }}
-      />
 
       <AuthSheet
         open={authSheetOpen}

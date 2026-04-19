@@ -125,7 +125,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
       }
       try {
         setStatusLabel("Fetching deck…");
-        const res = await fetch(`https://api.moxfield.com/v2/decks/all/${deckId}`);
+        const res = await fetch(`/api/moxfield?id=${encodeURIComponent(deckId)}`);
         if (!res.ok) throw new Error(`Moxfield error: ${res.status}`);
         const data = await res.json();
 
