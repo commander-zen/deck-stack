@@ -3,10 +3,12 @@ import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import SearchSheet   from "./components/SearchSheet.jsx";
+import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav     from "./components/BottomNav.jsx";
 import QuiverDrawer  from "./components/QuiverDrawer.jsx";
 import { fetchForSwipe } from "./lib/scryfall.js";
-import { getOrCreateSession, loadDecks, saveDeck, deleteDeck } from "./lib/db.js";
+import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
+import { getSession, onAuthChange } from "./lib/auth.js";
 
 function ensureInstanceIds(cards) {
   return (cards || []).map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
@@ -38,10 +40,12 @@ export default function App() {
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
   const [sheetOpen,     setSheetOpen]     = useState(false);
+  const [authUser,      setAuthUser]      = useState(null);
+  const [authSheetOpen, setAuthSheetOpen] = useState(false);
 
   // Stable refs so restoreDeck / handleSwitchDeck closures don't go stale
   const stateRef = useRef({});
-  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId };
+  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser };
 
   // ── Init: load session and most-recent deck from Supabase ──
   useEffect(() => {
@@ -49,7 +53,10 @@ export default function App() {
       try {
         const sid = await getOrCreateSession();
         setSessionId(sid);
-        const dbDecks = await loadDecks(sid);
+        const session = await getSession();
+        const user = session?.user ?? null;
+        setAuthUser(user);
+        const dbDecks = await loadDecks(sid, user?.id ?? null);
         if (dbDecks.length > 0) {
           setDecks(dbDecks);
           const latest = dbDecks[0];
@@ -92,6 +99,32 @@ export default function App() {
     }
   }
 
+  // ── Auth state subscription ──
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (event, session) => {
+      const user = session?.user ?? null;
+      const s = stateRef.current;
+      if (event === "SIGNED_IN" && user) {
+        try {
+          await migrateAnonymousDecks(s.sessionId);
+          const dbDecks = await loadDecks(s.sessionId, user.id);
+          setDecks(dbDecks);
+        } catch (err) {
+          console.error("Auth migration failed:", err);
+        }
+      } else if (event === "SIGNED_OUT") {
+        try {
+          const dbDecks = await loadDecks(s.sessionId, null);
+          setDecks(dbDecks);
+        } catch (err) {
+          console.error("Failed to reload decks after sign-out:", err);
+        }
+      }
+      setAuthUser(user);
+    });
+    return unsubscribe;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Debounced auto-save ──
   useEffect(() => {
     if (!appReady || !sessionId || !activeDeckId) return;
@@ -110,7 +143,7 @@ export default function App() {
           swipe_cards: s.swipeCards,
           swipe_index: s.swipeIndex,
           query: s.query,
-        });
+        }, s.authUser?.id ?? null);
         const now = new Date().toISOString();
         setDecks(ds => ds.map(d =>
           d.id === s.activeDeckId
@@ -122,7 +155,7 @@ export default function App() {
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady]);
+  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady, authUser]);
 
   // ── Search from SearchScreen: saves current deck, creates a new one ──
   async function handleSearch(q) {
@@ -142,7 +175,7 @@ export default function App() {
           commander_card: s.commanderCard ?? null,
           pile: s.pile, maybeboard: s.maybeboard,
           swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-        }).catch(console.error);
+        }, s.authUser?.id ?? null).catch(console.error);
       }
 
       const newDeckId = crypto.randomUUID();
@@ -171,7 +204,7 @@ export default function App() {
       setScreen("swipe");
 
       if (sessionId) {
-        saveDeck(sessionId, newDeck).catch(console.error);
+        saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
       }
     } catch (err) {
       setError(err.message);
@@ -203,7 +236,7 @@ export default function App() {
   // ── Clear pile (deletes current deck from DB) ──
   async function handleClearPile() {
     if (sessionId && activeDeckId) {
-      deleteDeck(sessionId, activeDeckId).catch(console.error);
+      deleteDeck(sessionId, activeDeckId, authUser?.id ?? null).catch(console.error);
       setDecks(ds => ds.filter(d => d.id !== activeDeckId));
     }
     setPile([]);
@@ -245,7 +278,7 @@ export default function App() {
     setScreen("pile");
 
     if (sessionId) {
-      saveDeck(sessionId, newDeck).catch(console.error);
+      saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
     }
   }
 
@@ -265,7 +298,7 @@ export default function App() {
         commander_card: s.commanderCard ?? null,
         pile: s.pile, maybeboard: s.maybeboard,
         swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-      }).catch(console.error);
+      }, s.authUser?.id ?? null).catch(console.error);
     }
 
     setActiveDeckId(deckId);
@@ -289,7 +322,7 @@ export default function App() {
         commander_card: s.commanderCard ?? null,
         pile: s.pile, maybeboard: s.maybeboard,
         swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-      }).catch(console.error);
+      }, s.authUser?.id ?? null).catch(console.error);
     }
     setPile([]);
     setCommander(null);
@@ -306,7 +339,7 @@ export default function App() {
   // ── Delete a saved deck ──
   async function handleDeleteDeck(deckId) {
     try {
-      await deleteDeck(sessionId, deckId);
+      await deleteDeck(sessionId, deckId, authUser?.id ?? null);
       const remaining = decks.filter(d => d.id !== deckId);
       setDecks(remaining);
       if (deckId === activeDeckId) {
@@ -416,6 +449,14 @@ export default function App() {
         onSwitch={handleSwitchDeck}
         onNew={handleNewDeck}
         onDelete={handleDeleteDeck}
+        authUser={authUser}
+        onOpenAuth={() => { setQuiverOpen(false); setAuthSheetOpen(true); }}
+      />
+
+      <AuthSheet
+        open={authSheetOpen}
+        onClose={() => setAuthSheetOpen(false)}
+        user={authUser}
       />
     </>
   );

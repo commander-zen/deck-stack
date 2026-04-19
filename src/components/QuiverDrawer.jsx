@@ -15,7 +15,7 @@ function relativeTime(isoString) {
   return new Date(isoString).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwitch, onNew, onDelete }) {
+export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwitch, onNew, onDelete, authUser, onOpenAuth }) {
   const [confirmId, setConfirmId] = useState(null);
 
   function handleSwitch(id) {
@@ -252,6 +252,21 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
               }}
             >
               + NEW BREW
+            </button>
+            <button
+              onClick={onOpenAuth}
+              style={{
+                width: "100%", marginTop: 10,
+                background: "transparent", border: "none",
+                color: authUser ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.25)",
+                fontSize: 11,
+                fontFamily: "'DM Sans', sans-serif",
+                cursor: "pointer",
+                padding: "4px 0",
+                textAlign: "center",
+              }}
+            >
+              {authUser ? `Signed in · ${authUser.email}` : "Sign in to sync across devices"}
             </button>
           </div>
 

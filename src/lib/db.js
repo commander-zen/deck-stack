@@ -15,23 +15,26 @@ export async function getOrCreateSession() {
   return id;
 }
 
-export async function loadDecks(sessionId) {
+export async function loadDecks(sessionId, userId) {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("decks")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("last_opened_at", { ascending: false });
+  let query = supabase.from("decks").select("*");
+  if (userId) {
+    query = query.eq("user_id", userId);
+  } else {
+    query = query.eq("session_id", sessionId);
+  }
+  const { data, error } = await query.order("last_opened_at", { ascending: false });
   if (error) throw error;
   return data || [];
 }
 
-export async function saveDeck(sessionId, deck) {
+export async function saveDeck(sessionId, deck, userId) {
   if (!supabase) return;
   const { error } = await supabase.from("decks").upsert(
     {
       id: deck.id,
       session_id: sessionId,
+      user_id: userId ?? null,
       name: deck.name,
       commander_name: deck.commander_name ?? null,
       commander_instance_id: deck.commander_instance_id ?? null,
@@ -48,12 +51,22 @@ export async function saveDeck(sessionId, deck) {
   if (error) throw error;
 }
 
-export async function deleteDeck(sessionId, deckId) {
+export async function deleteDeck(sessionId, deckId, userId) {
   if (!supabase) return;
-  const { error } = await supabase
-    .from("decks")
-    .delete()
-    .eq("id", deckId)
-    .eq("session_id", sessionId);
+  let query = supabase.from("decks").delete().eq("id", deckId);
+  if (userId) {
+    query = query.eq("user_id", userId);
+  } else {
+    query = query.eq("session_id", sessionId);
+  }
+  const { error } = await query;
+  if (error) throw error;
+}
+
+export async function migrateAnonymousDecks(sessionId) {
+  if (!supabase) return;
+  const { error } = await supabase.rpc("migrate_anonymous_decks", {
+    p_session_id: sessionId,
+  });
   if (error) throw error;
 }
