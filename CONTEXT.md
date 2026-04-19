@@ -1,3 +1,21 @@
+## Standing Instructions
+At the end of every session where architectural changes were made (new screens, 
+new components, new libraries, auth/backend changes, navigation changes, or 
+resolved known issues), update this file to reflect the current state before closing.
+
+What counts as "update-worthy":
+New or deleted files in src/
+New dependencies in package.json
+Auth/Supabase changes
+Navigation model changes
+Known issues resolved or newly discovered
+Stack changes
+
+What doesn't need an update:
+Bug fixes
+Style tweaks
+Content/copy changes
+
 # DECK STACK — AI Context Document
 > Paste this at the start of any new Claude session to restore full project context.
 
@@ -5,14 +23,12 @@
 
 ## What is Deck Stack?
 
-Deck Stack is a mobile-first MTG Commander deck-building web app. The core mechanic is a Tinder-style swipe interface: users search for cards via Scryfall, then swipe through results keeping or passing each one to assemble a deck pile. The app is Commander-format only.
+Deck Stack is a mobile-first MTG Commander deck-building web app. The core mechanic is a Tinder-style swipe interface: users search for cards via Scryfall, then swipe through results keeping or passing each one to assemble a deck pile. The app is Commander-format only. Users can manage multiple saved decks ("brews") and optionally sign in to sync across devices via Supabase.
 
 **Live URL:** https://deck-stack.vercel.app  
 **GitHub:** https://github.com/commander-zen/deck-stack  
-**Vercel project:** `deck-stack` (kylo-ben's projects)  
-**Status:** Early/active development. Only used by the developer and one friend so far.
-
-> ⚠️ The name was previously "Deck Swipe" — it is now **Deck Stack**, full stop. `package.json` still says `deck-swipe` and needs to be updated. GitHub links in `SearchScreen.jsx` footer still point to `kylo-ben/deck-swipe` and need updating.
+**Vercel project:** `deck-stack` (auto-deploys from `master` branch)  
+**Status:** Active development. Used by developer and a small number of friends.
 
 ---
 
@@ -25,10 +41,13 @@ Deck Stack is a mobile-first MTG Commander deck-building web app. The core mecha
 | Deploy | Vercel (auto-deploy from `master` branch) |
 | Styling | Inline styles + CSS variables (no Tailwind, no CSS modules) |
 | State | React `useState` only — no Redux, no Zustand |
-| Persistence | `localStorage` (no backend, no auth, no database) |
+| Persistence | `localStorage` (primary) + Supabase (cloud sync when signed in) |
+| Auth | Supabase Auth (email/OTP passwordless) |
+| Database | Supabase (deck persistence and sync) |
 | API | Scryfall REST API (public, no key required) |
 | Fonts | Bebas Neue, DM Sans, IBM Plex Mono (Google Fonts) |
 | PWA | `vite-plugin-pwa` — installable on iOS via Safari "Add to Home Screen" |
+| Env | `.env.local` holds Supabase keys (see `.env.local.example`) |
 
 ---
 
@@ -55,33 +74,49 @@ Defined in `src/index.css`:
 
 ```
 deck-stack/
-├── index.html              # Entry — sets fonts, base styles, viewport, PWA meta tags
-├── package.json            # ⚠️ name still says "deck-swipe", needs fix
-├── vite.config.js          # Vite + React + VitePWA plugin config
+├── index.html                  # Entry — fonts, viewport, PWA meta tags
+├── package.json                # name: "deck-stack"
+├── vite.config.js              # Vite + React + VitePWA config
+├── vercel.json
+├── .env.local                  # Supabase keys (gitignored)
+├── .env.local.example          # Template for env vars
+├── .claude/
+│   └── settings.local.json     # Claude Code permissions config
+├── supabase/                   # Supabase project config/migrations
 ├── public/
 │   ├── favicon.svg
 │   └── icons/
-│       ├── icon-192.png    # PWA / apple-touch-icon
-│       └── icon-512.png    # PWA maskable icon
+│       ├── icon-192.png
+│       └── icon-512.png
 └── src/
-    ├── main.jsx            # React root mount, ErrorBoundary wrapper, SW registration
-    ├── App.jsx             # Root state, routing, persistence
-    ├── index.css           # CSS variables + resets
-    ├── screens/
-    │   ├── LandingScreen.jsx   # Commander search + "Build by Strategy" entry (DEAD CODE — not wired into App.jsx)
-    │   ├── SearchScreen.jsx    # Main entry: two-step layout (Commander + Search), IMPORT DECK button
+    ├── main.jsx                # React root, ErrorBoundary wrapper, SW registration
+    ├── App.jsx                 # Root state, routing, persistence (15 KB — large)
+    ├── index.css               # CSS variables + resets
+    ├── screens/                # ✅ ACTIVE screens
+    │   ├── LandingScreen.jsx   # Commander search + "Build by Strategy" entry
+    │   ├── SearchScreen.jsx    # Main entry: commander picker + search form + IMPORT
     │   ├── SwipeScreen.jsx     # Card swipe mechanic + top SWIPE/PILE tab bar
-    │   └── PileScreen.jsx      # Deck review, export, commander assignment, maybeboard
-    └── components/
-        ├── BottomNav.jsx       # Fixed bottom tab bar — FILE EXISTS but is NOT rendered (removed from App.jsx)
-        ├── ErrorBoundary.jsx   # Class component — catches crashes, shows recovery UI
-        ├── ImportSheet.jsx     # Slide-up sheet — paste decklist or Moxfield URL → imports to pile
-        ├── SearchSheet.jsx     # Slide-up search modal (used mid-session via 🔍 icon)
-        ├── SearchForm.jsx      # Full search form with collapsible advanced filters
-        ├── PileSwipeScreen.jsx # Full-screen swipe review of pile/maybeboard cards
-        └── DeckReviewPill.jsx  # Floating pill + slide-up card list (may not be active)
+    │   └── PileScreen.jsx      # Deck review, export, commander assignment, maybeboard (22 KB)
+    ├── pages/                  # ⚠️ LEGACY — likely dead code, not wired into App.jsx
+    │   ├── CommanderScreen.jsx
+    │   ├── PileScreen.jsx
+    │   ├── SearchScreen.jsx
+    │   └── SwipeScreen.jsx
+    ├── components/
+    │   ├── AuthSheet.jsx       # Slide-up auth sheet — email OTP sign-in/sign-out
+    │   ├── BottomNav.jsx       # Fixed bottom tab bar — SWIPE | PILE | BREWS (ACTIVE)
+    │   ├── DeckReviewPill.jsx  # Floating pill + slide-up card list
+    │   ├── ErrorBoundary.jsx   # Class component — catches crashes, shows recovery UI
+    │   ├── ImportSheet.jsx     # Slide-up sheet — paste decklist or Moxfield URL
+    │   ├── PileSwipeScreen.jsx # Full-screen swipe review of pile/maybeboard cards
+    │   ├── QuiverDrawer.jsx    # Slide-up multi-deck manager — "BREWS" — switch/new/delete
+    │   ├── SearchForm.jsx      # Full search form with collapsible advanced filters (21 KB)
+    │   └── SearchSheet.jsx     # Slide-up search modal (used mid-session via 🔍 icon)
     └── lib/
+        ├── auth.js             # Supabase auth helpers (sign in, sign out, session)
+        ├── db.js               # Supabase deck persistence (save, load, delete decks)
         ├── scryfall.js         # All Scryfall API calls + query builder
+        ├── supabase.js         # Supabase client init (reads env vars)
         └── wrec.js             # WREC score engine
 ```
 
@@ -99,8 +134,7 @@ SearchScreen  (screen === "search")
 
 SwipeScreen  (screen === "swipe", stays mounted hidden when on other tabs)
   ├── Top bar: DECK STACK logo + 🔍 (opens SearchSheet)
-  ├── Commander banner (if commanderCard set)
-  ├── Tab bar: SWIPE (active) | PILE (n) — PILE navigates to PileScreen
+  ├── Tab bar: SWIPE (active) | PILE (n)
   ├── Card area: drag/pointer swipe gesture only (no pass/keep buttons)
   │   ├── swipe right / ArrowRight → keep (added to pile with instanceId)
   │   ├── swipe left  / ArrowLeft  → pass
@@ -109,44 +143,57 @@ SwipeScreen  (screen === "swipe", stays mounted hidden when on other tabs)
   └── Done state → "VIEW PILE" button
 
 PileScreen  (screen === "pile")
-  ├── Sticky header: ← (back to swipe) | DECK STACK | 🔍 | ··· (overflow menu)
+  ├── Sticky header: ← | DECK STACK | 🔍 | ··· (overflow menu)
   │   └── ··· menu: COPY LIST | COPY+MOXFIELD | CLEAR PILE
-  ├── Tab bar: DECK (n) | MAYBE (n) — switches active card grid
+  ├── Tab bar: DECK (n) | MAYBE (n)
   ├── Card grid (2-col): tap → lightbox, long-press → toggle Commander (gold outline + 👑)
-  ├── FAB (bottom-right): SWIPE TO REVIEW → opens PileSwipeScreen (deck or maybeboard)
-  └── PileSwipeScreen: full-screen swipe review — keep stays in pile, pass moves to maybeboard (or removes)
+  └── FAB: SWIPE TO REVIEW → opens PileSwipeScreen
+
+PileSwipeScreen  (full-screen overlay)
+  └── Swipe review of pile or maybeboard — keep stays, pass moves to maybeboard (or removes)
+
+QuiverDrawer  (slide-up, opened via BREWS tab in BottomNav)
+  ├── Lists all saved decks with commander art thumbnail, card count, last opened time
+  ├── Tap deck → switch active deck
+  ├── ✕ on deck → confirm → delete
+  ├── NEW BREW button → creates fresh deck
+  └── Sign-in prompt at bottom → opens AuthSheet
+
+AuthSheet  (slide-up)
+  └── Email OTP passwordless auth — sign in to enable cross-device sync via Supabase
 
 SearchSheet  (slide-up, rendered when inSession && swipeMounted)
-  └── Same SearchForm, triggers a new search without clearing pile
+  └── Same SearchForm, triggers new search without clearing pile
 
 ImportSheet  (slide-up from SearchScreen)
-  ├── Moxfield URL input → fetches api.moxfield.com/v2/decks/all/{id}
-  ├── Decklist textarea → parses "1x Name", "1 Name", bare "Name", MTGO/Arena/Moxfield exports
-  ├── // Commander or # Commander section header → sets commander instanceId
-  ├── Resolves names via Scryfall POST /cards/collection (75 per batch)
-  ├── Partial failures shown as amber warning; all errors shown as red inline
+  ├── Moxfield URL → fetches api.moxfield.com/v2/decks/all/{id}
+  ├── Decklist textarea → parses multiple export formats
+  ├── // Commander or # Commander section header → sets commander
+  ├── Resolves via Scryfall POST /cards/collection (75 per batch)
   └── On success: replaces pile, sets commander, navigates to PileScreen
 
-ErrorBoundary  (wraps entire app in main.jsx)
-  └── On crash: shows error message (IBM Plex Mono) + two buttons:
-      ├── RELOAD APP · CLEAR ALL DATA → localStorage.clear() + reload
-      └── KEEP DATA · RELOAD → reload only
+ErrorBoundary  (wraps entire app)
+  └── RELOAD APP · CLEAR ALL DATA  or  KEEP DATA · RELOAD
 ```
 
 ---
 
 ## Navigation Model
 
-Navigation is manual `screen` state (no router). No BottomNav — both SwipeScreen and PileScreen have their own top tab bars.
+Navigation is manual `screen` state (no router library).
+
+**Two nav bars run simultaneously:**
+- **Top tab bar** (inside SwipeScreen/PileScreen): SWIPE | PILE (n)
+- **BottomNav** (fixed, always visible): SWIPE | PILE | BREWS
 
 | From | To | How |
 |---|---|---|
-| SearchScreen | SwipeScreen | SWIPE button (handleSearch) |
-| SearchScreen | PileScreen | IMPORT DECK (handleImport) |
-| SwipeScreen | PileScreen | PILE tab in top tab bar |
-| PileScreen | SwipeScreen | ← back chevron in header |
-| PileScreen | SearchScreen | ← from SwipeScreen → back to search is separate flow |
-| Any (in-session) | new search | 🔍 → SearchSheet → handleSheetSearch (keeps pile) |
+| SearchScreen | SwipeScreen | SWIPE button |
+| SearchScreen | PileScreen | IMPORT DECK |
+| SwipeScreen | PileScreen | PILE tab (top or bottom nav) |
+| PileScreen | SwipeScreen | ← back chevron |
+| Any (in-session) | new search | 🔍 → SearchSheet |
+| Any | QuiverDrawer | BREWS tab in BottomNav |
 
 `SwipeScreen` stays mounted (`display:none`) when navigating away so swipe index and history survive tab switches. `swipeMounted` flag controls this.
 
@@ -156,47 +203,73 @@ Navigation is manual `screen` state (no router). No BottomNav — both SwipeScre
 
 All top-level state lives in `App.jsx`.
 
-| State | Type | Persisted key | Description |
+| State | Type | Persisted | Description |
 |---|---|---|---|
 | `pile` | Card[] | `deckstack_pile` | Kept cards |
 | `commander` | string\|null | `deckstack_commander` | **instanceId** of commander card in pile |
 | `commanderCard` | Card\|null | `deckstack_commander_card` | Full card object for display/filter |
-| `maybeboard` | Card[] | `deckstack_maybeboard` | Maybe board cards |
+| `maybeboard` | Card[] | `deckstack_maybeboard` | Maybeboard cards |
 | `swipeCards` | Card[] | `deckstack_cards` | Current search result queue |
 | `query` | string | `deckstack_query` | Last search query |
 | `screen` | string | `deckstack_screen` | Active screen: search/swipe/pile |
-| `swipeMounted` | bool | — | Keeps SwipeScreen in DOM during tab switches |
+| `swipeMounted` | bool | — | Keeps SwipeScreen in DOM |
 | `swipeKey` | number | — | Forces SwipeScreen remount on new search |
+| `decks` | Deck[] | localStorage + Supabase | All saved brews |
+| `activeDeckId` | string\|null | localStorage | Currently active deck |
+| `authUser` | User\|null | — | Supabase auth session user |
 
 **Important distinctions:**
-- `commander` is an **instanceId string** (used to find the card in pile via `pile.find(c => c.instanceId === commander)`), not a card name.
-- `commanderCard` is the **full card object** used for art display and color identity filtering during search. It does not need to be a pile member.
-- Cards in `pile` and `maybeboard` each have an `instanceId` (via `crypto.randomUUID()`) added at keep-time or import-time to allow duplicate cards and precise removal.
+- `commander` is an **instanceId string**, not a card name. Resolved via `pile.find(c => c.instanceId === commander)`.
+- `commanderCard` is the full card object for art display and color identity filtering. Does not need to be a pile member.
+- Cards in `pile` and `maybeboard` have `instanceId` (via `crypto.randomUUID()`) added at keep/import time.
 
-**Restore-time integrity checks** (`readSaved*` functions):
-- `ensureInstanceIds()` is applied to pile, maybeboard, and swipeCards on restore — any card missing an instanceId gets one assigned (handles data saved before the feature existed).
-- `readSavedCommander(pile)` validates the stored instanceId exists in the restored pile; resets to `null` if not found (prevents dangling references after partial data loss).
+**Restore-time integrity:**
+- `ensureInstanceIds()` applied to pile, maybeboard, swipeCards on restore
+- `readSavedCommander(pile)` validates instanceId exists in restored pile; resets to `null` if not found
+
+---
+
+## Multi-Deck / Brews Architecture
+
+Users can maintain multiple saved decks. The active deck's pile/commander/maybeboard is what's shown in the swipe/pile flow.
+
+- Deck list lives in `decks` state (array of deck objects)
+- Each deck has: `id`, `name`, `pile`, `commander`, `commander_card`, `maybeboard`, `last_opened_at`
+- Switching decks via QuiverDrawer loads that deck's state into the active pile/commander/maybeboard
+- NEW BREW creates a fresh empty deck and switches to it
+- **Local:** decks persisted to localStorage
+- **Cloud:** when signed in, decks synced to Supabase via `lib/db.js`
+
+---
+
+## Auth & Supabase (`lib/auth.js`, `lib/db.js`, `lib/supabase.js`)
+
+- **Client:** initialized in `lib/supabase.js` from `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` env vars
+- **Auth method:** passwordless email OTP (no passwords)
+- **`lib/auth.js`:** sign in, sign out, get session, auth state listener
+- **`lib/db.js`:** save deck, load decks, delete deck — all scoped to authenticated user
+- **Flow:** guest users get localStorage only; signed-in users get cloud sync layered on top
+- **AuthSheet** is the UI entry point — opened from QuiverDrawer's sign-in prompt or elsewhere
 
 ---
 
 ## Scryfall Integration (`lib/scryfall.js`)
 
 - **User-Agent:** `DeckStack/1.0 (deck-stack.vercel.app)`
-- **`fetchForSwipe(query, commanderCard)`** — paginates up to 175 cards, 100ms delay between pages, ordered by EDHREC rank; appends `id<=WUBRG` color identity filter if commanderCard has color_identity
-- **`fetchAllCards(query)`** — full paginator up to 1000 cards (legacy, kept for future use)
-- **`searchCommanders(query)`** — autocomplete for commander search (`is:commander`)
+- **`fetchForSwipe(query, commanderCard)`** — paginates up to 175 cards, 100ms delay between pages, EDHREC rank order; appends color identity filter if commanderCard set
+- **`searchCommanders(query)`** — autocomplete for commander search
 - **`fetchRandomCommander()`** — random commander
 - **`fetchCardByName(name)`** — exact name lookup
 - **`autocompleteCardNames(query)`** — card name autocomplete (max 8)
-- **`buildQuery(filters)`** — assembles Scryfall query string from SearchForm filter state
+- **`buildQuery(filters)`** — assembles Scryfall query from SearchForm filters
 - **`getCardImage(card, size)`** — handles double-faced cards (uses `card_faces[0]`)
-- **`POST /cards/collection`** — used by ImportSheet for bulk name resolution (75 per batch)
+- **`POST /cards/collection`** — bulk name resolution in ImportSheet (75 per batch)
 
 ---
 
 ## WREC Score (`lib/wrec.js`)
 
-Named after Commander content creator Rachel Weeks (@wachelreeks). Measures deck balance against her recommended Commander template.
+Named after Commander content creator Rachel Weeks. Measures deck balance against her recommended Commander template.
 
 | Category | Target |
 |---|---|
@@ -207,42 +280,42 @@ Named after Commander content creator Rachel Weeks (@wachelreeks). Measures deck
 | Mana Base | 38 |
 | Plan | 30 |
 
-- Score of `1.000` is perfect. Over or under is penalized equally.
-- Color coding: green = within ±0.08, amber = within ±0.20, red = outside
-- Cards are tagged with `_deckCategory` property; untagged cards default to "plan"
+- Score of `1.000` = perfect. Over/under penalized equally.
+- Color coding: green = ±0.08, amber = ±0.20, red = outside
+- Cards tagged with `_deckCategory`; untagged cards default to "plan"
 - `buildExport()` outputs Moxfield-compatible format with `#tag` annotations
 
-> ⚠️ WREC/DeckReviewPill with category tagging exists in the codebase but the `_deckCategory` property is **not currently being set** during swipe or import — cards in the pile won't have categories unless this is wired up. This is an open gap.
+> ⚠️ `_deckCategory` is **not currently being set** during swipe or import — WREC scoring and category export don't work end-to-end. This is an open gap.
 
 ---
 
 ## PWA Support
 
-Added via `vite-plugin-pwa`. Configured in `vite.config.js`:
 - Manifest: name "Deck Stack", display standalone, theme/bg `#0d0d0f`
-- Icons: `/icons/icon-192.png` and `/icons/icon-512.png` (programmatically generated — replaceable with better artwork)
-- Service worker: auto-registered in `main.jsx` via `virtual:pwa-register`, mode `generateSW`
-- iOS meta tags in `index.html`: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style: black-translucent`, `apple-touch-icon`
+- Icons: `/icons/icon-192.png` and `/icons/icon-512.png`
+- Service worker: auto-registered in `main.jsx`, mode `generateSW`
+- iOS: `apple-mobile-web-app-capable`, `black-translucent` status bar, `apple-touch-icon`
 
 ---
 
 ## Known Issues / Open Work
 
-- `package.json` name is still `deck-swipe` → update to `deck-stack`
-- GitHub links in `SearchScreen.jsx` footer still point to `kylo-ben/deck-swipe` → update to `commander-zen/deck-stack`
-- `LandingScreen.jsx` exists (commander search + "Build by Strategy" flow) but is **not wired into App.jsx routing** — dead code
-- `_deckCategory` is never set on swiped or imported cards → WREC scoring and category export don't work end-to-end
-- `DeckReviewPill.jsx` exists but may not be rendered in current App.jsx
-- `BottomNav.jsx` still exists as a file (SearchSheet.jsx imports `NAV_HEIGHT` from it) but is not rendered — SearchSheet uses that value for bottom padding; if BottomNav is deleted, SearchSheet will break
+- `pages/` folder contains `CommanderScreen`, `PileScreen`, `SearchScreen`, `SwipeScreen` — believed to be **dead code/legacy**, not wired into App.jsx. Candidate for deletion.
+- `LandingScreen.jsx` in `screens/` — status unclear, may or may not be wired into routing
+- `_deckCategory` never set on swiped or imported cards → WREC end-to-end broken
+- `DeckReviewPill.jsx` exists — verify whether it's rendered in current App.jsx
+- `BottomNav.jsx` imports `NAV_HEIGHT` which `SearchSheet.jsx` also uses — if BottomNav is ever removed, SearchSheet bottom padding will break
 
 ---
 
 ## Conventions
 
 - No CSS framework — all styling is inline React style objects using CSS variables
-- No routing library — screen state is managed manually via `screen` useState
-- No backend — all data is Scryfall API + localStorage
-- Fonts: Bebas Neue for headers/labels, DM Sans for body, IBM Plex Mono for code/mono display
-- Button labels in ALL CAPS with letter-spacing is the design language
+- No routing library — screen state managed manually via `screen` useState
+- No backend for card data — Scryfall API only
+- Supabase used for auth + deck persistence only
+- Fonts: Bebas Neue for headers/labels, DM Sans for body, IBM Plex Mono for mono display
+- Button labels in ALL CAPS with letter-spacing
 - Mobile-first: max-width 430–600px centered, touch events (pointer API), `dvh` units, safe-area insets
-- Sheet components (ImportSheet, SearchSheet) follow the same pattern: fixed backdrop + slide-up panel with drag handle, `zIndex: 200/201`, `cubic-bezier(0.32, 0.72, 0, 1)` transition
+- Sheet components follow same pattern: fixed backdrop + slide-up panel, drag handle, `zIndex: 200/201`, `cubic-bezier(0.32, 0.72, 0, 1)` transition
+- `.claude/settings.local.json` contains approved Claude Code bash permissions for this project
