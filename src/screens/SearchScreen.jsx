@@ -234,6 +234,9 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                     onBlur={() => { setCmdFocused(false); setTimeout(() => setCmdOpen(false), 150); }}
                     placeholder="Search for a commander…"
                     autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                     style={{
                       flex: 1,
                       background: "none", border: "none", outline: "none",
@@ -321,7 +324,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
         </div>
 
         {/* ── Import ── */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 8 }}>
           <button
             onClick={() => setImportOpen(true)}
             style={{
@@ -348,36 +351,14 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           </button>
         </div>
 
-        {/* ── CTA ── */}
-        <div style={{ marginTop: "auto", padding: "16px 0 28px" }}>
-          <button
-            onClick={handleSwipe}
-            disabled={loading}
-            style={{
-              width: "100%",
-              background: loading ? "transparent" : "rgba(91,143,255,0.12)",
-              border: loading ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
-              borderRadius: 16,
-              padding: "18px 24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              cursor: loading ? "default" : "pointer",
-              transition: "background 0.15s",
-            }}
-          >
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 22, letterSpacing: "0.12em",
-              color: loading ? "rgba(255,255,255,0.2)" : "var(--primary)",
-            }}>
-              {loading ? "LOADING…" : "SWIPE"}
-            </span>
-            {!loading && (
-              <span style={{ fontSize: 18, color: "var(--primary)" }}>→</span>
-            )}
-          </button>
+        {/* ── Swipe hint footnote ── */}
+        <div style={{
+          textAlign: "center",
+          fontSize: 12,
+          color: "var(--muted)",
+          marginBottom: 20,
+        }}>
+          ← swipe left to maybe board &nbsp;·&nbsp; swipe right to keep →
         </div>
 
         {/* ── Footer ── */}

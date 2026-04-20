@@ -447,7 +447,7 @@ export default function SwipeScreen({
                 alt={card?.name}
                 draggable={false}
                 style={{
-                  maxHeight: "65dvh", width: "auto",
+                  maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - 108px)`, width: "auto",
                   maxWidth: "min(88vw, 350px)",
                   borderRadius: 14,
                   boxShadow: "0 18px 56px rgba(0,0,0,0.8)",
