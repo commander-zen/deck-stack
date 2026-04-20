@@ -19,6 +19,11 @@ html, body, #root {
   padding: 0;
 }
 
+#root {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 body {
   background: var(--bg);
   color: var(--text);
