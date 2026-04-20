@@ -32,7 +32,7 @@ const inputStyle = {
   border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 10,
   color: "var(--text)",
-  fontSize: 15,
+  fontSize: 16,
   fontFamily: "'DM Sans', sans-serif",
   padding: "11px 13px",
   outline: "none",
@@ -281,7 +281,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
           style={{
             flex: 1, background: "none", border: "none", outline: "none",
             fontFamily: "'DM Sans', sans-serif",
-            fontSize: 15, color: "var(--text)",
+            fontSize: 16, color: "var(--text)",
             caretColor: "var(--primary)",
           }}
         />

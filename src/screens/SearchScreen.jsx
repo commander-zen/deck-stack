@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import SearchForm from "../components/SearchForm.jsx";
-import ImportSheet from "../components/ImportSheet.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
 
@@ -17,47 +16,22 @@ function ColorPip({ color }) {
   );
 }
 
-function StepLabel({ number, children }) {
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "baseline",
-      gap: 6,
-      marginBottom: 8,
-      paddingLeft: 2,
-    }}>
-      <span style={{
-        fontFamily: "'DM Sans', sans-serif",
-        fontSize: 10, fontWeight: 600,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
-        color: "var(--muted)",
-      }}>
-        {number} —
-      </span>
-      <span style={{
-        fontFamily: "'DM Sans', sans-serif",
-        fontSize: 10, fontWeight: 600,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
-        color: "var(--muted)",
-      }}>
-        {children}
-      </span>
-    </div>
-  );
-}
-
-export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange, onImport }) {
-  const [cmdQuery,      setCmdQuery]      = useState("");
-  const [cmdResults,    setCmdResults]    = useState([]);
-  const [cmdOpen,       setCmdOpen]       = useState(false);
-  const [cmdFocused,    setCmdFocused]    = useState(false);
-  const [currentQuery,  setCurrentQuery]  = useState("f:commander");
-  const [importOpen,    setImportOpen]    = useState(false);
+export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange }) {
+  const [cmdQuery,     setCmdQuery]     = useState("");
+  const [cmdResults,   setCmdResults]   = useState([]);
+  const [cmdOpen,      setCmdOpen]      = useState(false);
+  const [cmdFocused,   setCmdFocused]   = useState(false);
+  const [currentQuery, setCurrentQuery] = useState("f:commander");
+  const [cmdExpanded,  setCmdExpanded]  = useState(false);
   const abortRef    = useRef(null);
   const cmdInputRef = useRef(null);
 
+  // Auto-focus commander input when panel opens
+  useEffect(() => {
+    if (cmdExpanded) setTimeout(() => cmdInputRef.current?.focus(), 50);
+  }, [cmdExpanded]);
+
+  // Commander autocomplete
   useEffect(() => {
     if (!cmdQuery.trim()) {
       setCmdResults([]);
@@ -82,18 +56,26 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     setCmdQuery("");
     setCmdResults([]);
     setCmdOpen(false);
+    setCmdExpanded(false);
   }
 
-  function handleSwipe() {
+  function handlePillClick() {
+    if (commanderCard) {
+      onCommanderCardChange(null);
+      setCmdExpanded(true);
+    } else {
+      setCmdExpanded(e => !e);
+    }
+  }
+
+  function handleSearch() {
     if (loading) return;
     onSearch(currentQuery.trim());
   }
 
   const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
-  const hasCommander = !!commanderCard || cmdQuery.trim().length > 0;
 
   return (
-    <>
     <div style={{
       minHeight: "100dvh",
       background: "var(--bg)",
@@ -113,208 +95,187 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
         flex: 1,
       }}>
 
-        {/* ── Header ── */}
-        <div style={{
-          padding: "52px 0 24px",
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: 12,
-        }}>
+        {/* ── Title ── */}
+        <div style={{ padding: "48px 0 20px" }}>
           <div style={{
             fontFamily: "'Bebas Neue', sans-serif",
             fontSize: 48, lineHeight: 1,
             letterSpacing: "0.04em",
             color: "var(--text)",
-            flexShrink: 0,
           }}>
             DECK STACK
           </div>
+        </div>
+
+        {/* ── Hero area ── */}
+        <div style={{
+          position: "relative",
+          width: "100%",
+          height: 220,
+          background: "var(--panel)",
+          borderRadius: 16,
+          marginBottom: 36,
+          overflow: "visible",
+          flexShrink: 0,
+        }}>
+          {/* Commander pill — floating at bottom edge */}
           <button
-            onClick={() => commanderCard ? onCommanderCardChange(null) : cmdInputRef.current?.focus()}
+            onClick={handlePillClick}
             style={{
-              background: commanderCard ? "rgba(167,139,250,0.12)" : "transparent",
-              border: `1px solid ${commanderCard ? "rgba(167,139,250,0.45)" : "rgba(255,255,255,0.14)"}`,
+              position: "absolute",
+              bottom: -18,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: commanderCard ? "rgba(167,139,250,0.15)" : "rgba(13,13,15,0.92)",
+              border: `1px solid ${commanderCard ? "rgba(167,139,250,0.5)" : "rgba(255,255,255,0.18)"}`,
               borderRadius: 20,
-              padding: "6px 12px 6px 9px",
+              padding: "8px 16px 8px 12px",
               display: "flex",
               alignItems: "center",
-              gap: 5,
+              gap: 7,
               cursor: "pointer",
-              maxWidth: 160,
-              flexShrink: 0,
-              marginBottom: 3,
+              backdropFilter: "blur(8px)",
+              whiteSpace: "nowrap",
+              maxWidth: "calc(100% - 40px)",
+              transition: "border-color 0.2s, background 0.2s",
             }}
           >
-            <span style={{ fontSize: 13, lineHeight: 1 }}>👑</span>
+            {commanderCard && artUrl ? (
+              <img
+                src={artUrl}
+                alt={commanderCard.name}
+                draggable={false}
+                style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3, flexShrink: 0 }}
+              />
+            ) : (
+              <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>👑</span>
+            )}
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12,
+              fontSize: 13,
               color: commanderCard ? "var(--secondary)" : "var(--muted)",
-              whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              maxWidth: 108,
             }}>
               {commanderCard ? commanderCard.name : "Set commander…"}
             </span>
+            {commanderCard && (
+              <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0, marginLeft: 2 }}>✕</span>
+            )}
           </button>
         </div>
 
-        {/* ── Step 1: Commander ── */}
-        <div style={{ marginBottom: 20 }}>
-          <StepLabel number="1">
-            Commander{" "}
-            <span style={{ color: "rgba(85,85,102,0.7)", fontWeight: 400, letterSpacing: 0, textTransform: "none" }}>
-              (optional)
-            </span>
-          </StepLabel>
-
-          {/* Commander card */}
-          <div style={{
-            background: hasCommander
-              ? "linear-gradient(135deg, #1a1730 0%, #16161a 60%)"
-              : "var(--panel)",
-            border: `1px solid ${hasCommander ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.07)"}`,
-            borderRadius: 14,
-            overflow: "visible",
-            transition: "border-color 0.2s, background 0.2s",
-          }}>
-            {commanderCard ? (
-              /* Selected state */
+        {/* ── Commander search panel (expanded) ── */}
+        {cmdExpanded && (
+          <div style={{ marginBottom: 16, position: "relative" }}>
+            <div style={{
+              background: "var(--panel)",
+              border: "1px solid rgba(167,139,250,0.35)",
+              borderRadius: 14,
+            }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
-                {artUrl && (
-                  <img
-                    src={artUrl}
-                    alt={commanderCard.name}
-                    draggable={false}
-                    style={{ width: 68, height: 48, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
-                  />
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 14, color: "var(--text)", fontWeight: 500,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
-                    {commanderCard.name}
-                  </div>
-                  <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
-                    {commanderCard.color_identity?.length > 0
-                      ? commanderCard.color_identity.map(c => <ColorPip key={c} color={c} />)
-                      : <span style={{ fontSize: 11, color: "var(--muted)" }}>Colorless</span>
-                    }
-                  </div>
-                </div>
+                <span style={{
+                  fontSize: 16, flexShrink: 0,
+                  opacity: cmdFocused || cmdQuery ? 1 : 0.45,
+                  transition: "opacity 0.15s",
+                }}>
+                  👑
+                </span>
+                <input
+                  ref={cmdInputRef}
+                  type="text"
+                  value={cmdQuery}
+                  onChange={e => setCmdQuery(e.target.value)}
+                  onFocus={() => { setCmdFocused(true); cmdResults.length > 0 && setCmdOpen(true); }}
+                  onBlur={() => { setCmdFocused(false); setTimeout(() => setCmdOpen(false), 150); }}
+                  placeholder="Search for a commander…"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  style={{
+                    flex: 1,
+                    background: "none", border: "none", outline: "none",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 16, color: "var(--text)",
+                    caretColor: "var(--secondary)",
+                  }}
+                />
                 <button
-                  onClick={() => onCommanderCardChange(null)}
+                  onClick={() => { setCmdExpanded(false); setCmdQuery(""); setCmdResults([]); }}
                   style={{
                     background: "transparent", border: "none",
                     color: "var(--muted)", cursor: "pointer",
-                    fontSize: 16, padding: "4px", lineHeight: 1, flexShrink: 0,
+                    fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
                   }}
                 >✕</button>
               </div>
-            ) : (
-              /* Search input state */
-              <div style={{ position: "relative" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
-                  <span style={{
-                    fontSize: 18, flexShrink: 0,
-                    opacity: cmdFocused || cmdQuery ? 1 : 0.45,
-                    transition: "opacity 0.15s",
-                  }}>
-                    👑
-                  </span>
-                  <input
-                    ref={cmdInputRef}
-                    type="text"
-                    value={cmdQuery}
-                    onChange={e => setCmdQuery(e.target.value)}
-                    onFocus={() => { setCmdFocused(true); cmdResults.length > 0 && setCmdOpen(true); }}
-                    onBlur={() => { setCmdFocused(false); setTimeout(() => setCmdOpen(false), 150); }}
-                    placeholder="Search for a commander…"
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    style={{
-                      flex: 1,
-                      background: "none", border: "none", outline: "none",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 15, color: "var(--text)",
-                      caretColor: "var(--secondary)",
-                    }}
-                  />
-                </div>
 
-                {/* Dropdown */}
-                {cmdOpen && cmdResults.length > 0 && (
-                  <div style={{
-                    position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
-                    background: "var(--panel2)", borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    overflow: "hidden", zIndex: 50,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-                  }}>
-                    {cmdResults.map(card => {
-                      const thumb = getCardImage(card, "art_crop");
-                      return (
-                        <div
-                          key={card.id}
-                          onMouseDown={() => selectCommander(card)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 10,
-                            padding: "8px 12px", cursor: "pointer",
-                            borderBottom: "1px solid rgba(255,255,255,0.05)",
-                          }}
-                          onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                          onMouseOut={e => e.currentTarget.style.background = "transparent"}
-                        >
-                          {thumb && (
-                            <img
-                              src={thumb}
-                              alt={card.name}
-                              draggable={false}
-                              style={{ width: 48, height: 34, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
-                            />
-                          )}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              fontSize: 13, color: "var(--text)",
-                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                            }}>
-                              {card.name}
-                            </div>
-                            <div style={{ display: "flex", gap: 3, marginTop: 3 }}>
-                              {card.color_identity?.map(c => <ColorPip key={c} color={c} />)}
-                            </div>
+              {/* Dropdown */}
+              {cmdOpen && cmdResults.length > 0 && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+                  background: "var(--panel2)", borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  overflow: "hidden", zIndex: 50,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                }}>
+                  {cmdResults.map(card => {
+                    const thumb = getCardImage(card, "art_crop");
+                    return (
+                      <div
+                        key={card.id}
+                        onMouseDown={() => selectCommander(card)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "8px 12px", cursor: "pointer",
+                          borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        }}
+                        onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                        onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        {thumb && (
+                          <img
+                            src={thumb}
+                            alt={card.name}
+                            draggable={false}
+                            style={{ width: 48, height: 34, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+                          />
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 13, color: "var(--text)",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {card.name}
+                          </div>
+                          <div style={{ display: "flex", gap: 3, marginTop: 3 }}>
+                            {card.color_identity?.map(c => <ColorPip key={c} color={c} />)}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Hint text */}
-                <div style={{
-                  fontSize: 11.5,
-                  color: cmdQuery.trim() ? "var(--secondary)" : "var(--text2)",
-                  padding: "0 16px 12px",
-                  transition: "color 0.15s",
-                }}>
-                  {cmdQuery.trim()
-                    ? "✦ Color identity filter will be applied"
-                    : "Sets color identity filter — only matching cards will appear"
-                  }
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
+              )}
 
-        {/* ── Step 2: Search ── */}
-        <div style={{ marginBottom: 20 }}>
-          <StepLabel number="2">What cards to swipe</StepLabel>
+              <div style={{
+                fontSize: 11.5,
+                color: cmdQuery.trim() ? "var(--secondary)" : "var(--muted)",
+                padding: "0 14px 10px",
+                transition: "color 0.15s",
+              }}>
+                {cmdQuery.trim()
+                  ? "✦ Color identity filter will be applied"
+                  : "Sets color identity filter — only matching cards will appear"
+                }
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Scryfall search + Filters ── */}
+        <div style={{ marginBottom: 14 }}>
           <SearchForm
             onSearch={onSearch}
             onQueryChange={setCurrentQuery}
@@ -323,77 +284,76 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           />
         </div>
 
-        {/* ── Import ── */}
-        <div style={{ marginBottom: 8 }}>
+        {/* ── SEARCH CTA ── */}
+        <div style={{ marginBottom: 10 }}>
           <button
-            onClick={() => setImportOpen(true)}
+            onClick={handleSearch}
+            disabled={loading}
             style={{
               width: "100%",
-              background: "transparent",
-              border: "1.5px solid rgba(167,139,250,0.35)",
-              borderRadius: 14,
-              padding: "14px 20px",
+              background: loading ? "transparent" : "rgba(91,143,255,0.12)",
+              border: loading ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
+              borderRadius: 16,
+              padding: "18px 24px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
-              cursor: "pointer",
+              gap: 10,
+              cursor: loading ? "default" : "pointer",
+              transition: "background 0.15s",
             }}
           >
-            <span style={{ fontSize: 15, color: "var(--secondary)", opacity: 0.8 }}>↓</span>
             <span style={{
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 16, letterSpacing: "0.12em",
-              color: "var(--secondary)",
+              fontSize: 22, letterSpacing: "0.12em",
+              color: loading ? "rgba(255,255,255,0.2)" : "var(--primary)",
             }}>
-              IMPORT DECK
+              {loading ? "LOADING…" : "SEARCH"}
             </span>
           </button>
         </div>
 
-        {/* ── Swipe hint footnote ── */}
+        {/* ── Hint text ── */}
         <div style={{
           textAlign: "center",
           fontSize: 12,
           color: "var(--muted)",
           marginBottom: 20,
         }}>
-          ← swipe left to maybe board &nbsp;·&nbsp; swipe right to keep →
+          ← swipe left to yeet &nbsp;·&nbsp; swipe right to keep →
         </div>
 
         {/* ── Footer ── */}
         <div style={{
+          marginTop: "auto",
           display: "flex",
           justifyContent: "center",
           gap: 20,
           paddingBottom: 28,
         }}>
-          {[
-            { label: "GitHub",       href: "https://github.com/commander-zen/deck-stack" },
-            { label: "Report a Bug", href: "https://github.com/commander-zen/deck-stack/issues/new?labels=bug&template=bug_report.md" },
-          ].map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
-              onMouseOver={e => e.currentTarget.style.color = "var(--text2)"}
-              onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
-            >
-              {label}
-            </a>
-          ))}
+          <a
+            href="https://bsky.app/profile/commanderzen.bsky.social"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
+            onMouseOver={e => e.currentTarget.style.color = "var(--text)"}
+            onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
+          >
+            reach out @commanderzen
+          </a>
+          <a
+            href="https://github.com/commander-zen/deck-stack/issues/new?labels=bug&template=bug_report.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
+            onMouseOver={e => e.currentTarget.style.color = "var(--text)"}
+            onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
+          >
+            Report a Bug
+          </a>
         </div>
 
       </div>
     </div>
-
-    <ImportSheet
-      open={importOpen}
-      onClose={() => setImportOpen(false)}
-      onImport={onImport}
-    />
-    </>
   );
 }

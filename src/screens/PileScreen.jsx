@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
@@ -12,13 +12,12 @@ function buildExportText(pile, commander) {
   return pile.map(c => `1 ${c.name}`).join("\n");
 }
 
-function GridIcon({ color }) {
+function ImageIcon({ color }) {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="9" rx="1.5"/>
-      <rect x="14" y="3" width="7" height="9" rx="1.5"/>
-      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="4" width="18" height="16" rx="2"/>
+      <circle cx="8.5" cy="9.5" r="1.5" fill={color} stroke="none"/>
+      <polyline points="3,16 8,11 12,15 15.5,11.5 21,16"/>
     </svg>
   );
 }
@@ -40,6 +39,10 @@ export default function PileScreen({
 }) {
   const [viewMode,   setViewMode]   = useState("list");
   const [activeTab,  setActiveTab]  = useState(initialTab ?? "deck");
+
+  useEffect(() => {
+    setActiveTab(initialTab ?? "deck");
+  }, [initialTab]);
   const [reviewMode, setReviewMode] = useState(null);
   const [lightbox,   setLightbox]   = useState(null);
   const [copied,     setCopied]     = useState(false);
@@ -59,7 +62,7 @@ export default function PileScreen({
 
   const commanderName = reviewCommanderCard?.name ?? null;
 
-  const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 76px)`;
+  const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 120px)`;
   const fabBottom  = `calc(max(14px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 10px)`;
 
   // ── Card interactions ──────────────────────────────────────────────────────
@@ -266,7 +269,7 @@ export default function PileScreen({
 
       {/* ── Sticky header ── */}
       <div style={{
-        position: "sticky", top: 0, zIndex: 100,
+        position: "sticky", top: "env(safe-area-inset-top)", zIndex: 100,
         maxWidth: 600, margin: "0 auto", width: "100%",
         background: "rgba(13,13,15,0.96)",
         backdropFilter: "blur(12px)",
@@ -325,7 +328,7 @@ export default function PileScreen({
             }}
             title={viewMode === "list" ? "Switch to grid" : "Switch to list"}
           >
-            {viewMode === "list" ? <GridIcon color="rgba(255,255,255,0.45)" /> : <ListIcon color="rgba(255,255,255,0.45)" />}
+            {viewMode === "list" ? <ImageIcon color="rgba(255,255,255,0.45)" /> : <ListIcon color="rgba(255,255,255,0.45)" />}
           </button>
 
           {/* Export button */}

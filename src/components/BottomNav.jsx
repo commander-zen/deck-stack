@@ -27,11 +27,12 @@ function MaybeIcon({ color }) {
   );
 }
 
-function ProfileIcon({ color }) {
+function BrewsIcon({ color }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="4"/>
-      <path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/>
+      <rect x="5" y="6" width="13" height="16" rx="2"/>
+      <path d="M8 3h10a2 2 0 0 1 2 2v13" strokeOpacity="0.55"/>
+      <path d="M11 1h7a2 2 0 0 1 2 2v10" strokeOpacity="0.28"/>
     </svg>
   );
 }
@@ -41,10 +42,10 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
   const inactive = "rgba(255,255,255,0.35)";
 
   const tabs = [
-    { id: "stack",   label: "STACK",   Icon: StackIcon,   isActive: screen === "search" || screen === "swipe", onClick: onGoToStack },
-    { id: "pile",    label: "PILE",    Icon: PileIcon,    isActive: screen === "pile",   onClick: onGoToPile },
-    { id: "maybe",   label: "MAYBE",   Icon: MaybeIcon,   isActive: screen === "maybe",  onClick: onGoToMaybe },
-    { id: "profile", label: "PROFILE", Icon: ProfileIcon, isActive: screen === "brews",  onClick: onGoToProfile },
+    { id: "stack", label: "STACK", Icon: StackIcon, isActive: screen === "search" || screen === "swipe", onClick: onGoToStack },
+    { id: "pile",  label: "PILE",  Icon: PileIcon,  isActive: screen === "pile",  onClick: onGoToPile },
+    { id: "maybe", label: "MAYBE", Icon: MaybeIcon, isActive: screen === "maybe", onClick: onGoToMaybe },
+    { id: "brews", label: "BREWS", Icon: BrewsIcon, isActive: screen === "brews", onClick: onGoToProfile },
   ];
 
   return (

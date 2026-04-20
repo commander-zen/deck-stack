@@ -234,7 +234,7 @@ export default function SwipeScreen({
                   border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: 8, padding: "5px 10px",
                   fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13, color: "var(--text)",
+                  fontSize: 16, color: "var(--text)",
                   outline: "none", caretColor: "var(--secondary)",
                 }}
               />
