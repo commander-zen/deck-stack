@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import SearchForm from "../components/SearchForm.jsx";
 import ImportSheet from "../components/ImportSheet.jsx";
+import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
 
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
@@ -54,7 +55,8 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   const [cmdFocused,    setCmdFocused]    = useState(false);
   const [currentQuery,  setCurrentQuery]  = useState("f:commander");
   const [importOpen,    setImportOpen]    = useState(false);
-  const abortRef = useRef(null);
+  const abortRef    = useRef(null);
+  const cmdInputRef = useRef(null);
 
   useEffect(() => {
     if (!cmdQuery.trim()) {
@@ -100,6 +102,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      paddingBottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
     }}>
       <div style={{
         width: "100%",
@@ -111,33 +114,51 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
       }}>
 
         {/* ── Header ── */}
-        <div style={{ padding: "52px 0 32px" }}>
+        <div style={{
+          padding: "52px 0 24px",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          gap: 12,
+        }}>
           <div style={{
             fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 56, lineHeight: 1,
+            fontSize: 48, lineHeight: 1,
             letterSpacing: "0.04em",
             color: "var(--text)",
-            marginBottom: 6,
+            flexShrink: 0,
           }}>
             DECK STACK
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 13, color: "var(--text2)", letterSpacing: "0.01em" }}>
-              Swipe cards · Build your deck
-            </span>
+          <button
+            onClick={() => commanderCard ? onCommanderCardChange(null) : cmdInputRef.current?.focus()}
+            style={{
+              background: commanderCard ? "rgba(167,139,250,0.12)" : "transparent",
+              border: `1px solid ${commanderCard ? "rgba(167,139,250,0.45)" : "rgba(255,255,255,0.14)"}`,
+              borderRadius: 20,
+              padding: "6px 12px 6px 9px",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              cursor: "pointer",
+              maxWidth: 160,
+              flexShrink: 0,
+              marginBottom: 3,
+            }}
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>👑</span>
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 10, fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--primary)",
-              border: "1px solid rgba(91,143,255,0.35)",
-              borderRadius: 4,
-              padding: "2px 7px",
+              fontSize: 12,
+              color: commanderCard ? "var(--secondary)" : "var(--muted)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: 108,
             }}>
-              Commander
+              {commanderCard ? commanderCard.name : "Set commander…"}
             </span>
-          </div>
+          </button>
         </div>
 
         {/* ── Step 1: Commander ── */}
@@ -205,6 +226,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                     👑
                   </span>
                   <input
+                    ref={cmdInputRef}
                     type="text"
                     value={cmdQuery}
                     onChange={e => setCmdQuery(e.target.value)}

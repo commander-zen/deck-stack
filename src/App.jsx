@@ -315,8 +315,7 @@ export default function App() {
 
   function goToProfile() { setScreen("brews"); }
 
-  // Show nav whenever there is an active deck (even on search screen mid-session)
-  const showNav = activeDeckId !== null || swipeMounted || pile.length > 0 || decks.length > 0;
+  const showNav = true;
 
   if (!appReady) {
     return (
