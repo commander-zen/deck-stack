@@ -31,7 +31,7 @@ export default function SwipeScreen({
 
   // Onboarding tip
   const [showTip,    setShowTip]    = useState(false);
-  const [tipDismiss, setTipDismiss] = useState(false); // permanent dismiss in flight
+  const [tipDismiss, setTipDismiss] = useState(false);
   const tipShownRef = useRef(false);
 
   const didMountRef = useRef(false);
@@ -39,6 +39,13 @@ export default function SwipeScreen({
 
   const card = cards[idx] ?? null;
   const done = idx >= cards.length;
+
+  useEffect(() => {
+    if (!localStorage.getItem(TIP_KEY)) {
+      tipShownRef.current = true;
+      setShowTip(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!didMountRef.current) { didMountRef.current = true; return; }
@@ -106,10 +113,6 @@ export default function SwipeScreen({
 
     if (keep) {
       haptic(12);
-      if (!tipShownRef.current && !localStorage.getItem(TIP_KEY)) {
-        tipShownRef.current = true;
-        setShowTip(true);
-      }
     } else {
       haptic(6);
     }
@@ -177,8 +180,8 @@ export default function SwipeScreen({
 
   return (
     <div style={{
-      height: `calc(100dvh - ${NAV_HEIGHT}px)`,
-      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px)`,
+      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
       background: "var(--bg)",
       display: "flex", flexDirection: "column",
       fontFamily: "'DM Sans', sans-serif",
