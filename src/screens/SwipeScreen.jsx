@@ -106,11 +106,9 @@ export default function SwipeScreen({
 
     if (keep) {
       haptic(12);
-      // Show onboarding tip once
       if (!tipShownRef.current && !localStorage.getItem(TIP_KEY)) {
         tipShownRef.current = true;
         setShowTip(true);
-        setTimeout(() => setShowTip(false), 2200);
       }
     } else {
       haptic(6);
@@ -471,7 +469,7 @@ export default function SwipeScreen({
       {/* ── Onboarding tip overlay ── */}
       {showTip && (
         <div
-          onClick={() => setShowTip(false)}
+          onClick={dismissTipForever}
           style={{
             position: "absolute", inset: 0, zIndex: 300,
             background: "rgba(0,0,0,0.72)",
@@ -518,18 +516,14 @@ export default function SwipeScreen({
           <button
             onClick={e => { e.stopPropagation(); dismissTipForever(); }}
             style={{
-              background: "transparent", border: "none",
-              color: "rgba(255,255,255,0.3)", cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 12, padding: "8px 16px",
+              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 8, color: "rgba(255,255,255,0.7)", cursor: "pointer",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 14, letterSpacing: 3, padding: "10px 28px",
             }}
           >
-            Don't show again
+            GOT IT
           </button>
-
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
-            Tap anywhere to dismiss
-          </div>
         </div>
       )}
     </div>
