@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
+import ImportSheet from "../components/ImportSheet.jsx";
 
 function relativeTime(isoString) {
   if (!isoString) return "";
@@ -16,8 +17,9 @@ function relativeTime(isoString) {
   return new Date(isoString).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDelete, authUser, onOpenAuth }) {
+export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDelete, authUser, onOpenAuth, onImport }) {
   const [confirmId, setConfirmId] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   function handleSwitch(id) {
     onSwitch(id);
@@ -73,12 +75,12 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
         paddingBottom: bottomPad,
       }}>
 
-        {/* NEW BREW */}
-        <div style={{ padding: "14px 18px 0" }}>
+        {/* NEW BREW + IMPORT DECK */}
+        <div style={{ padding: "14px 18px 0", display: "flex", gap: 10 }}>
           <button
             onClick={onNew}
             style={{
-              width: "100%",
+              flex: 1,
               padding: "13px 20px",
               border: "1.5px solid rgba(91,143,255,0.35)",
               borderRadius: 12,
@@ -91,6 +93,23 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
             }}
           >
             + NEW BREW
+          </button>
+          <button
+            onClick={() => setImportOpen(true)}
+            style={{
+              flex: 1,
+              padding: "13px 20px",
+              border: "1.5px solid rgba(167,139,250,0.35)",
+              borderRadius: 12,
+              background: "transparent",
+              color: "var(--secondary)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 16, letterSpacing: 3,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}
+          >
+            IMPORT
           </button>
         </div>
 
@@ -229,6 +248,15 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
           })
         )}
       </div>
+
+      <ImportSheet
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={(pile, commanderCard) => {
+          setImportOpen(false);
+          onImport?.(pile, commanderCard);
+        }}
+      />
     </div>
   );
 }

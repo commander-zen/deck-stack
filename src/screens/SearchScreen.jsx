@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import SearchForm from "../components/SearchForm.jsx";
-import ImportSheet from "../components/ImportSheet.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
 
@@ -17,15 +16,14 @@ function ColorPip({ color }) {
   );
 }
 
-export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange, onImport }) {
+export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange }) {
   const [cmdQuery,     setCmdQuery]     = useState("");
   const [cmdResults,   setCmdResults]   = useState([]);
   const [cmdOpen,      setCmdOpen]      = useState(false);
   const [cmdFocused,   setCmdFocused]   = useState(false);
   const [currentQuery, setCurrentQuery] = useState("f:commander");
   const [cmdExpanded,  setCmdExpanded]  = useState(false);
-  const [importOpen,   setImportOpen]   = useState(false);
-  const abortRef    = useRef(null);
+const abortRef    = useRef(null);
   const cmdInputRef = useRef(null);
 
   // Auto-focus commander input when panel opens
@@ -169,16 +167,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               transition: "border-color 0.2s, background 0.2s",
             }}
           >
-            {commanderCard && artUrl ? (
-              <img
-                src={artUrl}
-                alt={commanderCard.name}
-                draggable={false}
-                style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3, flexShrink: 0 }}
-              />
-            ) : (
-              <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>👑</span>
-            )}
+            <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>👑</span>
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 13,
@@ -342,36 +331,6 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           </button>
         </div>
 
-        {/* ── IMPORT DECK ── */}
-        <div style={{ marginBottom: 14 }}>
-          <button
-            onClick={() => setImportOpen(true)}
-            style={{
-              width: "100%",
-              background: "transparent",
-              border: "1.5px solid rgba(167,139,250,0.35)",
-              borderRadius: 16,
-              padding: "14px 24px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              cursor: "pointer",
-              transition: "border-color 0.15s",
-            }}
-            onMouseOver={e => e.currentTarget.style.borderColor = "var(--secondary)"}
-            onMouseOut={e => e.currentTarget.style.borderColor = "rgba(167,139,250,0.35)"}
-          >
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 18, letterSpacing: "0.12em",
-              color: "var(--secondary)",
-            }}>
-              IMPORT DECK
-            </span>
-          </button>
-        </div>
-
         {/* ── Hint text ── */}
         <div style={{
           textAlign: "center",
@@ -414,14 +373,6 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
 
       </div>
 
-      <ImportSheet
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImport={(pile, commanderCard) => {
-          setImportOpen(false);
-          onImport?.(pile, commanderCard);
-        }}
-      />
     </div>
   );
 }

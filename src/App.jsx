@@ -377,7 +377,6 @@ export default function App() {
           error={error}
           commanderCard={commanderCard}
           onCommanderCardChange={setCommanderCard}
-          onImport={handleImport}
         />
       )}
 
@@ -420,6 +419,7 @@ export default function App() {
           onDelete={handleDeleteDeck}
           authUser={authUser}
           onOpenAuth={() => setAuthSheetOpen(true)}
+          onImport={handleImport}
         />
       )}
 
