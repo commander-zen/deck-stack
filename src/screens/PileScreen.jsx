@@ -15,9 +15,9 @@ function buildExportText(pile, commander) {
 function ImageIcon({ color }) {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="16" rx="2"/>
-      <circle cx="8.5" cy="9.5" r="1.5" fill={color} stroke="none"/>
-      <polyline points="3,16 8,11 12,15 15.5,11.5 21,16"/>
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill={color} stroke="none"/>
+      <polyline points="21,15 16,10 5,21"/>
     </svg>
   );
 }
@@ -420,11 +420,11 @@ export default function PileScreen({
             textAlign: "center", padding: "72px 20px",
             color: "rgba(255,255,255,0.35)", fontSize: 14,
           }}>
-            {activeTab === "deck" ? "Your stack is empty" : "Your maybeboard is empty"}
+            {activeTab === "deck" ? "Your pile is empty" : "Your maybeboard is empty"}
             <br />
             <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
               {activeTab === "deck"
-                ? "Swipe right to keep cards"
+                ? "Keep cards on the Stack to add them here"
                 : "Swipe left while reviewing your deck to send cards here"}
             </span>
           </div>

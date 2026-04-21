@@ -33,7 +33,8 @@ export default function App() {
   const [swipeCards,    setSwipeCards]    = useState([]);
   const [swipeIndex,    setSwipeIndex]    = useState(0);
   const [swipeMounted,  setSwipeMounted]  = useState(false);
-  const [swipeKey,      setSwipeKey]      = useState(0);
+  const [swipeKey,          setSwipeKey]          = useState(0);
+  const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
@@ -46,6 +47,13 @@ export default function App() {
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
   stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser };
+
+  // Grow the visible swipe batch as the user approaches the end of the current window
+  useEffect(() => {
+    if (swipeIndex >= swipeDisplayLimit - 5 && swipeDisplayLimit < swipeCards.length) {
+      setSwipeDisplayLimit(l => Math.min(l + 20, swipeCards.length));
+    }
+  }, [swipeIndex, swipeCards.length, swipeDisplayLimit]);
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -82,6 +90,7 @@ export default function App() {
     setPile(p);
     setSwipeCards(sc);
     setSwipeIndex(si);
+    setSwipeDisplayLimit(Math.min(Math.max(20, si + 20), sc.length || 20));
     setMaybeboard(mb);
     setQuery(deck.query || "");
     setCommanderCard(deck.commander_card || null);
@@ -192,7 +201,7 @@ export default function App() {
       };
 
       setPile([]); setCommander(null); setMaybeboard([]);
-      setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0);
+      setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0); setSwipeDisplayLimit(20);
       setActiveDeckId(newDeckId);
       setDecks(ds => [newDeck, ...ds]);
       setSwipeMounted(true);
@@ -376,7 +385,7 @@ export default function App() {
         <div style={{ display: screen === "swipe" ? "block" : "none" }}>
           <SwipeScreen
             key={swipeKey}
-            cards={swipeCards}
+            cards={swipeCards.slice(0, swipeDisplayLimit)}
             pile={pile}
             onPileChange={setPile}
             onGoToPile={goToPile}

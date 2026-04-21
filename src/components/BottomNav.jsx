@@ -30,9 +30,9 @@ function MaybeIcon({ color }) {
 function BrewsIcon({ color }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="6" width="13" height="16" rx="2"/>
-      <path d="M8 3h10a2 2 0 0 1 2 2v13" strokeOpacity="0.55"/>
-      <path d="M11 1h7a2 2 0 0 1 2 2v10" strokeOpacity="0.28"/>
+      <path d="M9 3h6"/>
+      <path d="M9 3v5l-4.5 7A2 2 0 0 0 6.22 18h11.56a2 2 0 0 0 1.72-3L15 8V3"/>
+      <path d="M6.5 13.5h11"/>
     </svg>
   );
 }
