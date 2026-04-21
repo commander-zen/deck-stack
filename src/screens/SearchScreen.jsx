@@ -120,6 +120,33 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           overflow: "visible",
           flexShrink: 0,
         }}>
+          {/* Art image — clipped separately so pill can overflow below */}
+          <div style={{
+            position: "absolute", inset: 0,
+            borderRadius: 16, overflow: "hidden",
+            background: "var(--panel)",
+          }}>
+            {artUrl && (
+              <img
+                src={artUrl}
+                alt={commanderCard?.name}
+                draggable={false}
+                style={{
+                  width: "100%", height: "100%",
+                  objectFit: "cover", objectPosition: "center top",
+                  display: "block",
+                  transition: "opacity 0.3s ease",
+                }}
+              />
+            )}
+            {artUrl && (
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(to bottom, rgba(13,13,15,0.1) 50%, rgba(13,13,15,0.7) 100%)",
+              }} />
+            )}
+          </div>
+
           {/* Commander pill — floating at bottom edge */}
           <button
             onClick={handlePillClick}
