@@ -1,15 +1,13 @@
 import { supabase } from "./supabase.js";
 
-export async function signInWithEmail(email) {
+export async function signInWithGoogle() {
   if (!supabase) throw new Error("Supabase not configured");
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: true,
-      emailRedirectTo: window.location.hostname === "localhost"
-        ? window.location.origin
-        : "https://deck-stack.vercel.app",
-    },
+  const redirectTo = window.location.hostname === "localhost"
+    ? window.location.origin
+    : "https://deck-stack.vercel.app";
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo },
   });
   if (error) throw error;
 }
