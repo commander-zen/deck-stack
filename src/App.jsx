@@ -5,7 +5,7 @@ import PileScreen    from "./screens/PileScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
 import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav     from "./components/BottomNav.jsx";
-import { fetchForSwipe } from "./lib/scryfall.js";
+import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js";
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
 import { getSession, onAuthChange } from "./lib/auth.js";
 
@@ -40,6 +40,8 @@ export default function App() {
   const [error,         setError]         = useState(null);
   const [authUser,      setAuthUser]      = useState(null);
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
+
+  const bgFetchAbort = useRef(null);
 
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
@@ -154,8 +156,13 @@ export default function App() {
   // ── Search: new deck ──────────────────────────────────────────────────────
   async function handleSearch(q) {
     setLoading(true); setError(null);
+
+    // cancel any in-flight background fetch from a prior search
+    bgFetchAbort.current?.abort();
+    bgFetchAbort.current = null;
+
     try {
-      const cards = await fetchForSwipe(q, commanderCard);
+      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, commanderCard);
 
       // flush current deck
       if (sessionId && activeDeckId) {
@@ -178,24 +185,41 @@ export default function App() {
         commander_name: commanderCard?.name ?? null,
         commander_instance_id: null,
         commander_card: commanderCard ?? null,
-        pile: [], maybeboard: [], swipe_cards: cards,
+        pile: [], maybeboard: [], swipe_cards: firstCards,
         swipe_index: 0, query: q,
         last_opened_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
       };
 
       setPile([]); setCommander(null); setMaybeboard([]);
-      setQuery(q); setSwipeCards(cards); setSwipeIndex(0);
+      setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0);
       setActiveDeckId(newDeckId);
       setDecks(ds => [newDeck, ...ds]);
       setSwipeMounted(true);
       setSwipeKey(k => k + 1);
       setScreen("swipe");
+      setLoading(false);
 
       if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
+
+      // Background-fetch remaining Scryfall pages (up to 175 total)
+      if (nextPage) {
+        const ctrl = new AbortController();
+        bgFetchAbort.current = ctrl;
+        const CAP = 175;
+        let url = nextPage;
+        let all = [...firstCards];
+        while (url && all.length < CAP && !ctrl.signal.aborted) {
+          await new Promise(r => setTimeout(r, 100));
+          const { cards: more, nextPage: next } = await fetchContinuationPage(url, { signal: ctrl.signal });
+          if (ctrl.signal.aborted) break;
+          all = [...all, ...more].slice(0, CAP);
+          setSwipeCards([...all]);
+          url = next && all.length < CAP ? next : null;
+        }
+      }
     } catch (err) {
-      setError(err.message);
-    } finally {
+      if (err.name !== "AbortError") setError(err.message);
       setLoading(false);
     }
   }

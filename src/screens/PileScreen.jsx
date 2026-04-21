@@ -39,13 +39,23 @@ export default function PileScreen({
 }) {
   const [viewMode,   setViewMode]   = useState("list");
   const [activeTab,  setActiveTab]  = useState(initialTab ?? "deck");
-
-  useEffect(() => {
-    setActiveTab(initialTab ?? "deck");
-  }, [initialTab]);
   const [reviewMode, setReviewMode] = useState(null);
   const [lightbox,   setLightbox]   = useState(null);
   const [copied,     setCopied]     = useState(false);
+
+  // Drag-to-reorder (list view, deck tab only)
+  const [drag, setDrag] = useState(null); // { srcIdx, targetIdx, startY, currentY }
+
+  // Scroll position memory per tab
+  const scrollPos = useRef({ deck: 0, maybe: 0 });
+  useEffect(() => {
+    scrollPos.current[activeTab] = window.scrollY; // save before switching
+    setActiveTab(initialTab ?? "deck");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTab]);
+  useEffect(() => {
+    window.scrollTo(0, scrollPos.current[activeTab] ?? 0);
+  }, [activeTab]);
 
   const lbDragStartY = useRef(null);
   const [lbDragY,    setLbDragY]   = useState(0);
@@ -93,6 +103,33 @@ export default function PileScreen({
   function onCardClick(card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
     openLightbox(card);
+  }
+
+  // ── Drag-to-reorder ────────────────────────────────────────────────────────
+
+  function onDragHandleDown(e, srcIdx) {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({ srcIdx, targetIdx: srcIdx, startY: e.clientY, currentY: e.clientY });
+  }
+
+  function onDragMove(e) {
+    if (!drag) return;
+    const deltaY = e.clientY - drag.startY;
+    const ROW_H = 50;
+    const targetIdx = Math.max(0, Math.min(pile.length - 1, drag.srcIdx + Math.round(deltaY / ROW_H)));
+    setDrag(d => ({ ...d, currentY: e.clientY, targetIdx }));
+  }
+
+  function onDragEnd() {
+    if (!drag) return;
+    if (drag.targetIdx !== drag.srcIdx) {
+      const next = [...pile];
+      const [moved] = next.splice(drag.srcIdx, 1);
+      next.splice(drag.targetIdx, 0, moved);
+      onPileChange(next);
+    }
+    setDrag(null);
   }
 
   // ── Lightbox ───────────────────────────────────────────────────────────────
@@ -153,20 +190,40 @@ export default function PileScreen({
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
-  function renderListRow(card, isCommander, onRemove) {
+  function renderListRow(card, isCommander, onRemove, rowIdx, isDraggable) {
     const mana = card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
+    const isDragging = drag?.srcIdx === rowIdx;
+    const isDropTarget = drag && drag.targetIdx === rowIdx && drag.srcIdx !== rowIdx;
     return (
       <div
         key={card.instanceId}
+        data-row-idx={rowIdx}
+        onPointerMove={drag ? onDragMove : undefined}
+        onPointerUp={drag ? onDragEnd : undefined}
+        onPointerCancel={drag ? onDragEnd : undefined}
         style={{
           display: "flex", alignItems: "center",
           padding: "9px 14px",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
-          background: isCommander ? "rgba(255,215,0,0.04)" : "transparent",
+          borderTop: isDropTarget && drag.targetIdx < drag.srcIdx ? "2px solid var(--primary)" : "none",
+          borderBottomColor: isDropTarget && drag.targetIdx > drag.srcIdx ? "var(--primary)" : "rgba(255,255,255,0.05)",
+          background: isDragging ? "rgba(91,143,255,0.08)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
+          opacity: isDragging ? 0.5 : 1,
           cursor: "pointer",
         }}
-        onClick={() => openLightbox(card)}
+        onClick={() => !drag && openLightbox(card)}
       >
+        {isDraggable && (
+          <div
+            onPointerDown={e => onDragHandleDown(e, rowIdx)}
+            style={{
+              marginRight: 8, flexShrink: 0,
+              color: "rgba(255,255,255,0.2)", cursor: "grab",
+              fontSize: 14, lineHeight: 1, padding: "4px 2px",
+              touchAction: "none", userSelect: "none",
+            }}
+          >⠿</div>
+        )}
         {isCommander && (
           <span style={{ fontSize: 12, marginRight: 6, flexShrink: 0 }}>👑</span>
         )}
@@ -374,8 +431,8 @@ export default function PileScreen({
         ) : viewMode === "list" ? (
           /* List view */
           activeTab === "deck"
-            ? pile.map(card => renderListRow(card, commander === card.instanceId, handleRemove))
-            : maybeboard.map(card => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e)))
+            ? pile.map((card, i) => renderListRow(card, commander === card.instanceId, handleRemove, i, true))
+            : maybeboard.map((card, i) => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), i, false))
         ) : (
           /* Grid view */
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

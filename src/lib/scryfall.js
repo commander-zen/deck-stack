@@ -99,6 +99,46 @@ export async function fetchFirstPage(query, options = {}) {
   return json.data ?? [];
 }
 
+// ── First-page swipe fetch — returns immediately so SwipeScreen can start ─────
+export async function fetchFirstPageForSwipe(query, commanderCard = null, options = {}) {
+  const { signal } = options;
+  let baseQuery = query;
+  if (commanderCard?.color_identity?.length > 0) {
+    baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
+  }
+  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=edhrec&unique=cards`;
+  let res;
+  try {
+    res = await fetch(url, { headers: { "User-Agent": UA }, signal });
+  } catch (err) {
+    if (err.name === "AbortError") throw err;
+    throw new Error("Network error.");
+  }
+  if (res.status === 404) throw new Error("No cards found for that query.");
+  if (res.status === 422) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error(json.details ?? "Invalid query syntax.");
+  }
+  if (!res.ok) throw new Error(`Scryfall error: ${res.status}`);
+  const json = await res.json();
+  return { cards: json.data ?? [], nextPage: json.has_more ? json.next_page : null };
+}
+
+// ── Fetch one continuation page for background loading ────────────────────────
+export async function fetchContinuationPage(pageUrl, options = {}) {
+  const { signal } = options;
+  let res;
+  try {
+    res = await fetch(pageUrl, { headers: { "User-Agent": UA }, signal });
+  } catch (err) {
+    if (err.name === "AbortError") throw err;
+    return { cards: [], nextPage: null };
+  }
+  if (!res.ok) return { cards: [], nextPage: null };
+  const json = await res.json();
+  return { cards: json.data ?? [], nextPage: json.has_more ? json.next_page : null };
+}
+
 // ── Swipe screen fetch — up to 175 cards, paginated ──────────────────────────
 export async function fetchForSwipe(query, commanderCard = null, options = {}) {
   const { signal } = options;

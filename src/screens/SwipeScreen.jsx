@@ -6,6 +6,20 @@ const SWIPE_THRESHOLD = 60;
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 const TIP_KEY = "deckstack_swipe_tip_seen";
 
+const CATEGORIES = ["RAMP", "DRAW", "REMOVAL", "WRATH", "LAND", "PLAN"];
+
+function inferCategory(card) {
+  const type   = (card.type_line   ?? "").toLowerCase();
+  const oracle = (card.oracle_text ?? "").toLowerCase();
+  if (type.includes("land")) return "LAND";
+  if (/add \{[wubrgc\d]+\}/.test(oracle) || oracle.includes("search your library for a basic land")) return "RAMP";
+  if (oracle.includes("draw a card") || oracle.includes("draw two") || oracle.includes("draw three") || oracle.includes("draw cards")) return "DRAW";
+  if (/destroy all|exile all creatures|each creature gets|all creatures get/.test(oracle) && !/target/.test(oracle.slice(0, 40))) return "WRATH";
+  if ((oracle.includes("destroy target") || oracle.includes("exile target") || oracle.includes("return target")) &&
+      (type.includes("instant") || type.includes("sorcery") || type.includes("enchantment"))) return "REMOVAL";
+  return "PLAN";
+}
+
 function haptic(pattern = 10) {
   if ("vibrate" in navigator) navigator.vibrate(pattern);
 }
@@ -29,6 +43,14 @@ export default function SwipeScreen({
   const cmdAbortRef = useRef(null);
   const cmdInputRef = useRef(null);
 
+  // Jump-to search
+  const [jumpOpen,  setJumpOpen]  = useState(false);
+  const [jumpQuery, setJumpQuery] = useState("");
+  const jumpInputRef = useRef(null);
+
+  // Category filter
+  const [activeCategory, setActiveCategory] = useState(null);
+
   // Onboarding tip
   const [showTip,    setShowTip]    = useState(false);
   const [tipDismiss, setTipDismiss] = useState(false);
@@ -39,6 +61,14 @@ export default function SwipeScreen({
 
   const card = cards[idx] ?? null;
   const done = idx >= cards.length;
+
+  // Preload next 4 card images to eliminate lag between swipes
+  useEffect(() => {
+    cards.slice(idx + 1, idx + 5).forEach(c => {
+      const url = getCardImage(c, "normal");
+      if (url) { const img = new Image(); img.src = url; }
+    });
+  }, [idx, cards]);
 
   useEffect(() => {
     if (!localStorage.getItem(TIP_KEY)) {
@@ -78,6 +108,26 @@ export default function SwipeScreen({
     }, 280);
     return () => clearTimeout(timer);
   }, [cmdQuery]);
+
+  useEffect(() => {
+    if (jumpOpen) setTimeout(() => jumpInputRef.current?.focus(), 50);
+  }, [jumpOpen]);
+
+  function handleJump() {
+    if (!jumpQuery.trim()) { setJumpOpen(false); return; }
+    const q = jumpQuery.toLowerCase().trim();
+    const found = cards.findIndex((c, i) => i > idx && c.name.toLowerCase().includes(q));
+    if (found !== -1) setIdx(found);
+    setJumpQuery("");
+    setJumpOpen(false);
+  }
+
+  function jumpToCategory(cat) {
+    if (activeCategory === cat) { setActiveCategory(null); return; }
+    setActiveCategory(cat);
+    const found = cards.findIndex((c, i) => i > idx && inferCategory(c) === cat);
+    if (found !== -1) setIdx(found);
+  }
 
   function openCmdPicker() {
     setCmdPickerOpen(true);
@@ -210,129 +260,187 @@ export default function SwipeScreen({
         borderBottom: "1px solid rgba(255,255,255,0.05)",
         backdropFilter: "blur(10px)",
       }}>
-        <span style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 18, letterSpacing: 4, color: "var(--primary)",
-          marginRight: 12, flexShrink: 0,
-        }}>
-          DECK STACK
-        </span>
+        {jumpOpen ? (
+          /* Jump-to-card search overlay */
+          <>
+            <input
+              ref={jumpInputRef}
+              value={jumpQuery}
+              onChange={e => setJumpQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleJump(); if (e.key === "Escape") setJumpOpen(false); }}
+              placeholder="Jump to card…"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              style={{
+                flex: 1, background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 8, padding: "7px 12px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 16, color: "var(--text)",
+                outline: "none", caretColor: "var(--primary)",
+              }}
+            />
+            <button
+              onClick={handleJump}
+              style={{
+                marginLeft: 8, background: "rgba(91,143,255,0.15)",
+                border: "1px solid rgba(91,143,255,0.35)", borderRadius: 8,
+                color: "var(--primary)", cursor: "pointer",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 13, letterSpacing: 2, padding: "6px 12px", flexShrink: 0,
+              }}
+            >GO</button>
+            <button
+              onClick={() => { setJumpOpen(false); setJumpQuery(""); }}
+              style={{
+                marginLeft: 6, background: "transparent", border: "none",
+                color: "var(--muted)", cursor: "pointer",
+                fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
+              }}
+            >✕</button>
+          </>
+        ) : (
+          <>
+            <span style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 18, letterSpacing: 4, color: "var(--primary)",
+              marginRight: 12, flexShrink: 0,
+            }}>
+              DECK STACK
+            </span>
 
-        {/* Inline commander selector */}
-        <div style={{ flex: 1, position: "relative" }}>
-          {cmdPickerOpen ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input
-                ref={cmdInputRef}
-                value={cmdQuery}
-                onChange={e => setCmdQuery(e.target.value)}
-                onBlur={() => setTimeout(closeCmdPicker, 160)}
-                placeholder="Search commander…"
-                autoComplete="off"
-                style={{
-                  flex: 1, background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 8, padding: "5px 10px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 16, color: "var(--text)",
-                  outline: "none", caretColor: "var(--secondary)",
-                }}
-              />
-              <button
-                onMouseDown={closeCmdPicker}
-                style={{
-                  background: "transparent", border: "none",
-                  color: "var(--muted)", cursor: "pointer",
-                  fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
-                }}
-              >✕</button>
+            {/* Inline commander selector */}
+            <div style={{ flex: 1, position: "relative" }}>
+              {cmdPickerOpen ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    ref={cmdInputRef}
+                    value={cmdQuery}
+                    onChange={e => setCmdQuery(e.target.value)}
+                    onBlur={() => setTimeout(closeCmdPicker, 160)}
+                    placeholder="Search commander…"
+                    autoComplete="off"
+                    style={{
+                      flex: 1, background: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      borderRadius: 8, padding: "5px 10px",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 16, color: "var(--text)",
+                      outline: "none", caretColor: "var(--secondary)",
+                    }}
+                  />
+                  <button
+                    onMouseDown={closeCmdPicker}
+                    style={{
+                      background: "transparent", border: "none",
+                      color: "var(--muted)", cursor: "pointer",
+                      fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
+                    }}
+                  >✕</button>
 
-              {/* Dropdown */}
-              {cmdResults.length > 0 && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
-                  background: "var(--panel2)", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  overflow: "hidden", zIndex: 200,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
-                }}>
-                  {commanderCard && (
-                    <button
-                      onMouseDown={clearCommander}
-                      style={{
-                        width: "100%", padding: "9px 12px",
-                        background: "transparent", border: "none",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        color: "var(--danger)", cursor: "pointer",
-                        fontFamily: "'Bebas Neue', sans-serif",
-                        fontSize: 12, letterSpacing: 2, textAlign: "left",
-                      }}
-                    >
-                      REMOVE COMMANDER
-                    </button>
+                  {/* Dropdown */}
+                  {cmdResults.length > 0 && (
+                    <div style={{
+                      position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
+                      background: "var(--panel2)", borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      overflow: "hidden", zIndex: 200,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
+                    }}>
+                      {commanderCard && (
+                        <button
+                          onMouseDown={clearCommander}
+                          style={{
+                            width: "100%", padding: "9px 12px",
+                            background: "transparent", border: "none",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                            color: "var(--danger)", cursor: "pointer",
+                            fontFamily: "'Bebas Neue', sans-serif",
+                            fontSize: 12, letterSpacing: 2, textAlign: "left",
+                          }}
+                        >
+                          REMOVE COMMANDER
+                        </button>
+                      )}
+                      {cmdResults.map(c => {
+                        const thumb = getCardImage(c, "art_crop");
+                        return (
+                          <button
+                            key={c.id}
+                            onMouseDown={() => selectCommander(c)}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 8,
+                              width: "100%", padding: "8px 12px",
+                              background: "transparent", border: "none",
+                              borderBottom: "1px solid rgba(255,255,255,0.04)",
+                              cursor: "pointer", textAlign: "left",
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                            onMouseOut={e => e.currentTarget.style.background = "transparent"}
+                          >
+                            {thumb && (
+                              <img src={thumb} alt={c.name} draggable={false}
+                                style={{ width: 42, height: 30, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
+                            )}
+                            <span style={{ fontSize: 13, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {c.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
-                  {cmdResults.map(c => {
-                    const thumb = getCardImage(c, "art_crop");
-                    return (
-                      <button
-                        key={c.id}
-                        onMouseDown={() => selectCommander(c)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 8,
-                          width: "100%", padding: "8px 12px",
-                          background: "transparent", border: "none",
-                          borderBottom: "1px solid rgba(255,255,255,0.04)",
-                          cursor: "pointer", textAlign: "left",
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                        onMouseOut={e => e.currentTarget.style.background = "transparent"}
-                      >
-                        {thumb && (
-                          <img src={thumb} alt={c.name} draggable={false}
-                            style={{ width: 42, height: 30, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
-                        )}
-                        <span style={{ fontSize: 13, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {c.name}
-                        </span>
-                      </button>
-                    );
-                  })}
                 </div>
+              ) : (
+                /* Commander pill — tap to open picker */
+                <button
+                  onClick={openCmdPicker}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: commanderCard ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${commanderCard ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.1)"}`,
+                    borderRadius: 8, padding: "5px 10px",
+                    cursor: "pointer", maxWidth: "100%",
+                  }}
+                >
+                  {commanderCard && getCardImage(commanderCard, "art_crop") && (
+                    <img
+                      src={getCardImage(commanderCard, "art_crop")}
+                      alt={commanderCard.name}
+                      draggable={false}
+                      style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3, flexShrink: 0 }}
+                    />
+                  )}
+                  <span style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 12, color: commanderCard ? "rgba(167,139,250,0.9)" : "var(--muted)",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {commanderCard ? commanderCard.name : "Set commander…"}
+                  </span>
+                  {commanderCard && (
+                    <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>✎</span>
+                  )}
+                </button>
               )}
             </div>
-          ) : (
-            /* Commander pill — tap to open picker */
-            <button
-              onClick={openCmdPicker}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: commanderCard ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${commanderCard ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.1)"}`,
-                borderRadius: 8, padding: "5px 10px",
-                cursor: "pointer", maxWidth: "100%",
-              }}
-            >
-              {commanderCard && getCardImage(commanderCard, "art_crop") && (
-                <img
-                  src={getCardImage(commanderCard, "art_crop")}
-                  alt={commanderCard.name}
-                  draggable={false}
-                  style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3, flexShrink: 0 }}
-                />
-              )}
-              <span style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 12, color: commanderCard ? "rgba(167,139,250,0.9)" : "var(--muted)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
-                {commanderCard ? commanderCard.name : "Set commander…"}
-              </span>
-              {commanderCard && (
-                <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>✎</span>
-              )}
-            </button>
-          )}
-        </div>
+
+            {/* Jump-to search trigger */}
+            {!done && (
+              <button
+                onClick={() => setJumpOpen(true)}
+                title="Jump to card"
+                style={{
+                  marginLeft: 6, background: "transparent", border: "none",
+                  color: "var(--muted)", cursor: "pointer",
+                  padding: "6px", lineHeight: 1, flexShrink: 0, fontSize: 16,
+                }}
+              >🔍</button>
+            )}
+          </>
+        )}
       </div>
 
       {/* ── Card area ── */}
@@ -344,7 +452,7 @@ export default function SwipeScreen({
       }}>
 
         {/* Counter + Undo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexShrink: 0 }}>
           <div style={{
             fontSize: 12, letterSpacing: 2,
             color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
@@ -367,6 +475,40 @@ export default function SwipeScreen({
             UNDO
           </button>
         </div>
+
+        {/* Category jump pills */}
+        {!done && (
+          <div style={{
+            display: "flex", gap: 5, marginBottom: 8, flexShrink: 0,
+            overflowX: "auto", paddingBottom: 2,
+            msOverflowStyle: "none", scrollbarWidth: "none",
+          }}>
+            {CATEGORIES.map(cat => {
+              const isActive = activeCategory === cat;
+              const nextIdx = cards.findIndex((c, i) => i > idx && inferCategory(c) === cat);
+              const hasAny = nextIdx !== -1;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => jumpToCategory(cat)}
+                  disabled={!hasAny}
+                  style={{
+                    flexShrink: 0,
+                    background: isActive ? "rgba(91,143,255,0.2)" : "rgba(255,255,255,0.05)",
+                    border: `1px solid ${isActive ? "rgba(91,143,255,0.5)" : "rgba(255,255,255,0.1)"}`,
+                    borderRadius: 6, padding: "3px 9px",
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: 10, letterSpacing: 1.5,
+                    color: isActive ? "var(--primary)" : hasAny ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
+                    cursor: hasAny ? "pointer" : "default",
+                  }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {done ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
