@@ -3,43 +3,68 @@ import { Component } from "react";
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { error: null };
+    this.state = { error: null, source: null };
+    this._onError = this._onError.bind(this);
+    this._onUnhandledRejection = this._onUnhandledRejection.bind(this);
+  }
+
+  componentDidMount() {
+    window.addEventListener("error", this._onError);
+    window.addEventListener("unhandledrejection", this._onUnhandledRejection);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("error", this._onError);
+    window.removeEventListener("unhandledrejection", this._onUnhandledRejection);
+  }
+
+  _onError(event) {
+    if (this.state.error) return;
+    this.setState({ error: event.error ?? new Error(event.message), source: "global" });
+  }
+
+  _onUnhandledRejection(event) {
+    if (this.state.error) return;
+    const err = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
+    this.setState({ error: err, source: "promise" });
   }
 
   static getDerivedStateFromError(error) {
-    return { error };
+    return { error, source: "render" };
   }
 
   render() {
-    const { error } = this.state;
+    const { error, source } = this.state;
     if (!error) return this.props.children;
+
+    const sourceLabel = source === "render" ? "React render" : source === "promise" ? "Unhandled promise" : "Global error";
 
     return (
       <div style={{
         minHeight: "100dvh",
-        background: "var(--bg)",
+        background: "#0d0d0f",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         padding: "24px 20px",
-        fontFamily: "'DM Sans', sans-serif",
-        color: "var(--text)",
+        fontFamily: "system-ui, sans-serif",
+        color: "#e8e8f0",
       }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
 
           {/* Title */}
           <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 32, letterSpacing: "0.06em",
-            color: "var(--danger)",
+            fontFamily: "monospace",
+            fontSize: 20, letterSpacing: "0.06em",
+            color: "#ff4d6d",
             marginBottom: 6,
           }}>
             SOMETHING WENT WRONG
           </div>
 
           <div style={{
-            fontSize: 13, color: "var(--muted)",
+            fontSize: 13, color: "#555566",
             marginBottom: 20, lineHeight: 1.5,
           }}>
             The app encountered an unexpected error. Your deck data may still be intact.
@@ -47,7 +72,7 @@ export default class ErrorBoundary extends Component {
 
           {/* Error message */}
           <div style={{
-            background: "var(--panel)",
+            background: "#16161a",
             border: "1px solid rgba(255,80,80,0.2)",
             borderRadius: 10,
             padding: "14px 16px",
@@ -56,18 +81,28 @@ export default class ErrorBoundary extends Component {
             <div style={{
               fontSize: 10, fontWeight: 600,
               letterSpacing: "0.1em", textTransform: "uppercase",
-              color: "var(--muted)", marginBottom: 8,
+              color: "#555566", marginBottom: 8,
             }}>
-              Error
+              {sourceLabel}
             </div>
             <pre style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 12, color: "var(--danger)",
+              fontFamily: "monospace",
+              fontSize: 12, color: "#ff4d6d",
               whiteSpace: "pre-wrap", wordBreak: "break-word",
               margin: 0, lineHeight: 1.6,
             }}>
               {error.message || String(error)}
             </pre>
+            {error.stack && (
+              <pre style={{
+                fontFamily: "monospace",
+                fontSize: 10, color: "#555566",
+                whiteSpace: "pre-wrap", wordBreak: "break-word",
+                margin: "10px 0 0", lineHeight: 1.5,
+              }}>
+                {error.stack}
+              </pre>
+            )}
           </div>
 
           {/* Recovery buttons */}
