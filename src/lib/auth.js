@@ -6,7 +6,9 @@ export async function signInWithEmail(email) {
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: window.location.origin,
+      emailRedirectTo: window.location.hostname === "localhost"
+        ? window.location.origin
+        : "https://deck-stack.vercel.app",
     },
   });
   if (error) throw error;
