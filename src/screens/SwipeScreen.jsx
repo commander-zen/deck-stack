@@ -198,8 +198,8 @@ export default function SwipeScreen({
 
   return (
     <div style={{
-      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
-      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`,
+      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`,
       background: "var(--bg)",
       display: "flex", flexDirection: "column",
       fontFamily: "'DM Sans', sans-serif",
@@ -357,37 +357,16 @@ export default function SwipeScreen({
       <div style={{
         position: "relative", zIndex: 10,
         flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        overflow: "hidden", paddingTop: 10, paddingBottom: 6,
+        alignItems: "center",
+        overflow: "hidden", paddingTop: 10, paddingBottom: 14,
       }}>
 
-        {/* Counter + Undo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexShrink: 0 }}>
-          <div style={{
-            fontSize: 12, letterSpacing: 2,
-            color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
-            fontFamily: "'Bebas Neue', sans-serif",
-          }}>
-            {counterStr}
-          </div>
-          <button
-            onClick={doUndo}
-            disabled={history.length === 0 || !!animOut}
-            style={{
-              background: "transparent", border: "none",
-              color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 11, letterSpacing: 2,
-              cursor: history.length > 0 ? "pointer" : "default",
-              padding: "2px 6px",
-            }}
-          >
-            UNDO
-          </button>
-        </div>
-
         {done ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
+          <div style={{
+            flex: 1, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            gap: 14, textAlign: "center",
+          }}>
             <div style={{
               width: "min(88vw, 300px)", aspectRatio: "63/88",
               background: "var(--panel)", borderRadius: 14,
@@ -418,9 +397,37 @@ export default function SwipeScreen({
             </div>
           </div>
         ) : (
-          <div
-            style={{
-              transform: `translateX(${tx}px) rotate(${rotation}deg)`,
+          <>
+            {/* Counter + Undo — sits at top of card area */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexShrink: 0 }}>
+              <div style={{
+                fontSize: 12, letterSpacing: 2,
+                color: "rgba(255,255,255,0.5)",
+                fontFamily: "'Bebas Neue', sans-serif",
+              }}>
+                {counterStr}
+              </div>
+              <button
+                onClick={doUndo}
+                disabled={history.length === 0 || !!animOut}
+                style={{
+                  background: "transparent", border: "none",
+                  color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 11, letterSpacing: 2,
+                  cursor: history.length > 0 ? "pointer" : "default",
+                  padding: "2px 6px",
+                }}
+              >
+                UNDO
+              </button>
+            </div>
+
+            {/* Card — marginTop:auto pushes it to bottom, minimizing gap below card */}
+            <div
+              style={{
+                marginTop: "auto",
+                transform: `translateX(${tx}px) rotate(${rotation}deg)`,
               transition: animOut
                 ? "transform 0.26s ease, opacity 0.26s ease"
                 : dragging ? "none" : "transform 0.18s ease",
@@ -468,7 +475,7 @@ export default function SwipeScreen({
                   style={{
                     maxHeight: isBattle
                       ? undefined
-                      : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - 80px)`,
+                      : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 80px)`,
                     width: "auto",
                     maxWidth: isBattle ? "min(55vw, 220px)" : "min(88vw, 350px)",
                     borderRadius: 14,
@@ -504,6 +511,7 @@ export default function SwipeScreen({
               </div>
             )}
           </div>
+          </>
         )}
       </div>
 

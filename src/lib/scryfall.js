@@ -106,7 +106,7 @@ export async function fetchFirstPageForSwipe(query, commanderCard = null, option
   if (commanderCard?.color_identity?.length > 0) {
     baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
   }
-  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=edhrec&unique=cards`;
+  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=random&unique=cards`;
   let res;
   try {
     res = await fetch(url, { headers: { "User-Agent": UA }, signal });
@@ -148,7 +148,7 @@ export async function fetchForSwipe(query, commanderCard = null, options = {}) {
   if (commanderCard?.color_identity?.length > 0) {
     baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
   }
-  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=edhrec&unique=cards`;
+  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=random&unique=cards`;
 
   while (url && results.length < CAP) {
     let res;

@@ -424,7 +424,7 @@ export default function PileScreen({
             <br />
             <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
               {activeTab === "deck"
-                ? "Keep cards on the Stack to add them here"
+                ? "Swipe right on the Stack to add cards here"
                 : "Swipe left while reviewing your deck to send cards here"}
             </span>
           </div>
