@@ -171,7 +171,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady, authUser]);
 
-  // ── Search: new deck ──────────────────────────────────────────────────────
+  // ── Search ────────────────────────────────────────────────────────────────
   async function handleSearch(q) {
     setLoading(true); setError(null);
 
@@ -182,43 +182,48 @@ export default function App() {
     try {
       const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, commanderCard);
 
-      // flush current deck
-      if (sessionId && activeDeckId) {
-        const s = stateRef.current;
-        saveDeck(sessionId, {
-          id: s.activeDeckId,
-          name: computeDeckName(s.commanderCard, s.query),
-          commander_name: s.commanderCard?.name ?? null,
-          commander_instance_id: s.commander ?? null,
-          commander_card: s.commanderCard ?? null,
-          pile: s.pile, maybeboard: s.maybeboard,
-          swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-        }, s.authUser?.id ?? null).catch(console.error);
+      const deckName = computeDeckName(commanderCard, q);
+
+      let targetDeckId = activeDeckId;
+      if (!targetDeckId) {
+        targetDeckId = crypto.randomUUID();
+        const newDeck = {
+          id: targetDeckId, name: deckName,
+          commander_name: commanderCard?.name ?? null,
+          commander_instance_id: null,
+          commander_card: commanderCard ?? null,
+          pile: [], maybeboard: [], swipe_cards: firstCards,
+          swipe_index: 0, query: q,
+          last_opened_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        };
+        setActiveDeckId(targetDeckId);
+        setDecks(ds => [newDeck, ...ds]);
+      } else {
+        setDecks(ds => ds.map(d =>
+          d.id === targetDeckId
+            ? { ...d, name: deckName, commander_card: commanderCard ?? null, swipe_cards: firstCards, swipe_index: 0, query: q, last_opened_at: new Date().toISOString() }
+            : d
+        ));
       }
 
-      const newDeckId = crypto.randomUUID();
-      const deckName  = computeDeckName(commanderCard, q);
-      const newDeck   = {
-        id: newDeckId, name: deckName,
+      setPile([]); setCommander(null); setMaybeboard([]);
+      setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0); setSwipeDisplayLimit(20);
+      setSwipeMounted(true);
+      setSwipeKey(k => k + 1);
+      setScreen("swipe");
+      setLoading(false);
+
+      const deckPayload = {
+        id: targetDeckId, name: deckName,
         commander_name: commanderCard?.name ?? null,
         commander_instance_id: null,
         commander_card: commanderCard ?? null,
         pile: [], maybeboard: [], swipe_cards: firstCards,
         swipe_index: 0, query: q,
         last_opened_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
       };
-
-      setPile([]); setCommander(null); setMaybeboard([]);
-      setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0); setSwipeDisplayLimit(20);
-      setActiveDeckId(newDeckId);
-      setDecks(ds => [newDeck, ...ds]);
-      setSwipeMounted(true);
-      setSwipeKey(k => k + 1);
-      setScreen("swipe");
-      setLoading(false);
-
-      if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
+      if (sessionId) saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(console.error);
 
       // Background-fetch remaining Scryfall pages (up to 175 total)
       if (nextPage) {
