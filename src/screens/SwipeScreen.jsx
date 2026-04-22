@@ -24,7 +24,7 @@ function ColorPip({ color }) {
 export default function SwipeScreen({
   cards, pile, onPileChange,
   maybeboard, onMaybeboardChange,
-  onGoToPile, onSearchMore, commanderCard, onCommanderCardChange,
+  onGoToPile, onGoToSearch, onSearchMore, commanderCard, onCommanderCardChange,
   initialIndex, onIndexChange,
 }) {
   const [idx,     setIdx]     = useState(initialIndex ?? 0);
@@ -248,6 +248,16 @@ export default function SwipeScreen({
         borderBottom: "1px solid rgba(255,255,255,0.05)",
         backdropFilter: "blur(10px)",
       }}>
+        <button
+          onClick={onGoToSearch}
+          style={{
+            background: "transparent", border: "none",
+            color: "rgba(255,255,255,0.6)", cursor: "pointer",
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 20, lineHeight: 1,
+            padding: "6px 10px 6px 0",
+          }}
+        >←</button>
         <span style={{
           flex: 1,
           fontFamily: "'Bebas Neue', sans-serif",

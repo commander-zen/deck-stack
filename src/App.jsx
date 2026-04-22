@@ -381,6 +381,8 @@ export default function App() {
     else setScreen("search");
   }
 
+  function goToSearch() { setScreen("search"); }
+
   function goToPile() { setScreen("pile"); }
 
   function goToMaybe() { setScreen("maybe"); }
@@ -429,6 +431,7 @@ export default function App() {
             maybeboard={maybeboard}
             onMaybeboardChange={setMaybeboard}
             onGoToPile={goToPile}
+            onGoToSearch={goToSearch}
             onSearchMore={handleSearchMore}
             commanderCard={commanderCard}
             onCommanderCardChange={setCommanderCard}
