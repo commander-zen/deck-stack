@@ -367,6 +367,14 @@ export default function App() {
     }
   }
 
+  // ── Search more (from done state) ─────────────────────────────────────────
+  function handleSearchMore() {
+    setSwipeCards([]);
+    setSwipeIndex(0);
+    setSwipeMounted(false);
+    setScreen("search");
+  }
+
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function goToStack() {
     if (swipeMounted) setScreen("swipe");
@@ -421,6 +429,7 @@ export default function App() {
             maybeboard={maybeboard}
             onMaybeboardChange={setMaybeboard}
             onGoToPile={goToPile}
+            onSearchMore={handleSearchMore}
             commanderCard={commanderCard}
             onCommanderCardChange={setCommanderCard}
             initialIndex={swipeIndex}

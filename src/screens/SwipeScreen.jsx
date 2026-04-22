@@ -24,7 +24,7 @@ function ColorPip({ color }) {
 export default function SwipeScreen({
   cards, pile, onPileChange,
   maybeboard, onMaybeboardChange,
-  onGoToPile, commanderCard, onCommanderCardChange,
+  onGoToPile, onSearchMore, commanderCard, onCommanderCardChange,
   initialIndex, onIndexChange,
 }) {
   const [idx,     setIdx]     = useState(initialIndex ?? 0);
@@ -447,6 +447,19 @@ export default function SwipeScreen({
                 }}
               >
                 VIEW PILE
+              </button>
+              <button
+                onClick={onSearchMore}
+                style={{
+                  padding: "10px 24px", borderRadius: 8,
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  background: "transparent",
+                  color: "var(--muted)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 15, letterSpacing: 3, cursor: "pointer",
+                }}
+              >
+                SEARCH MORE
               </button>
             </div>
           </div>
