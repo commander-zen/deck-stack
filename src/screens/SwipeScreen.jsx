@@ -134,16 +134,17 @@ export default function SwipeScreen({
     if (!card || animOut || done) return;
     setAnimOut(keep ? "right" : "left");
     setBadge(keep ? "keep" : "pass");
-    const cardEntry = { ...card, instanceId: crypto.randomUUID() };
 
     haptic(keep ? 12 : 6);
 
     setTimeout(() => {
-      setHistory(h => [...h, { card: cardEntry, kept: keep }]);
       if (keep) {
+        const cardEntry = { ...card, instanceId: crypto.randomUUID() };
+        setHistory(h => [...h, { card: cardEntry, kept: true }]);
         onPileChange([...pile, cardEntry]);
       } else {
-        onMaybeboardChange?.(m => [...m, cardEntry]);
+        // Left swipe on Stack = discard entirely — not saved anywhere
+        setHistory(h => [...h, { card, kept: false }]);
       }
       setIdx(i => i + 1);
       setOffset(0); setBadge(null); setAnimOut(null);
@@ -156,9 +157,8 @@ export default function SwipeScreen({
     setHistory(h => h.slice(0, -1));
     if (last.kept) {
       onPileChange(pile.filter(c => c.instanceId !== last.card.instanceId));
-    } else {
-      onMaybeboardChange?.(m => m.filter(c => c.instanceId !== last.card.instanceId));
     }
+    // kept === false: card was discarded, nothing to remove from state
     setIdx(i => Math.max(0, i - 1));
     haptic([4, 20, 4]);
   }
