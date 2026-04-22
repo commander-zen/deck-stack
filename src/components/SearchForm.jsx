@@ -277,7 +277,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
           <input
             value={rawQuery}
             onChange={e => setRawQuery(e.target.value)}
-            placeholder="ramp, draw, removal… or Scryfall syntax"
+            placeholder="Scryfall syntax"
             autoComplete="off"
             spellCheck={false}
             style={{
