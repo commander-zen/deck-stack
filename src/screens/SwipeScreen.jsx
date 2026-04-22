@@ -23,6 +23,7 @@ function ColorPip({ color }) {
 
 export default function SwipeScreen({
   cards, pile, onPileChange,
+  maybeboard, onMaybeboardChange,
   onGoToPile, commanderCard, onCommanderCardChange,
   initialIndex, onIndexChange,
 }) {
@@ -133,17 +134,17 @@ export default function SwipeScreen({
     if (!card || animOut || done) return;
     setAnimOut(keep ? "right" : "left");
     setBadge(keep ? "keep" : "pass");
-    const cardEntry = keep ? { ...card, instanceId: crypto.randomUUID() } : card;
+    const cardEntry = { ...card, instanceId: crypto.randomUUID() };
 
-    if (keep) {
-      haptic(12);
-    } else {
-      haptic(6);
-    }
+    haptic(keep ? 12 : 6);
 
     setTimeout(() => {
       setHistory(h => [...h, { card: cardEntry, kept: keep }]);
-      if (keep) onPileChange([...pile, cardEntry]);
+      if (keep) {
+        onPileChange([...pile, cardEntry]);
+      } else {
+        onMaybeboardChange?.(m => [...m, cardEntry]);
+      }
       setIdx(i => i + 1);
       setOffset(0); setBadge(null); setAnimOut(null);
     }, 260);
@@ -153,7 +154,11 @@ export default function SwipeScreen({
     if (history.length === 0 || animOut) return;
     const last = history[history.length - 1];
     setHistory(h => h.slice(0, -1));
-    if (last.kept) onPileChange(pile.filter(c => c !== last.card));
+    if (last.kept) {
+      onPileChange(pile.filter(c => c.instanceId !== last.card.instanceId));
+    } else {
+      onMaybeboardChange?.(m => m.filter(c => c.instanceId !== last.card.instanceId));
+    }
     setIdx(i => Math.max(0, i - 1));
     haptic([4, 20, 4]);
   }

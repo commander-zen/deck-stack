@@ -152,7 +152,16 @@ export default function App() {
         const now = new Date().toISOString();
         setDecks(ds => ds.map(d =>
           d.id === s.activeDeckId
-            ? { ...d, name, pile: s.pile, last_opened_at: now }
+            ? {
+                ...d, name,
+                pile: s.pile,
+                maybeboard: s.maybeboard,
+                swipe_cards: s.swipeCards,
+                swipe_index: s.swipeIndex,
+                commander_instance_id: s.commander,
+                commander_card: s.commanderCard,
+                last_opened_at: now,
+              }
             : d
         ));
       } catch (err) {
@@ -390,6 +399,8 @@ export default function App() {
             cards={swipeCards.slice(0, swipeDisplayLimit)}
             pile={pile}
             onPileChange={setPile}
+            maybeboard={maybeboard}
+            onMaybeboardChange={setMaybeboard}
             onGoToPile={goToPile}
             commanderCard={commanderCard}
             onCommanderCardChange={setCommanderCard}
