@@ -38,6 +38,7 @@ export default function SwipeScreen({
   const [cmdPickerOpen, setCmdPickerOpen]   = useState(false);
   const [cmdQuery,      setCmdQuery]        = useState("");
   const [cmdResults,    setCmdResults]      = useState([]);
+  const [cmdModalOpen,  setCmdModalOpen]    = useState(false);
   const cmdAbortRef = useRef(null);
   const cmdInputRef = useRef(null);
 
@@ -348,13 +349,12 @@ export default function SwipeScreen({
             )}
           </div>
         ) : (
-          <button
-            onClick={openCmdPicker}
+          <div
+            onClick={() => commanderCard ? setCmdModalOpen(true) : openCmdPicker()}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
               padding: "6px 14px",
-              background: "transparent", border: "none",
-              cursor: "pointer", textAlign: "left",
+              cursor: "pointer",
             }}
           >
             {cmdArt ? (
@@ -390,8 +390,15 @@ export default function SwipeScreen({
             <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
               {commanderCard?.color_identity?.map(c => <ColorPip key={c} color={c} />)}
             </div>
-            <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0, marginLeft: 2 }}>✎</span>
-          </button>
+            <button
+              onClick={e => { e.stopPropagation(); openCmdPicker(); }}
+              style={{
+                background: "transparent", border: "none",
+                fontSize: 13, color: "var(--muted)", cursor: "pointer",
+                padding: "4px 2px", lineHeight: 1, flexShrink: 0,
+              }}
+            >✎</button>
+          </div>
         )}
       </div>
 
@@ -600,6 +607,47 @@ export default function SwipeScreen({
               KEEP
             </span>
           </div>
+        </div>
+      )}
+
+      {/* ── Commander card modal ── */}
+      {cmdModalOpen && commanderCard && (
+        <div
+          onClick={() => setCmdModalOpen(false)}
+          style={{
+            position: "absolute", inset: 0, zIndex: 400,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            padding: "24px 16px",
+          }}
+        >
+          <button
+            onClick={e => { e.stopPropagation(); setCmdModalOpen(false); }}
+            style={{
+              position: "absolute", top: 16, right: 16,
+              width: 36, height: 36, borderRadius: "50%",
+              background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "rgba(255,255,255,0.8)", fontSize: 16,
+              cursor: "pointer", display: "flex",
+              alignItems: "center", justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >✕</button>
+          <img
+            src={getCardImage(commanderCard, "normal")}
+            alt={commanderCard.name}
+            draggable={false}
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: "min(88vw, 360px)",
+              maxHeight: "calc(100dvh - 120px)",
+              width: "auto", height: "auto",
+              borderRadius: 16,
+              boxShadow: "0 24px 72px rgba(0,0,0,0.9)",
+            }}
+          />
         </div>
       )}
 
