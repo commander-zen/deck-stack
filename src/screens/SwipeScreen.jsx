@@ -10,6 +10,17 @@ function haptic(pattern = 10) {
   if ("vibrate" in navigator) navigator.vibrate(pattern);
 }
 
+function ColorPip({ color }) {
+  return (
+    <div style={{
+      width: 13, height: 13, borderRadius: "50%",
+      background: COLOR_DOT[color] ?? "#888",
+      border: "1px solid rgba(255,255,255,0.25)",
+      flexShrink: 0,
+    }} />
+  );
+}
+
 export default function SwipeScreen({
   cards, pile, onPileChange,
   onGoToPile, commanderCard, onCommanderCardChange,
@@ -181,6 +192,7 @@ export default function SwipeScreen({
   }
 
   const artUrl   = card ? getCardImage(card, "art_crop") : null;
+  const cmdArt   = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
   const hasFaces = (card?.card_faces?.length ?? 0) >= 2;
   const isBattle = (card?.type_line ?? "").toLowerCase().includes("battle");
   const mainUrl  = card
@@ -229,128 +241,158 @@ export default function SwipeScreen({
         backdropFilter: "blur(10px)",
       }}>
         <span style={{
+          flex: 1,
           fontFamily: "'Bebas Neue', sans-serif",
           fontSize: 18, letterSpacing: 4, color: "var(--primary)",
-          marginRight: 12, flexShrink: 0,
         }}>
           DECK STACK
         </span>
+        <button
+          onClick={onGoToPile}
+          style={{
+            padding: "6px 14px", borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.15)",
+            background: "transparent",
+            color: "rgba(255,255,255,0.6)",
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 13, letterSpacing: 2, cursor: "pointer",
+          }}
+        >DONE</button>
+      </div>
 
-        {/* Inline commander selector */}
-        <div style={{ flex: 1, position: "relative" }}>
-          {cmdPickerOpen ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input
-                ref={cmdInputRef}
-                value={cmdQuery}
-                onChange={e => setCmdQuery(e.target.value)}
-                onBlur={() => setTimeout(closeCmdPicker, 160)}
-                placeholder="Search commander…"
-                autoComplete="off"
-                style={{
-                  flex: 1, background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 8, padding: "5px 10px",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 16, color: "var(--text)",
-                  outline: "none", caretColor: "var(--secondary)",
-                }}
-              />
-              <button
-                onMouseDown={closeCmdPicker}
-                style={{
-                  background: "transparent", border: "none",
-                  color: "var(--muted)", cursor: "pointer",
-                  fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
-                }}
-              >✕</button>
+      {/* ── Commander row ── */}
+      <div style={{
+        position: "relative", zIndex: 20, flexShrink: 0,
+        background: "rgba(13,13,15,0.85)",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        backdropFilter: "blur(10px)",
+      }}>
+        {cmdPickerOpen ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px" }}>
+            <input
+              ref={cmdInputRef}
+              value={cmdQuery}
+              onChange={e => setCmdQuery(e.target.value)}
+              onBlur={() => setTimeout(closeCmdPicker, 160)}
+              placeholder="Search commander…"
+              autoComplete="off"
+              style={{
+                flex: 1, background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 8, padding: "5px 10px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 16, color: "var(--text)",
+                outline: "none", caretColor: "var(--secondary)",
+              }}
+            />
+            <button
+              onMouseDown={closeCmdPicker}
+              style={{
+                background: "transparent", border: "none",
+                color: "var(--muted)", cursor: "pointer",
+                fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
+              }}
+            >✕</button>
 
-              {/* Dropdown */}
-              {cmdResults.length > 0 && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
-                  background: "var(--panel2)", borderRadius: 10,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  overflow: "hidden", zIndex: 200,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
-                }}>
-                  {commanderCard && (
+            {/* Dropdown */}
+            {cmdResults.length > 0 && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 0px)", left: 0, right: 0,
+                background: "var(--panel2)", borderRadius: 10,
+                border: "1px solid rgba(255,255,255,0.08)",
+                overflow: "hidden", zIndex: 200,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
+              }}>
+                {commanderCard && (
+                  <button
+                    onMouseDown={clearCommander}
+                    style={{
+                      width: "100%", padding: "9px 12px",
+                      background: "transparent", border: "none",
+                      borderBottom: "1px solid rgba(255,255,255,0.05)",
+                      color: "var(--danger)", cursor: "pointer",
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 12, letterSpacing: 2, textAlign: "left",
+                    }}
+                  >
+                    REMOVE COMMANDER
+                  </button>
+                )}
+                {cmdResults.map(c => {
+                  const thumb = getCardImage(c, "art_crop");
+                  return (
                     <button
-                      onMouseDown={clearCommander}
+                      key={c.id}
+                      onMouseDown={() => selectCommander(c)}
                       style={{
-                        width: "100%", padding: "9px 12px",
+                        display: "flex", alignItems: "center", gap: 8,
+                        width: "100%", padding: "8px 12px",
                         background: "transparent", border: "none",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        color: "var(--danger)", cursor: "pointer",
-                        fontFamily: "'Bebas Neue', sans-serif",
-                        fontSize: 12, letterSpacing: 2, textAlign: "left",
+                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                        cursor: "pointer", textAlign: "left",
                       }}
+                      onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
                     >
-                      REMOVE COMMANDER
+                      {thumb && (
+                        <img src={thumb} alt={c.name} draggable={false}
+                          style={{ width: 42, height: 30, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
+                      )}
+                      <span style={{ fontSize: 13, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {c.name}
+                      </span>
                     </button>
-                  )}
-                  {cmdResults.map(c => {
-                    const thumb = getCardImage(c, "art_crop");
-                    return (
-                      <button
-                        key={c.id}
-                        onMouseDown={() => selectCommander(c)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 8,
-                          width: "100%", padding: "8px 12px",
-                          background: "transparent", border: "none",
-                          borderBottom: "1px solid rgba(255,255,255,0.04)",
-                          cursor: "pointer", textAlign: "left",
-                        }}
-                        onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                        onMouseOut={e => e.currentTarget.style.background = "transparent"}
-                      >
-                        {thumb && (
-                          <img src={thumb} alt={c.name} draggable={false}
-                            style={{ width: 42, height: 30, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
-                        )}
-                        <span style={{ fontSize: 13, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {c.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={openCmdPicker}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "6px 14px",
+              background: "transparent", border: "none",
+              cursor: "pointer", textAlign: "left",
+            }}
+          >
+            {cmdArt ? (
+              <img
+                src={cmdArt}
+                alt={commanderCard.name}
+                draggable={false}
+                style={{ width: 56, height: 40, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+              />
+            ) : (
+              <div style={{
+                width: 56, height: 40, borderRadius: 4, flexShrink: 0,
+                background: "rgba(255,255,255,0.05)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <span style={{ fontSize: 18, opacity: 0.4 }}>👑</span>
+              </div>
+            )}
+            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+              {commanderCard ? (
+                <>
+                  <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+                    COMMANDER
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {commanderCard.name}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Set commander…</div>
               )}
             </div>
-          ) : (
-            /* Commander pill — tap to open picker */
-            <button
-              onClick={openCmdPicker}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: commanderCard ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${commanderCard ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.1)"}`,
-                borderRadius: 8, padding: "5px 10px",
-                cursor: "pointer", maxWidth: "100%",
-              }}
-            >
-              {commanderCard && getCardImage(commanderCard, "art_crop") && (
-                <img
-                  src={getCardImage(commanderCard, "art_crop")}
-                  alt={commanderCard.name}
-                  draggable={false}
-                  style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3, flexShrink: 0 }}
-                />
-              )}
-              <span style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 12, color: commanderCard ? "rgba(167,139,250,0.9)" : "var(--muted)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
-                {commanderCard ? commanderCard.name : "Set commander…"}
-              </span>
-              {commanderCard && (
-                <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>✎</span>
-              )}
-            </button>
-          )}
-        </div>
+            <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+              {commanderCard?.color_identity?.map(c => <ColorPip key={c} color={c} />)}
+            </div>
+            <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0, marginLeft: 2 }}>✎</span>
+          </button>
+        )}
       </div>
 
       {/* ── Card area ── */}
@@ -358,7 +400,7 @@ export default function SwipeScreen({
         position: "relative", zIndex: 10,
         flex: 1, display: "flex", flexDirection: "column",
         alignItems: "center",
-        overflow: "hidden", paddingTop: 10, paddingBottom: 14,
+        overflow: "hidden", paddingTop: 10, paddingBottom: 4,
       }}>
 
         {done ? (
@@ -398,7 +440,7 @@ export default function SwipeScreen({
           </div>
         ) : (
           <>
-            {/* Counter + Undo — sits at top of card area */}
+            {/* Counter + Undo */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexShrink: 0 }}>
               <div style={{
                 fontSize: 12, letterSpacing: 2,
@@ -423,97 +465,143 @@ export default function SwipeScreen({
               </button>
             </div>
 
-            {/* Card — marginTop:auto pushes it to bottom, minimizing gap below card */}
+            {/* Card */}
             <div
               style={{
                 marginTop: "auto",
                 transform: `translateX(${tx}px) rotate(${rotation}deg)`,
-              transition: animOut
-                ? "transform 0.26s ease, opacity 0.26s ease"
-                : dragging ? "none" : "transform 0.18s ease",
-              opacity: animOut ? 0 : 1,
-              cursor: dragging ? "grabbing" : "grab",
-              touchAction: "none", userSelect: "none",
-              position: "relative", flexShrink: 0,
-            }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-          >
-            {badge === "keep" && (
-              <div style={{
-                position: "absolute", top: 14, right: 14, zIndex: 20,
-                padding: "6px 14px",
-                border: "3px solid var(--success)", borderRadius: 8,
-                color: "var(--success)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 26, letterSpacing: 4,
-                transform: "rotate(-15deg)",
-                background: "rgba(0,0,0,0.55)",
-              }}>KEEP</div>
-            )}
-            {badge === "pass" && (
-              <div style={{
-                position: "absolute", top: 14, left: 14, zIndex: 20,
-                padding: "6px 14px",
-                border: "3px solid var(--danger)", borderRadius: 8,
-                color: "var(--danger)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 26, letterSpacing: 4,
-                transform: "rotate(15deg)",
-                background: "rgba(0,0,0,0.55)",
-              }}>PASS</div>
-            )}
+                transition: animOut
+                  ? "transform 0.26s ease, opacity 0.26s ease"
+                  : dragging ? "none" : "transform 0.18s ease",
+                opacity: animOut ? 0 : 1,
+                cursor: dragging ? "grabbing" : "grab",
+                touchAction: "none", userSelect: "none",
+                position: "relative", flexShrink: 0,
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+            >
+              {badge === "keep" && (
+                <div style={{
+                  position: "absolute", top: 14, right: 14, zIndex: 20,
+                  padding: "6px 14px",
+                  border: "3px solid var(--success)", borderRadius: 8,
+                  color: "var(--success)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 26, letterSpacing: 4,
+                  transform: "rotate(-15deg)",
+                  background: "rgba(0,0,0,0.55)",
+                }}>KEEP</div>
+              )}
+              {badge === "pass" && (
+                <div style={{
+                  position: "absolute", top: 14, left: 14, zIndex: 20,
+                  padding: "6px 14px",
+                  border: "3px solid var(--secondary)", borderRadius: 8,
+                  color: "var(--secondary)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 26, letterSpacing: 4,
+                  transform: "rotate(15deg)",
+                  background: "rgba(0,0,0,0.55)",
+                }}>MAYBE</div>
+              )}
 
-            {mainUrl ? (
-              <>
-                <img
-                  src={mainUrl}
-                  alt={card?.name}
-                  draggable={false}
-                  style={{
-                    maxHeight: isBattle
-                      ? undefined
-                      : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 80px)`,
-                    width: "auto",
-                    maxWidth: isBattle ? "min(55vw, 220px)" : "min(88vw, 350px)",
-                    borderRadius: 14,
-                    boxShadow: "0 18px 56px rgba(0,0,0,0.8)",
-                    display: "block", pointerEvents: "none",
-                    transform: isBattle ? "rotate(90deg)" : undefined,
-                  }}
-                />
-                {hasFaces && (
-                  <button
-                    onPointerDown={e => { e.stopPropagation(); setFaceIdx(f => f === 0 ? 1 : 0); }}
+              {mainUrl ? (
+                <>
+                  <img
+                    src={mainUrl}
+                    alt={card?.name}
+                    draggable={false}
                     style={{
-                      position: "absolute", bottom: 10, right: 10,
-                      width: 34, height: 34, borderRadius: "50%",
-                      background: "rgba(0,0,0,0.75)",
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      color: "white", cursor: "pointer", fontSize: 18,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      lineHeight: 1,
+                      maxHeight: isBattle
+                        ? undefined
+                        : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 230px)`,
+                      width: "auto",
+                      maxWidth: isBattle ? "min(55vw, 220px)" : "min(88vw, 350px)",
+                      borderRadius: 14,
+                      boxShadow: "0 18px 56px rgba(0,0,0,0.8)",
+                      display: "block", pointerEvents: "none",
+                      transform: isBattle ? "rotate(90deg)" : undefined,
                     }}
-                  >↻</button>
-                )}
-              </>
-            ) : (
-              <div style={{
-                width: 260, height: 362,
-                background: "var(--panel)", borderRadius: 14,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "rgba(255,255,255,0.5)", fontSize: 14,
-                padding: 16, textAlign: "center",
-              }}>
-                {card?.name}
-              </div>
-            )}
-          </div>
+                  />
+                  {hasFaces && (
+                    <button
+                      onPointerDown={e => { e.stopPropagation(); setFaceIdx(f => f === 0 ? 1 : 0); }}
+                      style={{
+                        position: "absolute", bottom: 10, right: 10,
+                        width: 34, height: 34, borderRadius: "50%",
+                        background: "rgba(0,0,0,0.75)",
+                        border: "1px solid rgba(255,255,255,0.3)",
+                        color: "white", cursor: "pointer", fontSize: 18,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        lineHeight: 1,
+                      }}
+                    >↻</button>
+                  )}
+                </>
+              ) : (
+                <div style={{
+                  width: 260, height: 362,
+                  background: "var(--panel)", borderRadius: 14,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "rgba(255,255,255,0.5)", fontSize: 14,
+                  padding: 16, textAlign: "center",
+                }}>
+                  {card?.name}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
+
+      {/* ── Action buttons ── */}
+      {!done && (
+        <div style={{
+          position: "relative", zIndex: 10, flexShrink: 0,
+          display: "flex", alignItems: "center",
+          justifyContent: "center", gap: 36,
+          paddingTop: 10, paddingBottom: 24,
+        }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+            <button
+              onClick={() => doResolve(false)}
+              disabled={!!animOut}
+              style={{
+                width: 54, height: 54, borderRadius: "50%",
+                border: "2px solid var(--secondary)",
+                background: "rgba(167,139,250,0.1)",
+                color: "var(--secondary)",
+                fontSize: 20, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >✕</button>
+            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+              MAYBE
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+            <button
+              onClick={() => doResolve(true)}
+              disabled={!!animOut}
+              style={{
+                width: 54, height: 54, borderRadius: "50%",
+                border: "2px solid var(--success)",
+                background: "rgba(52,211,153,0.1)",
+                color: "var(--success)",
+                fontSize: 20, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >♥</button>
+            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+              KEEP
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── Onboarding tip overlay ── */}
       {showTip && (

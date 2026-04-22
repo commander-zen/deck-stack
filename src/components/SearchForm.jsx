@@ -253,91 +253,83 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
       {/* Hidden submit so Enter key works in inputs */}
       <button type="submit" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" />
 
-      {/* Search input with icon */}
+      {/* Search input + filters toggle — unified row */}
       <div
         onFocus={() => setSearchFocused(true)}
         onBlur={() => setSearchFocused(false)}
         style={{
-          display: "flex", alignItems: "center", gap: 10,
+          display: "flex", alignItems: "center",
           background: "var(--panel)",
-          border: `1px solid ${searchFocused ? "rgba(91,143,255,0.4)" : "rgba(255,255,255,0.07)"}`,
+          border: `1px solid ${searchFocused || advOpen ? "rgba(91,143,255,0.4)" : "rgba(255,255,255,0.07)"}`,
           borderRadius: 14,
-          padding: "14px 16px",
           transition: "border-color 0.15s",
+          overflow: "hidden",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          style={{ flexShrink: 0, opacity: 0.5 }}>
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          value={rawQuery}
-          onChange={e => setRawQuery(e.target.value)}
-          placeholder="ramp, draw, removal… or Scryfall syntax"
-          autoComplete="off"
-          spellCheck={false}
-          style={{
-            flex: 1, background: "none", border: "none", outline: "none",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 16, color: "var(--text)",
-            caretColor: "var(--primary)",
-          }}
-        />
-      </div>
-
-      {error && (
-        <div style={{ fontSize: 13, color: "var(--danger)", paddingLeft: 2 }}>{error}</div>
-      )}
-
-      {/* Filters toggle */}
-      <button
-        type="button"
-        onClick={() => setAdvOpen(v => !v)}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          width: "100%",
-          background: "var(--panel)",
-          border: `1px solid ${advOpen ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)"}`,
-          borderRadius: 14,
-          padding: "12px 16px",
-          cursor: "pointer",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M1 3h12M3 7h8M5 11h4" stroke="var(--text2)" strokeWidth="1.5" strokeLinecap="round"/>
+        {/* Search icon + input */}
+        <div style={{ display: "flex", alignItems: "center", flex: 1, gap: 10, padding: "14px 16px", minWidth: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{ flexShrink: 0, opacity: 0.5 }}>
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
           </svg>
-          <span style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13, fontWeight: 500,
-            color: "var(--text2)",
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-          }}>
-            Filters
-          </span>
+          <input
+            value={rawQuery}
+            onChange={e => setRawQuery(e.target.value)}
+            placeholder="ramp, draw, removal… or Scryfall syntax"
+            autoComplete="off"
+            spellCheck={false}
+            style={{
+              flex: 1, background: "none", border: "none", outline: "none",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 16, color: "var(--text)",
+              caretColor: "var(--primary)",
+              minWidth: 0,
+            }}
+          />
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,0.08)", flexShrink: 0, margin: "8px 0" }} />
+
+        {/* Filters suffix button */}
+        <button
+          type="button"
+          onClick={() => setAdvOpen(v => !v)}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "14px 14px",
+            background: advOpen ? "rgba(91,143,255,0.08)" : "transparent",
+            border: "none",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+            <path d="M1 3h12M3 7h8M5 11h4"
+              stroke={advOpen || activeFilterCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.45)"}
+              strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
           {activeFilterCount > 0 && (
             <span style={{
               background: "rgba(91,143,255,0.2)",
               color: "var(--primary)",
               borderRadius: 10,
-              padding: "1px 7px",
+              padding: "1px 6px",
               fontSize: 11, fontWeight: 600,
               fontFamily: "'DM Sans', sans-serif",
+              lineHeight: 1.4,
             }}>
               {activeFilterCount}
             </span>
           )}
-        </div>
-        <span style={{
-          fontSize: 10, color: "var(--muted)",
-          transform: advOpen ? "rotate(90deg)" : "rotate(0deg)",
-          transition: "transform 0.2s",
-          display: "inline-block",
-        }}>▶</span>
-      </button>
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ fontSize: 13, color: "var(--danger)", paddingLeft: 2 }}>{error}</div>
+      )}
 
       {/* Filters panel */}
       {advOpen && (

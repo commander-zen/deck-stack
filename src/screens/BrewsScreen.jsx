@@ -20,14 +20,21 @@ function relativeTime(isoString) {
 export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDelete, authUser, onOpenAuth, onImport }) {
   const [confirmId, setConfirmId] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   function handleSwitch(id) {
     onSwitch(id);
   }
 
-  function handleDelete(id) {
-    onDelete(id);
-    setConfirmId(null);
+  async function handleDelete(id) {
+    setDeleteError("");
+    try {
+      await onDelete(id);
+      setConfirmId(null);
+    } catch (err) {
+      setDeleteError(err?.message || "Failed to delete brew.");
+      setConfirmId(null);
+    }
   }
 
   const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 18px)`;
@@ -129,6 +136,20 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
         >
           {authUser ? `Signed in · ${authUser.email}` : "Sign in to sync across devices ↗"}
         </button>
+
+        {/* Delete error */}
+        {deleteError && (
+          <div style={{
+            margin: "8px 18px 0",
+            padding: "9px 13px",
+            borderRadius: 8,
+            background: "rgba(255,80,80,0.08)",
+            border: "1px solid rgba(255,80,80,0.25)",
+            fontSize: 12, color: "var(--danger)", lineHeight: 1.4,
+          }}>
+            {deleteError}
+          </div>
+        )}
 
         {/* Divider */}
         <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 0 0" }} />

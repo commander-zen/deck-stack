@@ -320,19 +320,22 @@ export default function App() {
 
   // ── Delete deck ───────────────────────────────────────────────────────────
   async function handleDeleteDeck(deckId) {
-    try {
-      await deleteDeck(sessionId, deckId, authUser?.id ?? null);
-      const remaining = decks.filter(d => d.id !== deckId);
-      setDecks(remaining);
-      if (deckId === activeDeckId) {
-        if (remaining.length > 0) {
-          handleSwitchDeck(remaining[0].id);
-        } else {
-          handleNewDeck();
-        }
+    await deleteDeck(sessionId, deckId, authUser?.id ?? null);
+    const remaining = decks.filter(d => d.id !== deckId);
+    setDecks(remaining);
+    if (deckId === activeDeckId) {
+      if (remaining.length > 0) {
+        // Switch directly — avoid handleSwitchDeck which saves the just-deleted deck
+        const next = remaining[0];
+        setActiveDeckId(next.id);
+        restoreDeck(next);
+      } else {
+        // No decks left — reset to clean search state without saving anything
+        setPile([]); setCommander(null); setCommanderCard(null);
+        setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
+        setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
+        setScreen("search");
       }
-    } catch (err) {
-      console.error("Failed to delete deck:", err);
     }
   }
 
