@@ -216,8 +216,10 @@ export default function SwipeScreen({
 
   return (
     <div style={{
-      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`,
-      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top))`,
+      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
+      boxSizing: "border-box",
+      paddingTop: "env(safe-area-inset-top)",
       background: "var(--bg)",
       display: "flex", flexDirection: "column",
       fontFamily: "'DM Sans', sans-serif",
