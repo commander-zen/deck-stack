@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
+import CommanderModal from "../components/CommanderModal.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 function buildExportText(pile, commander) {
@@ -37,11 +38,12 @@ export default function PileScreen({
   maybeboard, onMaybeboardChange,
   initialTab,
 }) {
-  const [viewMode,   setViewMode]   = useState("list");
-  const [activeTab,  setActiveTab]  = useState(initialTab ?? "deck");
-  const [reviewMode, setReviewMode] = useState(null);
-  const [lightbox,   setLightbox]   = useState(null);
-  const [copied,     setCopied]     = useState(false);
+  const [viewMode,        setViewMode]        = useState("list");
+  const [activeTab,       setActiveTab]       = useState(initialTab ?? "deck");
+  const [reviewMode,      setReviewMode]      = useState(null);
+  const [lightbox,        setLightbox]        = useState(null);
+  const [copied,          setCopied]          = useState(false);
+  const [cmdModalOpen,    setCmdModalOpen]    = useState(false);
 
   // Drag-to-reorder (list view, deck tab only)
   const [drag, setDrag] = useState(null); // { srcIdx, targetIdx, startY, currentY }
@@ -344,15 +346,23 @@ export default function PileScreen({
                   src={getCardImage(reviewCommanderCard, "art_crop")}
                   alt={commanderName}
                   draggable={false}
-                  style={{ width: 40, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+                  onClick={() => setCmdModalOpen(true)}
+                  style={{
+                    width: 40, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0,
+                    cursor: "pointer",
+                  }}
                 />
               )}
-              <span style={{
-                flex: 1,
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 18, letterSpacing: 3, color: "var(--text)",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
+              <span
+                onClick={() => setCmdModalOpen(true)}
+                style={{
+                  flex: 1,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: 3, color: "var(--text)",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >
                 {commanderName}
               </span>
             </>
@@ -518,6 +528,12 @@ export default function PileScreen({
           </button>
         </div>
       )}
+
+      {/* ── Commander modal ── */}
+      <CommanderModal
+        card={cmdModalOpen ? reviewCommanderCard : null}
+        onClose={() => setCmdModalOpen(false)}
+      />
 
       {/* ── Lightbox ── */}
       {lightbox && (

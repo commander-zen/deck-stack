@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { getCardImage, searchCommanders } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
+import CommanderModal from "../components/CommanderModal.jsx";
 
 const SWIPE_THRESHOLD = 60;
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
@@ -641,45 +642,10 @@ export default function SwipeScreen({
       )}
 
       {/* ── Commander card modal ── */}
-      {cmdModalOpen && commanderCard && (
-        <div
-          onClick={() => setCmdModalOpen(false)}
-          style={{
-            position: "absolute", inset: 0, zIndex: 400,
-            background: "rgba(0,0,0,0.85)",
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            padding: "24px 16px",
-          }}
-        >
-          <button
-            onClick={e => { e.stopPropagation(); setCmdModalOpen(false); }}
-            style={{
-              position: "absolute", top: 16, right: 16,
-              width: 36, height: 36, borderRadius: "50%",
-              background: "rgba(255,255,255,0.12)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              color: "rgba(255,255,255,0.8)", fontSize: 16,
-              cursor: "pointer", display: "flex",
-              alignItems: "center", justifyContent: "center",
-              lineHeight: 1,
-            }}
-          >✕</button>
-          <img
-            src={getCardImage(commanderCard, "normal")}
-            alt={commanderCard.name}
-            draggable={false}
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: "min(88vw, 360px)",
-              maxHeight: "calc(100dvh - 120px)",
-              width: "auto", height: "auto",
-              borderRadius: 16,
-              boxShadow: "0 24px 72px rgba(0,0,0,0.9)",
-            }}
-          />
-        </div>
-      )}
+      <CommanderModal
+        card={cmdModalOpen ? commanderCard : null}
+        onClose={() => setCmdModalOpen(false)}
+      />
 
       {/* ── Onboarding tip overlay ── */}
       {showTip && (
