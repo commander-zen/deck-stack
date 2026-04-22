@@ -505,7 +505,7 @@ export default function SwipeScreen({
                   fontSize: 26, letterSpacing: 4,
                   transform: "rotate(-15deg)",
                   background: "rgba(0,0,0,0.55)",
-                }}>KEEP</div>
+                }}>PILE</div>
               )}
               {badge === "pass" && (
                 <div style={{
@@ -517,7 +517,7 @@ export default function SwipeScreen({
                   fontSize: 26, letterSpacing: 4,
                   transform: "rotate(15deg)",
                   background: "rgba(0,0,0,0.55)",
-                }}>MAYBE</div>
+                }}>SKIP</div>
               )}
 
               {mainUrl ? (
@@ -591,7 +591,7 @@ export default function SwipeScreen({
               }}
             >✕</button>
             <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
-              MAYBE
+              SKIP
             </span>
           </div>
 
@@ -609,7 +609,7 @@ export default function SwipeScreen({
               }}
             >♥</button>
             <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
-              KEEP
+              PILE
             </span>
           </div>
         </div>
@@ -682,8 +682,8 @@ export default function SwipeScreen({
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                { dir: "← LEFT", label: "MAYBE BOARD", color: "var(--secondary)" },
-                { dir: "RIGHT →", label: "KEEP IT", color: "var(--success)" },
+                { dir: "← LEFT", label: "SKIP", color: "var(--secondary)" },
+                { dir: "RIGHT →", label: "ADD TO PILE", color: "var(--success)" },
               ].map(({ dir, label, color }) => (
                 <div key={dir} style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
