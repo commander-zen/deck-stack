@@ -256,28 +256,47 @@ export default function App() {
 
   // ── Import deck ───────────────────────────────────────────────────────────
   async function handleImport(importedPile, importedCommanderCard) {
-    const newDeckId = crypto.randomUUID();
-    const deckName  = importedCommanderCard?.name || "Imported Deck";
-    const newDeck   = {
-      id: newDeckId, name: deckName,
-      commander_name: importedCommanderCard?.name ?? null,
-      commander_instance_id: importedCommanderCard?.instanceId ?? null,
-      commander_card: importedCommanderCard ?? null,
-      pile: importedPile, maybeboard: [],
-      swipe_cards: [], swipe_index: 0, query: "",
-      last_opened_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-    };
+    const commanderInstanceId = importedCommanderCard?.instanceId ?? null;
+    const deckName = importedCommanderCard?.name || "Imported Deck";
 
+    // Shared state updates regardless of path
     setPile(importedPile);
-    setCommander(importedCommanderCard?.instanceId ?? null);
+    setCommander(commanderInstanceId);
     setCommanderCard(importedCommanderCard ?? null);
-    setSwipeCards([]); setSwipeIndex(0); setMaybeboard([]);
-    setActiveDeckId(newDeckId);
-    setDecks(ds => [newDeck, ...ds]);
+    setSwipeCards([]); setSwipeIndex(0); setMaybeboard([]); setQuery("");
+    setSwipeMounted(false);
     setScreen("pile");
 
-    if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
+    if (activeDeckId) {
+      // Load into the current active brew — don't create a second deck
+      const deckPayload = {
+        id: activeDeckId, name: deckName,
+        commander_name: importedCommanderCard?.name ?? null,
+        commander_instance_id: commanderInstanceId,
+        commander_card: importedCommanderCard ?? null,
+        pile: importedPile, maybeboard: [],
+        swipe_cards: [], swipe_index: 0, query: "",
+        last_opened_at: new Date().toISOString(),
+      };
+      setDecks(ds => ds.map(d => d.id === activeDeckId ? { ...d, ...deckPayload } : d));
+      if (sessionId) saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(console.error);
+    } else {
+      // No active brew — create exactly one new deck
+      const newDeckId = crypto.randomUUID();
+      const newDeck = {
+        id: newDeckId, name: deckName,
+        commander_name: importedCommanderCard?.name ?? null,
+        commander_instance_id: commanderInstanceId,
+        commander_card: importedCommanderCard ?? null,
+        pile: importedPile, maybeboard: [],
+        swipe_cards: [], swipe_index: 0, query: "",
+        last_opened_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      setActiveDeckId(newDeckId);
+      setDecks(ds => [newDeck, ...ds]);
+      if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
+    }
   }
 
   // ── Switch deck ───────────────────────────────────────────────────────────
