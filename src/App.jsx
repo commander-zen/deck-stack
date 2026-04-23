@@ -179,19 +179,27 @@ export default function App() {
     bgFetchAbort.current?.abort();
     bgFetchAbort.current = null;
 
-    try {
-      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, commanderCard);
+    // Capture commander lock BEFORE any state mutations.
+    // Lock applies when the brew has kept cards AND the user has explicitly
+    // assigned a pile card as commander (long-press in PileScreen).
+    const lockedCard = (pile.length > 0 && commander !== null)
+      ? (pile.find(c => c.instanceId === commander) ?? commanderCard)
+      : null;
+    const effectiveCommanderCard = lockedCard ?? commanderCard;
 
-      const deckName = computeDeckName(commanderCard, q);
+    try {
+      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, effectiveCommanderCard);
+
+      const deckName = computeDeckName(effectiveCommanderCard, q);
 
       let targetDeckId = activeDeckId;
       if (!targetDeckId) {
         targetDeckId = crypto.randomUUID();
         const newDeck = {
           id: targetDeckId, name: deckName,
-          commander_name: commanderCard?.name ?? null,
+          commander_name: effectiveCommanderCard?.name ?? null,
           commander_instance_id: null,
-          commander_card: commanderCard ?? null,
+          commander_card: effectiveCommanderCard ?? null,
           pile: [], maybeboard: [], swipe_cards: firstCards,
           swipe_index: 0, query: q,
           last_opened_at: new Date().toISOString(),
@@ -202,13 +210,15 @@ export default function App() {
       } else {
         setDecks(ds => ds.map(d =>
           d.id === targetDeckId
-            ? { ...d, name: deckName, commander_card: commanderCard ?? null, swipe_cards: firstCards, swipe_index: 0, query: q, last_opened_at: new Date().toISOString() }
+            ? { ...d, name: deckName, commander_card: effectiveCommanderCard ?? null, swipe_cards: firstCards, swipe_index: 0, query: q, last_opened_at: new Date().toISOString() }
             : d
         ));
       }
 
       setPile([]); setCommander(null); setMaybeboard([]);
       setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0); setSwipeDisplayLimit(20);
+      // Restore locked commander into state so it survives the pile reset
+      if (lockedCard) setCommanderCard(lockedCard);
       setSwipeMounted(true);
       setSwipeKey(k => k + 1);
       setScreen("swipe");
@@ -216,9 +226,9 @@ export default function App() {
 
       const deckPayload = {
         id: targetDeckId, name: deckName,
-        commander_name: commanderCard?.name ?? null,
+        commander_name: effectiveCommanderCard?.name ?? null,
         commander_instance_id: null,
-        commander_card: commanderCard ?? null,
+        commander_card: effectiveCommanderCard ?? null,
         pile: [], maybeboard: [], swipe_cards: firstCards,
         swipe_index: 0, query: q,
         last_opened_at: new Date().toISOString(),
@@ -261,13 +271,18 @@ export default function App() {
 
   // ── Import deck ───────────────────────────────────────────────────────────
   async function handleImport(importedPile, importedCommanderCard) {
-    const commanderInstanceId = importedCommanderCard?.instanceId ?? null;
-    const deckName = importedCommanderCard?.name || "Imported Deck";
+    // If the brew already has kept cards AND an explicitly-assigned commander,
+    // the commander is immutable — keep the existing one, ignore the import's.
+    const commanderLocked = pile.length > 0 && commander !== null;
+    const effectiveCommanderCard = commanderLocked ? commanderCard : (importedCommanderCard ?? null);
+    const effectiveCommander     = commanderLocked ? commander     : (importedCommanderCard?.instanceId ?? null);
+
+    const deckName = effectiveCommanderCard?.name || importedCommanderCard?.name || "Imported Deck";
 
     // Shared state updates regardless of path
     setPile(importedPile);
-    setCommander(commanderInstanceId);
-    setCommanderCard(importedCommanderCard ?? null);
+    setCommander(effectiveCommander);
+    setCommanderCard(effectiveCommanderCard);
     setSwipeCards([]); setSwipeIndex(0); setMaybeboard([]); setQuery("");
     setSwipeMounted(false);
     setScreen("pile");
@@ -276,9 +291,9 @@ export default function App() {
       // Load into the current active brew — don't create a second deck
       const deckPayload = {
         id: activeDeckId, name: deckName,
-        commander_name: importedCommanderCard?.name ?? null,
-        commander_instance_id: commanderInstanceId,
-        commander_card: importedCommanderCard ?? null,
+        commander_name: effectiveCommanderCard?.name ?? null,
+        commander_instance_id: effectiveCommander,
+        commander_card: effectiveCommanderCard ?? null,
         pile: importedPile, maybeboard: [],
         swipe_cards: [], swipe_index: 0, query: "",
         last_opened_at: new Date().toISOString(),
@@ -290,9 +305,9 @@ export default function App() {
       const newDeckId = crypto.randomUUID();
       const newDeck = {
         id: newDeckId, name: deckName,
-        commander_name: importedCommanderCard?.name ?? null,
-        commander_instance_id: commanderInstanceId,
-        commander_card: importedCommanderCard ?? null,
+        commander_name: effectiveCommanderCard?.name ?? null,
+        commander_instance_id: effectiveCommander,
+        commander_card: effectiveCommanderCard ?? null,
         pile: importedPile, maybeboard: [],
         swipe_cards: [], swipe_index: 0, query: "",
         last_opened_at: new Date().toISOString(),
