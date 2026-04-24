@@ -33,14 +33,16 @@ export default function SwipeScreen({
   onGoToPile, onGoToSearch, onSearchMore, commanderCard, onCommanderCardChange,
   initialIndex, onIndexChange,
   swipeOrder = "name", swipeDir = "auto", onSortChange,
+  onGoToBrews,
 }) {
-  const [idx,     setIdx]     = useState(initialIndex ?? 0);
-  const [history, setHistory] = useState([]);
-  const [offset,  setOffset]  = useState(0);
-  const [dragging,setDragging]= useState(false);
-  const [badge,   setBadge]   = useState(null);
-  const [animOut, setAnimOut] = useState(null);
-  const [faceIdx, setFaceIdx] = useState(0);
+  const [idx,          setIdx]          = useState(initialIndex ?? 0);
+  const [history,      setHistory]      = useState([]);
+  const [offset,       setOffset]       = useState(0);
+  const [dragging,     setDragging]     = useState(false);
+  const [badge,        setBadge]        = useState(null);
+  const [animOut,      setAnimOut]      = useState(null);
+  const [faceIdx,      setFaceIdx]      = useState(0);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
   // Inline commander picker
   const [cmdPickerOpen, setCmdPickerOpen]   = useState(false);
@@ -234,8 +236,6 @@ export default function SwipeScreen({
       position: "relative",
       maxWidth: 600, margin: "0 auto", width: "100%",
     }}>
-      <style>{`.swipe-sort-scroller::-webkit-scrollbar { display: none; }`}</style>
-
       {/* Blurred art background */}
       {artUrl && (
         <div style={{
@@ -246,45 +246,6 @@ export default function SwipeScreen({
           transform: "scale(1.1)", pointerEvents: "none",
         }} />
       )}
-
-      {/* ── Top bar ── */}
-      <div style={{
-        position: "relative", zIndex: 20, flexShrink: 0,
-        display: "flex", alignItems: "center",
-        padding: "0 14px", height: 52,
-        background: "rgba(13,13,15,0.9)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        backdropFilter: "blur(10px)",
-      }}>
-        <button
-          onClick={onGoToSearch}
-          style={{
-            background: "transparent", border: "none",
-            color: "rgba(255,255,255,0.6)", cursor: "pointer",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 20, lineHeight: 1,
-            padding: "6px 10px 6px 0",
-          }}
-        >←</button>
-        <span style={{
-          flex: 1,
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 18, letterSpacing: 4, color: "var(--primary)",
-        }}>
-          DECK STACK
-        </span>
-        <button
-          onClick={onGoToPile}
-          style={{
-            padding: "6px 14px", borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.15)",
-            background: "transparent",
-            color: "rgba(255,255,255,0.6)",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 13, letterSpacing: 2, cursor: "pointer",
-          }}
-        >DONE</button>
-      </div>
 
       {/* ── Commander row ── */}
       <div style={{
@@ -375,33 +336,50 @@ export default function SwipeScreen({
           </div>
         ) : (
           <div
-            onClick={() => commanderCard ? setCmdModalOpen(true) : openCmdPicker()}
+            onClick={() => {
+              if (sortMenuOpen) { setSortMenuOpen(false); return; }
+              commanderCard ? setCmdModalOpen(true) : openCmdPicker();
+            }}
             style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "6px 14px",
+              width: "100%", display: "flex", alignItems: "center", gap: 7,
+              padding: "6px 8px",
               cursor: "pointer",
             }}
           >
+            {/* ← Back to Brews */}
+            <button
+              onClick={e => { e.stopPropagation(); onGoToBrews?.(); }}
+              style={{
+                background: "transparent", border: "none",
+                color: "rgba(255,255,255,0.5)", cursor: "pointer",
+                fontSize: 18, lineHeight: 1,
+                padding: "4px 4px", flexShrink: 0,
+              }}
+            >←</button>
+
+            {/* Thumbnail */}
             {cmdArt ? (
               <img
                 src={cmdArt}
                 alt={commanderCard.name}
                 draggable={false}
-                style={{ width: 56, height: 40, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+                style={{ width: 52, height: 37, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
               />
             ) : (
               <div style={{
-                width: 56, height: 40, borderRadius: 4, flexShrink: 0,
+                width: 52, height: 37, borderRadius: 4, flexShrink: 0,
                 background: "rgba(255,255,255,0.05)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <span style={{ fontSize: 18, opacity: 0.4 }}>👑</span>
+                <span style={{ fontSize: 16, opacity: 0.4 }}>👑</span>
               </div>
             )}
+
+            {/* Info */}
             <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
               {commanderCard ? (
                 <>
-                  <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
                     COMMANDER
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -412,9 +390,13 @@ export default function SwipeScreen({
                 <div style={{ fontSize: 12, color: "var(--muted)" }}>Set commander…</div>
               )}
             </div>
+
+            {/* Color pips */}
             <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
               {commanderCard?.color_identity?.map(c => <ColorPip key={c} color={c} />)}
             </div>
+
+            {/* Edit commander */}
             <button
               onClick={e => { e.stopPropagation(); openCmdPicker(); }}
               style={{
@@ -423,69 +405,80 @@ export default function SwipeScreen({
                 padding: "4px 2px", lineHeight: 1, flexShrink: 0,
               }}
             >✎</button>
+
+            {/* Dir toggle */}
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                const next = swipeDir === "auto" ? "asc" : swipeDir === "asc" ? "desc" : "auto";
+                onSortChange?.(swipeOrder, next);
+              }}
+              style={{
+                flexShrink: 0,
+                width: 26, height: 26, borderRadius: 5,
+                border: swipeDir !== "auto" ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent",
+                background: "transparent",
+                color: swipeDir !== "auto" ? "var(--text)" : "rgba(255,255,255,0.3)",
+                cursor: "pointer", fontSize: 13,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              {swipeDir === "asc" ? "↑" : swipeDir === "desc" ? "↓" : "↕"}
+            </button>
+
+            {/* Sort menu button */}
+            <button
+              onClick={e => { e.stopPropagation(); setSortMenuOpen(o => !o); }}
+              style={{
+                flexShrink: 0,
+                padding: "3px 7px", borderRadius: 5,
+                border: sortMenuOpen ? "1px solid var(--primary)" : "1px solid rgba(255,255,255,0.1)",
+                background: sortMenuOpen ? "rgba(91,143,255,0.12)" : "transparent",
+                color: sortMenuOpen ? "var(--primary)" : "rgba(255,255,255,0.4)",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 10, letterSpacing: 1, cursor: "pointer", lineHeight: 1,
+                marginRight: 2,
+              }}
+            >
+              {SORT_OPTIONS.find(o => o.value === swipeOrder)?.label ?? "SORT"}
+            </button>
           </div>
         )}
-      </div>
 
-      {/* ── Sort row ── */}
-      <div style={{
-        position: "relative", zIndex: 20, flexShrink: 0,
-        background: "rgba(13,13,15,0.85)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        backdropFilter: "blur(10px)",
-        display: "flex", alignItems: "center",
-      }}>
-        <div
-          className="swipe-sort-scroller"
-          style={{
-            flex: 1, display: "flex", gap: 4,
-            overflowX: "auto", padding: "6px 14px",
-            scrollbarWidth: "none",
-          }}
-        >
-          {SORT_OPTIONS.map(opt => {
-            const active = swipeOrder === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => onSortChange?.(opt.value, swipeDir)}
-                style={{
-                  flexShrink: 0,
-                  padding: "4px 10px",
-                  borderRadius: 20,
-                  border: active
-                    ? "1px solid var(--primary)"
-                    : "1px solid rgba(255,255,255,0.1)",
-                  background: active ? "rgba(91,143,255,0.15)" : "transparent",
-                  color: active ? "var(--primary)" : "rgba(255,255,255,0.4)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 11, letterSpacing: 1.5,
-                  cursor: "pointer", lineHeight: 1,
-                }}
-              >{opt.label}</button>
-            );
-          })}
-        </div>
-        <button
-          onClick={() => {
-            const next = swipeDir === "auto" ? "asc" : swipeDir === "asc" ? "desc" : "auto";
-            onSortChange?.(swipeOrder, next);
-          }}
-          style={{
-            flexShrink: 0,
-            width: 32, height: 32, borderRadius: 6,
-            border: swipeDir !== "auto"
-              ? "1px solid rgba(255,255,255,0.2)"
-              : "1px solid transparent",
-            background: "transparent",
-            color: swipeDir !== "auto" ? "var(--text)" : "rgba(255,255,255,0.25)",
-            cursor: "pointer", fontSize: 14,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            marginRight: 8,
-          }}
-        >
-          {swipeDir === "asc" ? "↑" : swipeDir === "desc" ? "↓" : "↕"}
-        </button>
+        {/* Sort dropdown */}
+        {sortMenuOpen && (
+          <div style={{
+            position: "absolute", top: "100%", right: 8, zIndex: 30,
+            background: "var(--panel2)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 10, overflow: "hidden",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
+            minWidth: 110,
+          }}>
+            {SORT_OPTIONS.map(opt => {
+              const active = swipeOrder === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => { onSortChange?.(opt.value, swipeDir); setSortMenuOpen(false); }}
+                  style={{
+                    display: "block", width: "100%",
+                    padding: "10px 14px",
+                    background: active ? "rgba(91,143,255,0.12)" : "transparent",
+                    border: "none",
+                    borderBottom: "1px solid rgba(255,255,255,0.05)",
+                    color: active ? "var(--primary)" : "var(--text)",
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: 12, letterSpacing: 2,
+                    cursor: "pointer", textAlign: "left",
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Card area ── */}
@@ -623,7 +616,7 @@ export default function SwipeScreen({
                     style={{
                       maxHeight: isBattle
                         ? undefined
-                        : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 230px)`,
+                        : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 140px)`,
                       width: "auto",
                       maxWidth: isBattle ? "min(55vw, 220px)" : "min(88vw, 350px)",
                       borderRadius: 14,

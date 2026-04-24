@@ -499,6 +499,24 @@ export default function App() {
     handleResort(order, dir);
   }
 
+  // ── Commander card lock guard (prevents UI pickers from overwriting a brew's commander) ──
+  function handleCommanderCardChange(newCard) {
+    const activeDeckCommander = activeDeckId
+      ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
+      : null;
+    console.log(
+      "[commander lock] change attempted — current:", commanderCard?.name ?? null,
+      "→ incoming:", newCard?.name ?? null,
+      "| brew locked to:", activeDeckCommander?.name ?? "none",
+      "| activeDeckId:", activeDeckId
+    );
+    if (activeDeckCommander) {
+      console.log("[commander lock] BLOCKED — brew already has a locked commander:", activeDeckCommander.name);
+      return;
+    }
+    setCommanderCard(newCard);
+  }
+
   // ── Commander assignment guard ────────────────────────────────────────────
   function handleCommanderChange(instanceId) {
     if (!instanceId) { setCommander(null); return; }
@@ -555,7 +573,7 @@ export default function App() {
           loading={loading}
           error={error}
           commanderCard={commanderCard}
-          onCommanderCardChange={setCommanderCard}
+          onCommanderCardChange={handleCommanderCardChange}
         />
       )}
 
@@ -572,12 +590,13 @@ export default function App() {
             onGoToSearch={goToSearch}
             onSearchMore={handleSearchMore}
             commanderCard={commanderCard}
-            onCommanderCardChange={setCommanderCard}
+            onCommanderCardChange={handleCommanderCardChange}
             initialIndex={swipeIndex}
             onIndexChange={setSwipeIndex}
             swipeOrder={swipeOrder}
             swipeDir={swipeDir}
             onSortChange={handleSortChange}
+            onGoToBrews={goToProfile}
           />
         </div>
       )}
