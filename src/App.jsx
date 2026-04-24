@@ -509,7 +509,7 @@ export default function App() {
       "| brew locked to:", activeDeckCommander?.name ?? "none",
       "| activeDeckId:", activeDeckId
     );
-    if (activeDeckCommander) {
+    if (newCard !== null && activeDeckCommander && pile.length > 0) {
       console.log("[commander lock] BLOCKED — brew already has a locked commander:", activeDeckCommander.name);
       return;
     }
