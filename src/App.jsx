@@ -61,8 +61,8 @@ export default function App() {
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const safetyTimer = setTimeout(() => setAppReady(true), 3000);
-    async function init() {
+    setAppReady(true);
+    async function initBackground() {
       try {
         const sid = await getOrCreateSession();
         setSessionId(sid);
@@ -78,13 +78,9 @@ export default function App() {
         }
       } catch (err) {
         console.error("Failed to init from Supabase:", err);
-      } finally {
-        clearTimeout(safetyTimer);
-        setAppReady(true);
       }
     }
-    init();
-    return () => clearTimeout(safetyTimer);
+    initBackground();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function restoreDeck(deck) {

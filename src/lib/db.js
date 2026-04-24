@@ -7,10 +7,14 @@ export async function getOrCreateSession() {
     localStorage.setItem("deckstack_session_id", id);
   }
   if (supabase) {
-    const { error } = await supabase
-      .from("sessions")
-      .upsert({ id }, { onConflict: "id" });
-    if (error) throw error;
+    try {
+      const { error } = await supabase
+        .from("sessions")
+        .upsert({ id }, { onConflict: "id" });
+      if (error) console.warn("Session upsert failed:", error);
+    } catch (err) {
+      console.warn("Session upsert failed:", err);
+    }
   }
   return id;
 }
