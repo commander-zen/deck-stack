@@ -6,13 +6,9 @@ import CommanderModal from "../components/CommanderModal.jsx";
 const SWIPE_THRESHOLD = 60;
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 const SORT_OPTIONS = [
-  { value: "name",     label: "NAME" },
-  { value: "cmc",      label: "CMC" },
-  { value: "color",    label: "COLOR" },
-  { value: "rarity",   label: "RARITY" },
-  { value: "usd",      label: "PRICE" },
-  { value: "edhrec",   label: "EDHREC" },
-  { value: "released", label: "DATE" },
+  { value: "name",   label: "NAME" },
+  { value: "cmc",    label: "CMC" },
+  { value: "edhrec", label: "EDHREC" },
 ];
 const TIP_KEY = "deckstack_swipe_tip_seen";
 
