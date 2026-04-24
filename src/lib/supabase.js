@@ -10,7 +10,14 @@ let _client = null;
 export function getSupabaseClient() {
   if (!_client) {
     _client = url && key
-      ? createClient(url, key, { auth: { lock: { timeout: 15000 } } })
+      ? createClient(url, key, {
+          auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,
+            lockAcquireTimeout: 15000,
+          },
+        })
       : null;
   }
   return _client;
