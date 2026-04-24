@@ -231,7 +231,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                 {isConfirm ? (
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button
-                      onClick={() => setConfirmId(null)}
+                      onClick={e => { e.stopPropagation(); setConfirmId(null); }}
                       style={{
                         padding: "5px 10px", borderRadius: 6,
                         border: "1px solid rgba(255,255,255,0.15)",
@@ -241,7 +241,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                       }}
                     >CANCEL</button>
                     <button
-                      onClick={() => handleDelete(deck.id)}
+                      onClick={e => { e.stopPropagation(); handleDelete(deck.id); }}
                       style={{
                         padding: "5px 10px", borderRadius: 6,
                         border: "1px solid rgba(255,80,80,0.4)",
