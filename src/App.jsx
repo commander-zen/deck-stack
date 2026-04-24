@@ -4,7 +4,7 @@ import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
 import AuthSheet     from "./components/AuthSheet.jsx";
-import BottomNav     from "./components/BottomNav.jsx";
+import BottomNav, { NAV_HEIGHT } from "./components/BottomNav.jsx";
 import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js";
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
 import { getSession, onAuthChange } from "./lib/auth.js";
@@ -41,8 +41,10 @@ export default function App() {
   const [error,         setError]         = useState(null);
   const [authUser,      setAuthUser]      = useState(null);
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
+  const [toastMsg,      setToastMsg]      = useState(null);
 
   const bgFetchAbort = useRef(null);
+  const toastTimer   = useRef(null);
 
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
@@ -171,6 +173,26 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady, authUser]);
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  // Returns the first brew that already uses this commander (by Scryfall ID,
+  // falling back to name). Brews with no commander_card are exempt.
+  function commanderAlreadyBrewed(card, excludeId = null) {
+    if (!card?.name) return null;
+    return decks.find(d => {
+      if (d.id === excludeId || !d.commander_card) return false;
+      return card.id && d.commander_card.id
+        ? d.commander_card.id   === card.id
+        : d.commander_card.name === card.name;
+    }) ?? null;
+  }
+
+  function showToast(msg) {
+    clearTimeout(toastTimer.current);
+    setToastMsg(msg);
+    toastTimer.current = setTimeout(() => setToastMsg(null), 3500);
+  }
+
   // ── Search ────────────────────────────────────────────────────────────────
   async function handleSearch(q) {
     setLoading(true); setError(null);
@@ -194,6 +216,16 @@ export default function App() {
 
       let targetDeckId = activeDeckId;
       if (!targetDeckId) {
+        // No active brew: if this commander already has a brew, redirect to it
+        const duplicate = commanderAlreadyBrewed(effectiveCommanderCard);
+        if (duplicate) {
+          setLoading(false);
+          setActiveDeckId(duplicate.id);
+          restoreDeck(duplicate);
+          showToast(`A brew for ${duplicate.commander_card?.name ?? effectiveCommanderCard?.name} already exists`);
+          return;
+        }
+
         targetDeckId = crypto.randomUUID();
         const newDeck = {
           id: targetDeckId, name: deckName,
@@ -208,6 +240,19 @@ export default function App() {
         setActiveDeckId(targetDeckId);
         setDecks(ds => [newDeck, ...ds]);
       } else {
+        // Existing brew: if the commander is changing to one that's already brewed, block
+        if (effectiveCommanderCard && !lockedCard) {
+          const currentCommander = decks.find(d => d.id === targetDeckId)?.commander_card;
+          if (currentCommander?.name !== effectiveCommanderCard.name) {
+            const duplicate = commanderAlreadyBrewed(effectiveCommanderCard, targetDeckId);
+            if (duplicate) {
+              setLoading(false);
+              showToast(`A brew for ${effectiveCommanderCard.name} already exists`);
+              return;
+            }
+          }
+        }
+
         setDecks(ds => ds.map(d =>
           d.id === targetDeckId
             ? { ...d, name: deckName, commander_card: effectiveCommanderCard ?? null, swipe_cards: firstCards, swipe_index: 0, query: q, last_opened_at: new Date().toISOString() }
@@ -278,6 +323,15 @@ export default function App() {
     const effectiveCommander     = commanderLocked ? commander     : (importedCommanderCard?.instanceId ?? null);
 
     const deckName = effectiveCommanderCard?.name || importedCommanderCard?.name || "Imported Deck";
+
+    // Block if a different brew already uses this commander
+    if (!commanderLocked && effectiveCommanderCard) {
+      const duplicate = commanderAlreadyBrewed(effectiveCommanderCard, activeDeckId ?? null);
+      if (duplicate) {
+        showToast(`A brew for ${effectiveCommanderCard.name} already exists`);
+        return;
+      }
+    }
 
     // Shared state updates regardless of path
     setPile(importedPile);
@@ -395,6 +449,20 @@ export default function App() {
     setScreen("search");
   }
 
+  // ── Commander assignment guard ────────────────────────────────────────────
+  function handleCommanderChange(instanceId) {
+    if (!instanceId) { setCommander(null); return; }
+    const card = pile.find(c => c.instanceId === instanceId);
+    if (card) {
+      const duplicate = commanderAlreadyBrewed(card, activeDeckId);
+      if (duplicate) {
+        showToast(`A brew for ${card.name} already exists`);
+        return;
+      }
+    }
+    setCommander(instanceId);
+  }
+
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function goToStack() {
     if (swipeMounted) setScreen("swipe");
@@ -467,7 +535,7 @@ export default function App() {
           onPileChange={setPile}
           onClearPile={handleClearPile}
           commander={commander}
-          onCommanderChange={setCommander}
+          onCommanderChange={handleCommanderChange}
           commanderCard={commanderCard}
           maybeboard={maybeboard}
           onMaybeboardChange={setMaybeboard}
@@ -486,6 +554,31 @@ export default function App() {
           onOpenAuth={() => setAuthSheetOpen(true)}
           onImport={handleImport}
         />
+      )}
+
+      {/* ── Toast ── */}
+      {toastMsg && (
+        <div style={{
+          position: "fixed",
+          bottom: `calc(${NAV_HEIGHT}px + max(16px, env(safe-area-inset-bottom)) + 10px)`,
+          left: "50%", transform: "translateX(-50%)",
+          zIndex: 500,
+          background: "rgba(22,22,26,0.97)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 10,
+          padding: "10px 18px",
+          color: "var(--text)",
+          fontSize: 13,
+          fontFamily: "'DM Sans', sans-serif",
+          maxWidth: "min(90vw, 360px)",
+          width: "max-content",
+          textAlign: "center",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+          pointerEvents: "none",
+          whiteSpace: "nowrap",
+        }}>
+          {toastMsg}
+        </div>
       )}
 
       {/* ── Bottom nav ── */}
