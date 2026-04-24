@@ -346,9 +346,9 @@ export default function SwipeScreen({
               cursor: "pointer",
             }}
           >
-            {/* ← Back to Brews */}
+            {/* ← Back to Search */}
             <button
-              onClick={e => { e.stopPropagation(); onGoToBrews?.(); }}
+              onClick={e => { e.stopPropagation(); onGoToSearch?.(); }}
               style={{
                 background: "transparent", border: "none",
                 color: "rgba(255,255,255,0.5)", cursor: "pointer",
