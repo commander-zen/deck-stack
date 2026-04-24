@@ -204,11 +204,14 @@ export default function App() {
     bgFetchAbort.current = null;
 
     // Capture commander lock BEFORE any state mutations.
-    // Lock applies when the brew has kept cards AND the user has explicitly
-    // assigned a pile card as commander (long-press in PileScreen).
-    const lockedCard = (pile.length > 0 && commander !== null)
-      ? (pile.find(c => c.instanceId === commander) ?? commanderCard)
+    // A brew's commander is immutable once set — pile.length is not the gate.
+    // Read from the stored deck record (covers the empty-pile case), then fall
+    // back to the in-memory instanceId lookup for the long-press assignment.
+    const activeDeckCommander = activeDeckId
+      ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
       : null;
+    const lockedCard = activeDeckCommander
+      ?? (commander !== null ? (pile.find(c => c.instanceId === commander) ?? commanderCard) : null);
     const effectiveCommanderCard = lockedCard ?? commanderCard;
 
     try {
@@ -320,11 +323,15 @@ export default function App() {
 
   // ── Import deck ───────────────────────────────────────────────────────────
   async function handleImport(importedPile, importedCommanderCard) {
-    // If the brew already has kept cards AND an explicitly-assigned commander,
-    // the commander is immutable — keep the existing one, ignore the import's.
-    const commanderLocked = pile.length > 0 && commander !== null;
-    const effectiveCommanderCard = commanderLocked ? commanderCard : (importedCommanderCard ?? null);
-    const effectiveCommander     = commanderLocked ? commander     : (importedCommanderCard?.instanceId ?? null);
+    // A brew's commander is immutable once set — pile.length is not the gate.
+    const activeDeckCommander = activeDeckId
+      ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
+      : null;
+    const commanderLockedCard = activeDeckCommander
+      ?? (commander !== null ? (pile.find(c => c.instanceId === commander) ?? commanderCard) : null);
+    const commanderLocked = commanderLockedCard !== null;
+    const effectiveCommanderCard = commanderLocked ? commanderLockedCard : (importedCommanderCard ?? null);
+    const effectiveCommander     = commanderLocked ? commander            : (importedCommanderCard?.instanceId ?? null);
 
     const deckName = effectiveCommanderCard?.name || importedCommanderCard?.name || "Imported Deck";
 
