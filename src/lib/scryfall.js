@@ -101,12 +101,13 @@ export async function fetchFirstPage(query, options = {}) {
 
 // ── First-page swipe fetch — returns immediately so SwipeScreen can start ─────
 export async function fetchFirstPageForSwipe(query, commanderCard = null, options = {}) {
-  const { signal } = options;
+  const { signal, order = "name", dir = "auto" } = options;
   let baseQuery = query;
   if (commanderCard?.color_identity?.length > 0) {
     baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
   }
-  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=random&unique=cards`;
+  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=${order}&unique=cards`;
+  if (dir !== "auto") url += `&dir=${dir}`;
   let res;
   try {
     res = await fetch(url, { headers: { "User-Agent": UA }, signal });

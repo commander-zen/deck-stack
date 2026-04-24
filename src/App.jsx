@@ -35,6 +35,8 @@ export default function App() {
   const [swipeMounted,  setSwipeMounted]  = useState(false);
   const [swipeKey,          setSwipeKey]          = useState(0);
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
+  const [swipeOrder,    setSwipeOrder]    = useState("name");
+  const [swipeDir,      setSwipeDir]      = useState("auto");
   // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
@@ -210,7 +212,9 @@ export default function App() {
     const effectiveCommanderCard = lockedCard ?? commanderCard;
 
     try {
-      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, effectiveCommanderCard);
+      setSwipeOrder("name");
+      setSwipeDir("auto");
+      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, effectiveCommanderCard, { order: "name", dir: "auto" });
 
       const deckName = computeDeckName(effectiveCommanderCard, q);
 
@@ -449,6 +453,45 @@ export default function App() {
     setScreen("search");
   }
 
+  // ── Resort swipe queue ────────────────────────────────────────────────────
+  async function handleResort(order, dir) {
+    bgFetchAbort.current?.abort();
+    bgFetchAbort.current = null;
+
+    const s = stateRef.current;
+    try {
+      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(s.query, s.commanderCard, { order, dir });
+      setSwipeCards(firstCards);
+      setSwipeIndex(0);
+      setSwipeDisplayLimit(20);
+      setSwipeKey(k => k + 1);
+
+      if (nextPage) {
+        const ctrl = new AbortController();
+        bgFetchAbort.current = ctrl;
+        const CAP = 175;
+        let url = nextPage;
+        let all = [...firstCards];
+        while (url && all.length < CAP && !ctrl.signal.aborted) {
+          await new Promise(r => setTimeout(r, 100));
+          const { cards: more, nextPage: next } = await fetchContinuationPage(url, { signal: ctrl.signal });
+          if (ctrl.signal.aborted) break;
+          all = [...all, ...more].slice(0, CAP);
+          setSwipeCards([...all]);
+          url = next && all.length < CAP ? next : null;
+        }
+      }
+    } catch (err) {
+      if (err.name !== "AbortError") setError(err.message);
+    }
+  }
+
+  function handleSortChange(order, dir) {
+    setSwipeOrder(order);
+    setSwipeDir(dir);
+    handleResort(order, dir);
+  }
+
   // ── Commander assignment guard ────────────────────────────────────────────
   function handleCommanderChange(instanceId) {
     if (!instanceId) { setCommander(null); return; }
@@ -525,6 +568,9 @@ export default function App() {
             onCommanderCardChange={setCommanderCard}
             initialIndex={swipeIndex}
             onIndexChange={setSwipeIndex}
+            swipeOrder={swipeOrder}
+            swipeDir={swipeDir}
+            onSortChange={handleSortChange}
           />
         </div>
       )}

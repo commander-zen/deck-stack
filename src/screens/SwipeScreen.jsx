@@ -5,6 +5,15 @@ import CommanderModal from "../components/CommanderModal.jsx";
 
 const SWIPE_THRESHOLD = 60;
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
+const SORT_OPTIONS = [
+  { value: "name",     label: "NAME" },
+  { value: "cmc",      label: "CMC" },
+  { value: "color",    label: "COLOR" },
+  { value: "rarity",   label: "RARITY" },
+  { value: "usd",      label: "PRICE" },
+  { value: "edhrec",   label: "EDHREC" },
+  { value: "released", label: "DATE" },
+];
 const TIP_KEY = "deckstack_swipe_tip_seen";
 
 function haptic(pattern = 10) {
@@ -27,6 +36,7 @@ export default function SwipeScreen({
   maybeboard, onMaybeboardChange,
   onGoToPile, onGoToSearch, onSearchMore, commanderCard, onCommanderCardChange,
   initialIndex, onIndexChange,
+  swipeOrder = "name", swipeDir = "auto", onSortChange,
 }) {
   const [idx,     setIdx]     = useState(initialIndex ?? 0);
   const [history, setHistory] = useState([]);
@@ -228,6 +238,7 @@ export default function SwipeScreen({
       position: "relative",
       maxWidth: 600, margin: "0 auto", width: "100%",
     }}>
+      <style>{`.swipe-sort-scroller::-webkit-scrollbar { display: none; }`}</style>
 
       {/* Blurred art background */}
       {artUrl && (
@@ -418,6 +429,67 @@ export default function SwipeScreen({
             >✎</button>
           </div>
         )}
+      </div>
+
+      {/* ── Sort row ── */}
+      <div style={{
+        position: "relative", zIndex: 20, flexShrink: 0,
+        background: "rgba(13,13,15,0.85)",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        backdropFilter: "blur(10px)",
+        display: "flex", alignItems: "center",
+      }}>
+        <div
+          className="swipe-sort-scroller"
+          style={{
+            flex: 1, display: "flex", gap: 4,
+            overflowX: "auto", padding: "6px 14px",
+            scrollbarWidth: "none",
+          }}
+        >
+          {SORT_OPTIONS.map(opt => {
+            const active = swipeOrder === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onSortChange?.(opt.value, swipeDir)}
+                style={{
+                  flexShrink: 0,
+                  padding: "4px 10px",
+                  borderRadius: 20,
+                  border: active
+                    ? "1px solid var(--primary)"
+                    : "1px solid rgba(255,255,255,0.1)",
+                  background: active ? "rgba(91,143,255,0.15)" : "transparent",
+                  color: active ? "var(--primary)" : "rgba(255,255,255,0.4)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 11, letterSpacing: 1.5,
+                  cursor: "pointer", lineHeight: 1,
+                }}
+              >{opt.label}</button>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => {
+            const next = swipeDir === "auto" ? "asc" : swipeDir === "asc" ? "desc" : "auto";
+            onSortChange?.(swipeOrder, next);
+          }}
+          style={{
+            flexShrink: 0,
+            width: 32, height: 32, borderRadius: 6,
+            border: swipeDir !== "auto"
+              ? "1px solid rgba(255,255,255,0.2)"
+              : "1px solid transparent",
+            background: "transparent",
+            color: swipeDir !== "auto" ? "var(--text)" : "rgba(255,255,255,0.25)",
+            cursor: "pointer", fontSize: 14,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginRight: 8,
+          }}
+        >
+          {swipeDir === "asc" ? "↑" : swipeDir === "desc" ? "↓" : "↕"}
+        </button>
       </div>
 
       {/* ── Card area ── */}
