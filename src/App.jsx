@@ -525,6 +525,33 @@ export default function App() {
     setCommander(instanceId);
   }
 
+  // ── Set commander for any brew by deck ID (used from BrewsScreen) ─────────
+  function handleSetCommanderForDeck(deckId, card) {
+    setDecks(ds => ds.map(d =>
+      d.id === deckId
+        ? { ...d, commander_name: card.name, commander_card: card }
+        : d
+    ));
+    if (deckId === activeDeckId) {
+      setCommanderCard(card);
+    }
+    const deck = decks.find(d => d.id === deckId);
+    if (sessionId && deck) {
+      saveDeck(sessionId, {
+        id: deckId,
+        name: deck.name,
+        commander_name: card.name,
+        commander_instance_id: deck.commander_instance_id ?? null,
+        commander_card: card,
+        pile: deck.pile ?? [],
+        maybeboard: deck.maybeboard ?? [],
+        swipe_cards: deck.swipe_cards ?? [],
+        swipe_index: deck.swipe_index ?? 0,
+        query: deck.query ?? null,
+      }, authUser?.id ?? null).catch(console.error);
+    }
+  }
+
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function goToStack() {
     if (swipeMounted) setScreen("swipe");
@@ -603,9 +630,12 @@ export default function App() {
           commander={commander}
           onCommanderChange={handleCommanderChange}
           commanderCard={commanderCard}
+          onCommanderCardChange={handleCommanderCardChange}
           maybeboard={maybeboard}
           onMaybeboardChange={setMaybeboard}
           initialTab={screen === "maybe" ? "maybe" : "deck"}
+          decks={decks}
+          activeDeckId={activeDeckId}
         />
       )}
 
@@ -619,6 +649,7 @@ export default function App() {
           authUser={authUser}
           onOpenAuth={() => setAuthSheetOpen(true)}
           onImport={handleImport}
+          onSetCommanderForDeck={handleSetCommanderForDeck}
         />
       )}
 

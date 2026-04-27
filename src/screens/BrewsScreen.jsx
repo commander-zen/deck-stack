@@ -2,6 +2,7 @@ import { useState } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import ImportSheet from "../components/ImportSheet.jsx";
+import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
 
 function relativeTime(isoString) {
   if (!isoString) return "";
@@ -17,10 +18,11 @@ function relativeTime(isoString) {
   return new Date(isoString).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDelete, authUser, onOpenAuth, onImport }) {
-  const [confirmId, setConfirmId] = useState(null);
-  const [importOpen, setImportOpen] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDelete, authUser, onOpenAuth, onImport, onSetCommanderForDeck }) {
+  const [confirmId,      setConfirmId]      = useState(null);
+  const [importOpen,     setImportOpen]     = useState(false);
+  const [deleteError,    setDeleteError]    = useState("");
+  const [cmdSheetDeckId, setCmdSheetDeckId] = useState(null);
 
   function handleSwitch(id) {
     onSwitch(id);
@@ -172,6 +174,8 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
             const thumb = deck.commander_card ? getCardImage(deck.commander_card, "art_crop") : null;
             const isConfirm = confirmId === deck.id;
 
+            const hasCommander = Boolean(deck.commander_card);
+
             return (
               <div
                 key={deck.id}
@@ -183,12 +187,24 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                   borderLeft: isActive ? "3px solid var(--primary)" : "3px solid transparent",
                 }}
               >
-                {/* Thumbnail */}
-                <div style={{
-                  width: 56, height: 40, borderRadius: 7, flexShrink: 0,
-                  background: "var(--panel)", overflow: "hidden",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+                {/* Thumbnail — clickable placeholder when no commander set */}
+                <div
+                  onClick={e => {
+                    if (isConfirm) return;
+                    if (!hasCommander && onSetCommanderForDeck) {
+                      e.stopPropagation();
+                      setCmdSheetDeckId(deck.id);
+                    }
+                  }}
+                  title={hasCommander ? undefined : "Tap to set commander"}
+                  style={{
+                    width: 56, height: 40, borderRadius: 7, flexShrink: 0,
+                    background: "var(--panel)", overflow: "hidden",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: !hasCommander && onSetCommanderForDeck ? "pointer" : "default",
+                    border: !hasCommander ? "1.5px dashed rgba(255,255,255,0.15)" : "none",
+                  }}
+                >
                   {thumb ? (
                     <img
                       src={thumb}
@@ -197,7 +213,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   ) : (
-                    <span style={{ fontSize: 20, opacity: 0.35 }}>🃏</span>
+                    <span style={{ fontSize: 18, color: "var(--muted)", opacity: 0.6 }}>?</span>
                   )}
                 </div>
 
@@ -277,6 +293,19 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
           setImportOpen(false);
           onImport?.(pile, commanderCard);
         }}
+      />
+
+      <CommanderSearchSheet
+        open={cmdSheetDeckId !== null}
+        onClose={() => setCmdSheetDeckId(null)}
+        onSelect={card => {
+          if (cmdSheetDeckId && onSetCommanderForDeck) {
+            onSetCommanderForDeck(cmdSheetDeckId, card);
+          }
+          setCmdSheetDeckId(null);
+        }}
+        decks={decks}
+        excludeDeckId={cmdSheetDeckId}
       />
     </div>
   );

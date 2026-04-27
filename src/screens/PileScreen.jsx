@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
 import CommanderModal from "../components/CommanderModal.jsx";
+import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
 function buildExportText(pile, commander) {
@@ -11,6 +12,30 @@ function buildExportText(pile, commander) {
     return `Commander: ${cmdCard.name}\n\n${rest.map(c => `1 ${c.name}`).join("\n")}`;
   }
   return pile.map(c => `1 ${c.name}`).join("\n");
+}
+
+// Deduplicate by Scryfall id (fallback: name). Commander card always wins its slot.
+function deduplicatePile(pile, commanderInstanceId) {
+  const seen = new Set();
+  const result = [];
+  // Pass 1: commander first so it is never displaced by a duplicate
+  if (commanderInstanceId) {
+    const cmd = pile.find(c => c.instanceId === commanderInstanceId);
+    if (cmd) {
+      const key = cmd.id ?? cmd.name;
+      seen.add(key);
+      result.push(cmd);
+    }
+  }
+  // Pass 2: remaining unique cards in original order
+  for (const card of pile) {
+    const key = card.id ?? card.name;
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(card);
+    }
+  }
+  return result;
 }
 
 function ImageIcon({ color }) {
@@ -31,27 +56,32 @@ function ListIcon({ color }) {
   );
 }
 
+// NAV_HEIGHT (60) + STACK & SWIPE button (~52px) + gap (10px) + safe area
+const FAB_CLEARANCE = NAV_HEIGHT + 52 + 18;
+
 export default function PileScreen({
   pile, onPileChange, onClearPile,
   commander, onCommanderChange,
-  commanderCard,
+  commanderCard, onCommanderCardChange,
   maybeboard, onMaybeboardChange,
   initialTab,
+  decks = [],
+  activeDeckId = null,
 }) {
-  const [viewMode,        setViewMode]        = useState("list");
-  const [activeTab,       setActiveTab]       = useState(initialTab ?? "deck");
-  const [reviewMode,      setReviewMode]      = useState(null);
-  const [lightbox,        setLightbox]        = useState(null);
-  const [copied,          setCopied]          = useState(false);
-  const [cmdModalOpen,    setCmdModalOpen]    = useState(false);
+  const [viewMode,     setViewMode]     = useState("list");
+  const [activeTab,    setActiveTab]    = useState(initialTab ?? "deck");
+  const [reviewMode,   setReviewMode]   = useState(null);
+  const [lightbox,     setLightbox]     = useState(null);
+  const [copied,       setCopied]       = useState(false);
+  const [cmdModalOpen, setCmdModalOpen] = useState(false);
+  const [cmdSearchOpen, setCmdSearchOpen] = useState(false);
 
   // Drag-to-reorder (list view, deck tab only)
-  const [drag, setDrag] = useState(null); // { srcIdx, targetIdx, startY, currentY }
+  const [drag, setDrag] = useState(null);
 
-  // Scroll position memory per tab
   const scrollPos = useRef({ deck: 0, maybe: 0 });
   useEffect(() => {
-    scrollPos.current[activeTab] = window.scrollY; // save before switching
+    scrollPos.current[activeTab] = window.scrollY;
     setActiveTab(initialTab ?? "deck");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTab]);
@@ -60,22 +90,37 @@ export default function PileScreen({
   }, [activeTab]);
 
   const lbDragStartY = useRef(null);
-  const [lbDragY,    setLbDragY]   = useState(0);
+  const [lbDragY,    setLbDragY]    = useState(0);
   const [lbDragging, setLbDragging] = useState(false);
 
   const lpTimerRef = useRef(null);
   const lpFiredRef = useRef(false);
-
-  const activeCards = activeTab === "deck" ? pile : maybeboard;
 
   const reviewCommanderCard =
     commanderCard ??
     (commander ? pile.find(c => c.instanceId === commander) : null);
 
   const commanderName = reviewCommanderCard?.name ?? null;
+  const hasCommander  = Boolean(reviewCommanderCard);
 
-  const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 120px)`;
-  const fabBottom  = `calc(max(14px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 10px)`;
+  // Deduplicated views — render-time only, never mutates Supabase state
+  const displayPile      = deduplicatePile(pile, commander);
+  const displayMaybeboard = (() => {
+    const seen = new Set();
+    return maybeboard.filter(c => {
+      const key = c.id ?? c.name;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
+
+  const activeCards    = activeTab === "deck" ? displayPile : displayMaybeboard;
+  const activeRawCards = activeTab === "deck" ? pile        : maybeboard;
+
+  // Bottom padding clears the fixed STACK & SWIPE button + nav bar
+  const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${FAB_CLEARANCE}px + 40px)`;
+  const fabBottom  = `calc(max(10px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 8px)`;
 
   // ── Card interactions ──────────────────────────────────────────────────────
 
@@ -107,7 +152,7 @@ export default function PileScreen({
     openLightbox(card);
   }
 
-  // ── Drag-to-reorder ────────────────────────────────────────────────────────
+  // ── Drag-to-reorder (operates on displayPile to match rendered indices) ────
 
   function onDragHandleDown(e, srcIdx) {
     e.stopPropagation();
@@ -119,14 +164,14 @@ export default function PileScreen({
     if (!drag) return;
     const deltaY = e.clientY - drag.startY;
     const ROW_H = 50;
-    const targetIdx = Math.max(0, Math.min(pile.length - 1, drag.srcIdx + Math.round(deltaY / ROW_H)));
+    const targetIdx = Math.max(0, Math.min(displayPile.length - 1, drag.srcIdx + Math.round(deltaY / ROW_H)));
     setDrag(d => ({ ...d, currentY: e.clientY, targetIdx }));
   }
 
   function onDragEnd() {
     if (!drag) return;
     if (drag.targetIdx !== drag.srcIdx) {
-      const next = [...pile];
+      const next = [...displayPile];
       const [moved] = next.splice(drag.srcIdx, 1);
       next.splice(drag.targetIdx, 0, moved);
       onPileChange(next);
@@ -193,8 +238,9 @@ export default function PileScreen({
   // ── Renders ────────────────────────────────────────────────────────────────
 
   function renderListRow(card, isCommander, onRemove, rowIdx, isDraggable) {
+    // Strip Scryfall brace notation: {8}{R} → "8 R". Plain strings pass through unchanged.
     const mana = card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
-    const isDragging = drag?.srcIdx === rowIdx;
+    const isDragging   = drag?.srcIdx === rowIdx;
     const isDropTarget = drag && drag.targetIdx === rowIdx && drag.srcIdx !== rowIdx;
     return (
       <div
@@ -416,6 +462,27 @@ export default function PileScreen({
             </button>
           )}
         </div>
+
+        {/* SET COMMANDER banner — shown when pile has cards but no commander is assigned */}
+        {!hasCommander && pile.length > 0 && activeTab === "deck" && onCommanderCardChange && (
+          <button
+            onClick={() => setCmdSearchOpen(true)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "9px 18px",
+              background: "rgba(91,143,255,0.10)",
+              border: "none",
+              borderTop: "1px solid rgba(91,143,255,0.2)",
+              cursor: "pointer",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 13, letterSpacing: 3,
+              color: "var(--primary)",
+            }}
+          >
+            <span style={{ fontSize: 14 }}>👑</span>
+            SET COMMANDER
+          </button>
+        )}
       </div>
 
       {/* ── Card list / grid ── */}
@@ -439,16 +506,16 @@ export default function PileScreen({
             </span>
           </div>
         ) : viewMode === "list" ? (
-          /* List view */
+          /* List view — rendered from deduplicated pile */
           activeTab === "deck"
-            ? pile.map((card, i) => renderListRow(card, commander === card.instanceId, handleRemove, i, true))
-            : maybeboard.map((card, i) => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), i, false))
+            ? displayPile.map((card, i) => renderListRow(card, commander === card.instanceId, handleRemove, i, true))
+            : displayMaybeboard.map((card, i) => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), i, false))
         ) : (
           /* Grid view */
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {activeTab === "deck"
-              ? pile.map(card => renderGridCard(card, commander === card.instanceId, handleRemove))
-              : maybeboard.map(card => renderGridCard(card, false, (id, e) => handleRemoveMaybe(id, e)))
+              ? displayPile.map(card => renderGridCard(card, commander === card.instanceId, handleRemove))
+              : displayMaybeboard.map(card => renderGridCard(card, false, (id, e) => handleRemoveMaybe(id, e)))
             }
           </div>
         )}
@@ -495,15 +562,16 @@ export default function PileScreen({
         )}
       </div>
 
-      {/* ── STACK & SWIPE full-width button ── */}
+      {/* ── STACK & SWIPE — fixed above BottomNav, never inside scroll flow ── */}
       {activeCards.length > 0 && (
         <div style={{
           position: "fixed",
-          bottom: `calc(max(10px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 8px)`,
+          bottom: fabBottom,
           left: 0, right: 0,
           maxWidth: 600, margin: "0 auto",
           padding: "0 14px",
           zIndex: 80,
+          pointerEvents: "auto",
         }}>
           <button
             onClick={() => setReviewMode(activeTab)}
@@ -533,6 +601,18 @@ export default function PileScreen({
       <CommanderModal
         card={cmdModalOpen ? reviewCommanderCard : null}
         onClose={() => setCmdModalOpen(false)}
+      />
+
+      {/* ── Commander search sheet ── */}
+      <CommanderSearchSheet
+        open={cmdSearchOpen}
+        onClose={() => setCmdSearchOpen(false)}
+        onSelect={card => {
+          onCommanderCardChange?.(card);
+          setCmdSearchOpen(false);
+        }}
+        decks={decks}
+        excludeDeckId={activeDeckId}
       />
 
       {/* ── Lightbox ── */}
