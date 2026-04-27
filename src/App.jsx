@@ -503,14 +503,9 @@ export default function App() {
     const activeDeckCommander = activeDeckId
       ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
       : null;
-    console.log(
-      "[commander lock] change attempted — current:", commanderCard?.name ?? null,
-      "→ incoming:", newCard?.name ?? null,
-      "| brew locked to:", activeDeckCommander?.name ?? "none",
-      "| activeDeckId:", activeDeckId
-    );
-    if (newCard !== null && activeDeckCommander && pile.length > 0) {
-      console.log("[commander lock] BLOCKED — brew already has a locked commander:", activeDeckCommander.name);
+    // Lock fires whenever the brew has a commander set — pile size is not the gate.
+    // handleSearch and handleImport enforce their own lock logic independently.
+    if (newCard !== null && activeDeckCommander) {
       return;
     }
     setCommanderCard(newCard);
