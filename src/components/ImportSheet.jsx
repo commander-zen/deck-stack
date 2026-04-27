@@ -128,16 +128,25 @@ export default function ImportSheet({ open, onClose, onImport }) {
         const res = await fetch(`/api/moxfield?id=${encodeURIComponent(deckId)}`);
         if (!res.ok) throw new Error(`Moxfield error: ${res.status}`);
         const data = await res.json();
+        console.log("[moxfield] raw response:", data);
 
+        // Moxfield v2: boards.commanders.cards and boards.mainboard.cards
+        // Each value is { quantity, card: { name, ... } } keyed by card ID
         const commanders = Object.values(data.boards?.commanders?.cards ?? {});
-        const mainboard  = Object.values(data.boards?.mainboard?.cards ?? {});
+        const mainboard  = Object.values(data.boards?.mainboard?.cards  ?? {});
 
         let built = "";
         if (commanders.length > 0) {
           built += "// Commander\n";
-          built += commanders.map(e => `1x ${e.card.name}`).join("\n") + "\n\n";
+          built += commanders
+            .filter(e => e?.card?.name)
+            .map(e => `1x ${e.card.name}`)
+            .join("\n") + "\n\n";
         }
-        built += mainboard.map(e => `${e.quantity}x ${e.card.name}`).join("\n");
+        built += mainboard
+          .filter(e => e?.card?.name)
+          .map(e => `${e.quantity ?? 1}x ${e.card.name}`)
+          .join("\n");
         deckText = built;
       } catch {
         if (hasText) {
