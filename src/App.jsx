@@ -523,6 +523,27 @@ export default function App() {
     setCommanderCard(newCard);
   }
 
+  // ── Immediate save triggered from PileScreen after pile/maybeboard mutations ──
+  // Called with the already-computed new arrays so the save doesn't depend on
+  // React having committed the state update yet.
+  function handleSaveFromPileScreen(newPile, newMaybeboard) {
+    const s = stateRef.current;
+    if (!s.sessionId || !s.activeDeckId) return;
+    saveDeck(s.sessionId, {
+      id: s.activeDeckId,
+      name: computeDeckName(s.commanderCard, s.query),
+      commander_name: s.commanderCard?.name ?? null,
+      commander_instance_id: s.commander ?? null,
+      commander_card: s.commanderCard ?? null,
+      pile: newPile,
+      maybeboard: newMaybeboard,
+      swipe_cards: s.swipeCards,
+      swipe_index: s.swipeIndex,
+      query: s.query,
+      last_opened_at: new Date().toISOString(),
+    }, s.authUser?.id ?? null).catch(err => console.error("Immediate save failed:", err));
+  }
+
   // ── Commander assignment guard ────────────────────────────────────────────
   function handleCommanderChange(instanceId) {
     if (!instanceId) { setCommander(null); return; }
@@ -669,6 +690,7 @@ export default function App() {
           initialTab={screen === "maybe" ? "maybe" : "deck"}
           decks={decks}
           activeDeckId={activeDeckId}
+          onSave={handleSaveFromPileScreen}
         />
       )}
 

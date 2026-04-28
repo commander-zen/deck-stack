@@ -97,6 +97,7 @@ export default function PileScreen({
   initialTab,
   decks = [],
   activeDeckId = null,
+  onSave,
 }) {
   const [viewMode,      setViewMode]      = useState("list");
   const [activeTab,     setActiveTab]     = useState(initialTab ?? "deck");
@@ -148,7 +149,9 @@ export default function PileScreen({
 
   function handleRemove(instanceId, e) {
     e?.stopPropagation();
-    onPileChange(pile.filter(c => c.instanceId !== instanceId));
+    const newPile = pile.filter(c => c.instanceId !== instanceId);
+    onPileChange(newPile);
+    onSave?.(newPile, maybeboard);
     if (lightbox?.instanceId === instanceId) setLightbox(null);
     if (commander === instanceId) onCommanderChange(null);
   }
@@ -156,7 +159,9 @@ export default function PileScreen({
   function handleRemoveMaybe(instanceId, e) {
     e?.stopPropagation();
     if (lightbox?.instanceId === instanceId) setLightbox(null);
-    onMaybeboardChange(m => m.filter(c => c.instanceId !== instanceId));
+    const newMaybe = maybeboard.filter(c => c.instanceId !== instanceId);
+    onMaybeboardChange(newMaybe);
+    onSave?.(pile, newMaybe);
   }
 
   // Qty +/– for stackable cards.
@@ -166,26 +171,29 @@ export default function PileScreen({
     const entries = pile.filter(c => c.name === displayCard.name);
     if (entries.length === 0) return;
 
+    let newPile;
     if (entries.length === 1) {
-      const entry  = entries[0];
+      const entry   = entries[0];
       const current = entry.qty ?? 1;
       const next    = current + delta;
       if (next <= 0) {
-        onPileChange(pile.filter(c => c.name !== displayCard.name));
+        newPile = pile.filter(c => c.name !== displayCard.name);
       } else {
-        onPileChange(pile.map(c => c.name === displayCard.name ? { ...c, qty: next } : c));
+        newPile = pile.map(c => c.name === displayCard.name ? { ...c, qty: next } : c);
       }
     } else {
       // Legacy multi-entry path
       if (delta > 0) {
         const template = entries[0];
         const clone    = { ...template, instanceId: crypto.randomUUID(), qty: undefined };
-        onPileChange([...pile, clone]);
+        newPile = [...pile, clone];
       } else {
         const lastId = entries[entries.length - 1].instanceId;
-        onPileChange(pile.filter(c => c.instanceId !== lastId));
+        newPile = pile.filter(c => c.instanceId !== lastId);
       }
     }
+    onPileChange(newPile);
+    onSave?.(newPile, maybeboard);
   }
 
   function onCardPointerDown(card) {
@@ -226,6 +234,7 @@ export default function PileScreen({
       const [moved] = next.splice(drag.srcIdx, 1);
       next.splice(drag.targetIdx, 0, moved);
       onPileChange(next);
+      onSave?.(next, maybeboard);
     }
     setDrag(null);
   }
@@ -259,17 +268,25 @@ export default function PileScreen({
 
   function handleReviewKeep(card) {
     if (reviewMode !== "deck") {
-      onMaybeboardChange(m => m.filter(c => c.instanceId !== card.instanceId));
-      onPileChange(p => [...p, card]);
+      const newMaybe = maybeboard.filter(c => c.instanceId !== card.instanceId);
+      const newPile  = [...pile, card];
+      onMaybeboardChange(newMaybe);
+      onPileChange(newPile);
+      onSave?.(newPile, newMaybe);
     }
   }
 
   function handleReviewPass(card) {
     if (reviewMode === "deck") {
-      onPileChange(p => p.filter(c => c.instanceId !== card.instanceId));
-      onMaybeboardChange(m => [...m, card]);
+      const newPile  = pile.filter(c => c.instanceId !== card.instanceId);
+      const newMaybe = [...maybeboard, card];
+      onPileChange(newPile);
+      onMaybeboardChange(newMaybe);
+      onSave?.(newPile, newMaybe);
     } else {
-      onMaybeboardChange(m => m.filter(c => c.instanceId !== card.instanceId));
+      const newMaybe = maybeboard.filter(c => c.instanceId !== card.instanceId);
+      onMaybeboardChange(newMaybe);
+      onSave?.(pile, newMaybe);
     }
   }
 
