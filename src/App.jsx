@@ -13,6 +13,8 @@ function ensureInstanceIds(cards) {
   return (cards || []).map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
 }
 
+const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
+
 function computeDeckName(commanderCard, query) {
   if (commanderCard?.name) return commanderCard.name;
   if (query?.trim()) return query.trim().split(/\s+/)[0];
@@ -216,7 +218,11 @@ export default function App() {
     try {
       setSwipeOrder("name");
       setSwipeDir("auto");
-      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(q, effectiveCommanderCard, { order: "name", dir: "auto" });
+      const { cards: rawFirstCards, nextPage } = await fetchFirstPageForSwipe(q, effectiveCommanderCard, { order: "name", dir: "auto" });
+      const firstCards = rawFirstCards.filter(c => !isBasicLand(c));
+      if (rawFirstCards.length !== firstCards.length) {
+        console.log(`Filtered ${rawFirstCards.length - firstCards.length} basic land(s) from swipe queue`);
+      }
 
       const deckName = computeDeckName(effectiveCommanderCard, q);
 
@@ -297,7 +303,7 @@ export default function App() {
           await new Promise(r => setTimeout(r, 100));
           const { cards: more, nextPage: next } = await fetchContinuationPage(url, { signal: ctrl.signal });
           if (ctrl.signal.aborted) break;
-          all = [...all, ...more].slice(0, CAP);
+          all = [...all, ...more.filter(c => !isBasicLand(c))].slice(0, CAP);
           setSwipeCards([...all]);
           url = next && all.length < CAP ? next : null;
         }
@@ -466,7 +472,11 @@ export default function App() {
 
     const s = stateRef.current;
     try {
-      const { cards: firstCards, nextPage } = await fetchFirstPageForSwipe(s.query, s.commanderCard, { order, dir });
+      const { cards: rawFirstCards, nextPage } = await fetchFirstPageForSwipe(s.query, s.commanderCard, { order, dir });
+      const firstCards = rawFirstCards.filter(c => !isBasicLand(c));
+      if (rawFirstCards.length !== firstCards.length) {
+        console.log(`Filtered ${rawFirstCards.length - firstCards.length} basic land(s) from swipe queue`);
+      }
       setSwipeCards(firstCards);
       setSwipeIndex(0);
       setSwipeDisplayLimit(20);
@@ -482,7 +492,7 @@ export default function App() {
           await new Promise(r => setTimeout(r, 100));
           const { cards: more, nextPage: next } = await fetchContinuationPage(url, { signal: ctrl.signal });
           if (ctrl.signal.aborted) break;
-          all = [...all, ...more].slice(0, CAP);
+          all = [...all, ...more.filter(c => !isBasicLand(c))].slice(0, CAP);
           setSwipeCards([...all]);
           url = next && all.length < CAP ? next : null;
         }

@@ -3,6 +3,8 @@ import { useState } from "react";
 const UA = "DeckStack/1.0 (deck-stack.vercel.app)";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
+
 function parseMoxfieldId(url) {
   const m = url.match(/moxfield\.com\/decks\/([A-Za-z0-9_-]+)/);
   return m ? m[1] : null;
@@ -190,10 +192,12 @@ export default function ImportSheet({ open, onClose, onImport }) {
     const resolvedMap = new Map(resolved.map(c => [c.name.toLowerCase(), c]));
     const pile = [];
     let commanderCard = null;
+    let basicsFiltered = 0;
 
     for (const entry of parsed) {
       const card = resolvedMap.get(entry.name.toLowerCase());
       if (!card) continue;
+      if (isBasicLand(card)) { basicsFiltered += entry.qty; continue; }
       for (let q = 0; q < entry.qty; q++) {
         const cardEntry = { ...card, instanceId: crypto.randomUUID() };
         pile.push(cardEntry);
@@ -201,6 +205,10 @@ export default function ImportSheet({ open, onClose, onImport }) {
           commanderCard = cardEntry;
         }
       }
+    }
+
+    if (basicsFiltered > 0) {
+      console.log(`Filtered ${basicsFiltered} basic land${basicsFiltered !== 1 ? "s" : ""} from import`);
     }
 
     if (notFound.length > 0) {
