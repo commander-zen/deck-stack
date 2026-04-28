@@ -4,6 +4,10 @@ import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import ImportSheet from "../components/ImportSheet.jsx";
 import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
 
+function pileCount(pile) {
+  return (pile ?? []).reduce((sum, c) => sum + (c.qty ?? 1), 0);
+}
+
 function relativeTime(isoString) {
   if (!isoString) return "";
   const diff = Date.now() - new Date(isoString).getTime();
@@ -237,7 +241,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                     )}
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 3, fontSize: 11, color: "var(--muted)" }}>
-                    <span>{deck.pile?.length ?? 0} cards</span>
+                    <span>{pileCount(deck.pile)} cards</span>
                     <span>·</span>
                     <span>{relativeTime(deck.last_opened_at)}</span>
                   </div>

@@ -1,7 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { getCardImage, searchCommanders } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import CommanderModal from "../components/CommanderModal.jsx";
+
+const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
+const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
+const isStackable  = c => isBasicLand(c) || isAnyNumber(c);
 
 const SWIPE_THRESHOLD = 60;
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
@@ -35,6 +39,21 @@ export default function SwipeScreen({
   swipeOrder = "name", swipeDir = "auto", onSortChange,
   onGoToBrews,
 }) {
+  // Deduplicate swipe queue: skip oracle_id already seen in the queue or kept in pile.
+  // Stackables (basic lands + any-number cards) are always allowed through.
+  const effectiveCards = useMemo(() => {
+    const pileIds = new Set(pile.filter(c => !isStackable(c) && c.oracle_id).map(c => c.oracle_id));
+    const seen = new Set(pileIds);
+    const result = [];
+    for (const c of cards) {
+      if (isStackable(c)) { result.push(c); continue; }
+      if (c.oracle_id && seen.has(c.oracle_id)) continue;
+      if (c.oracle_id) seen.add(c.oracle_id);
+      result.push(c);
+    }
+    return result;
+  }, [cards, pile]);
+
   const [idx,          setIdx]          = useState(initialIndex ?? 0);
   const [history,      setHistory]      = useState([]);
   const [offset,       setOffset]       = useState(0);
@@ -60,16 +79,16 @@ export default function SwipeScreen({
   const didMountRef = useRef(false);
   const dragStartRef = useRef(null);
 
-  const card = cards[idx] ?? null;
-  const done = idx >= cards.length;
+  const card = effectiveCards[idx] ?? null;
+  const done = idx >= effectiveCards.length;
 
   // Preload next 4 card images to eliminate lag between swipes
   useEffect(() => {
-    cards.slice(idx + 1, idx + 5).forEach(c => {
+    effectiveCards.slice(idx + 1, idx + 5).forEach(c => {
       const url = getCardImage(c, "normal");
       if (url) { const img = new Image(); img.src = url; }
     });
-  }, [idx, cards]);
+  }, [idx, effectiveCards]);
 
   // Reset face to front when card changes
   useEffect(() => { setFaceIdx(0); }, [idx]);
@@ -221,7 +240,7 @@ export default function SwipeScreen({
 
   const counterStr = done
     ? `${pile.length} KEPT`
-    : `${idx + 1} / ${cards.length} · ${pile.length} KEPT`;
+    : `${idx + 1} / ${effectiveCards.length} · ${pile.length} KEPT`;
 
   return (
     <div style={{
