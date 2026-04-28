@@ -135,22 +135,41 @@ export default function ImportSheet({ open, onClose, onImport }) {
         console.log("[moxfield] raw response:", data);
 
         // Moxfield v2: boards.commanders.cards and boards.mainboard.cards
-        // Each value is { quantity, card: { name, ... } } keyed by card ID
-        const commanders = Object.values(data.boards?.commanders?.cards ?? {});
-        const mainboard  = Object.values(data.boards?.mainboard?.cards  ?? {});
+        // Each value is { quantity, card: { name, ... } } keyed by card ID.
+        // Log a sample entry so we can see the actual shape in the console.
+        const rawMainCards = data.boards?.mainboard?.cards ?? {};
+        const rawCmdCards  = data.boards?.commanders?.cards ?? {};
+        const sampleEntry  = Object.values(rawMainCards)[0] ?? Object.values(rawCmdCards)[0];
+        if (sampleEntry) {
+          console.log("[moxfield] sample card entry:", sampleEntry);
+        } else {
+          console.warn("[moxfield] no card entries found — board keys:", Object.keys(data.boards ?? {}));
+        }
+
+        const commanders = Object.values(rawCmdCards);
+        const mainboard  = Object.values(rawMainCards);
+
+        // Extract name and qty robustly: prefer nested card.name (v2 structure),
+        // fall back to a flat name field on the entry itself.
+        const entryName = e => e?.card?.name ?? e?.name ?? null;
+        const entryQty  = e => e?.quantity ?? e?.qty ?? 1;
 
         let built = "";
         if (commanders.length > 0) {
           built += "// Commander\n";
           built += commanders
-            .filter(e => e?.card?.name)
-            .map(e => `1x ${e.card.name}`)
+            .filter(e => entryName(e))
+            .map(e => `1x ${entryName(e)}`)
             .join("\n") + "\n\n";
         }
         built += mainboard
-          .filter(e => e?.card?.name)
-          .map(e => `${e.quantity ?? 1}x ${e.card.name}`)
+          .filter(e => entryName(e))
+          .map(e => `${entryQty(e)}x ${entryName(e)}`)
           .join("\n");
+
+        if (!built.trim()) {
+          console.warn("[moxfield] built decklist is empty — check sample entry above for correct field paths");
+        }
         deckText = built;
       } catch {
         if (hasText) {
