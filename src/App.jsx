@@ -54,7 +54,7 @@ export default function App() {
 
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
-  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser };
+  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser, decks };
 
   // Grow the visible swipe batch as the user approaches the end of the current window
   useEffect(() => {
@@ -65,14 +65,18 @@ export default function App() {
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    setAppReady(true);
     async function initBackground() {
       try {
         const sid = await getOrCreateSession();
         setSessionId(sid);
+        // Wait for the session check before rendering — avoids a false "signed out"
+        // flash while localStorage is being read. onAuthStateChange alone fires
+        // INITIAL_SESSION (not SIGNED_IN) on hard refresh and isn't guaranteed to
+        // beat the first render.
         const session = await getSession();
         const user = session?.user ?? null;
         setAuthUser(user);
+        setAppReady(true); // Auth state is now known — safe to render
         const dbDecks = await loadDecks(sid, user?.id ?? null);
         if (dbDecks.length > 0) {
           setDecks(dbDecks);
@@ -82,6 +86,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Failed to init from Supabase:", err);
+        setAppReady(true); // Always unblock the app even if init fails
       }
     }
     initBackground();
@@ -120,7 +125,25 @@ export default function App() {
     const unsubscribe = onAuthChange(async (event, session) => {
       const user = session?.user ?? null;
       const s = stateRef.current;
-      if (event === "SIGNED_IN" && user) {
+
+      if (event === "INITIAL_SESSION" && user) {
+        // Hard refresh with an existing stored session. Supabase v2 fires
+        // INITIAL_SESSION here (not SIGNED_IN), so deck loading must be
+        // handled explicitly. initBackground() is the primary path; this
+        // acts as a fallback in case that failed before reaching loadDecks.
+        setAuthUser(user);
+        try {
+          const dbDecks = await loadDecks(s.sessionId, user.id);
+          if (dbDecks.length > 0 && stateRef.current.decks.length === 0) {
+            setDecks(dbDecks);
+            restoreDeck(dbDecks[0]);
+          }
+        } catch (err) {
+          console.error("Session restore failed:", err);
+        }
+      } else if (event === "SIGNED_IN" && user) {
+        // Fresh sign-in: migrate anonymous decks then load cloud decks.
+        setAuthUser(user);
         try {
           await migrateAnonymousDecks(s.sessionId);
           const dbDecks = await loadDecks(s.sessionId, user.id);
@@ -129,14 +152,17 @@ export default function App() {
           console.error("Auth migration failed:", err);
         }
       } else if (event === "SIGNED_OUT") {
+        setAuthUser(null);
         try {
           const dbDecks = await loadDecks(s.sessionId, null);
           setDecks(dbDecks);
         } catch (err) {
           console.error("Failed to reload decks after sign-out:", err);
         }
+      } else {
+        // TOKEN_REFRESHED and other events — just keep authUser in sync.
+        setAuthUser(user);
       }
-      setAuthUser(user);
     });
     return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
