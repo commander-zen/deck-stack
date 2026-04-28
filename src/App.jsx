@@ -65,6 +65,10 @@ export default function App() {
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Absolute backstop: if initBackground hangs (e.g. Supabase storage-lock
+    // timeout, network hang that doesn't reject), unblock the app after 5s.
+    const safetyTimer = setTimeout(() => setAppReady(true), 5000);
+
     async function initBackground() {
       try {
         const sid = await getOrCreateSession();
@@ -76,7 +80,6 @@ export default function App() {
         const session = await getSession();
         const user = session?.user ?? null;
         setAuthUser(user);
-        setAppReady(true); // Auth state is now known — safe to render
         const dbDecks = await loadDecks(sid, user?.id ?? null);
         if (dbDecks.length > 0) {
           setDecks(dbDecks);
@@ -86,10 +89,15 @@ export default function App() {
         }
       } catch (err) {
         console.error("Failed to init from Supabase:", err);
-        setAppReady(true); // Always unblock the app even if init fails
+      } finally {
+        // Single guaranteed call-site — runs after try OR catch, and before
+        // any hanging promise can block the UI indefinitely.
+        clearTimeout(safetyTimer);
+        setAppReady(true);
       }
     }
     initBackground();
+    return () => clearTimeout(safetyTimer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function restoreDeck(deck) {
