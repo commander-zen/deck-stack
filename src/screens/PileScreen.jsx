@@ -5,37 +5,67 @@ import CommanderModal from "../components/CommanderModal.jsx";
 import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
-function buildExportText(pile, commander) {
-  const cmdCard = commander ? pile.find(c => c.instanceId === commander) : null;
-  const rest = cmdCard ? pile.filter(c => c.instanceId !== commander) : pile;
-  if (cmdCard) {
-    return `Commander: ${cmdCard.name}\n\n${rest.map(c => `1 ${c.name}`).join("\n")}`;
-  }
-  return pile.map(c => `1 ${c.name}`).join("\n");
+// ── Card-type helpers ─────────────────────────────────────────────────────────
+const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
+const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
+const isStackable = c => isBasicLand(c) || isAnyNumber(c);
+
+// ── Export ────────────────────────────────────────────────────────────────────
+// Accepts the display pile (already collapsed) so stackable quantities print correctly.
+function buildExportText(displayPile, commander, rawPile) {
+  const cmdCard = commander ? rawPile.find(c => c.instanceId === commander) : null;
+  const rows = cmdCard
+    ? displayPile.filter(c => c.name !== cmdCard.name)
+    : displayPile;
+  const lines = rows.map(c => `${c.qty ?? 1} ${c.name}`).join("\n");
+  return cmdCard ? `Commander: ${cmdCard.name}\n\n${lines}` : lines;
 }
 
-// Deduplicate by Scryfall id (fallback: name). Commander card always wins its slot.
-function deduplicatePile(pile, commanderInstanceId) {
-  const seen = new Set();
-  const result = [];
-  // Pass 1: commander first so it is never displaced by a duplicate
+// ── Display pile ──────────────────────────────────────────────────────────────
+// - Stackable cards collapsed by name into a single row with qty (summed across any
+//   residual multi-entry groups from legacy data or undo edge-cases).
+// - Non-stackable cards deduplicated by Scryfall id (fallback: name).
+// - Commander card always gets priority in its position.
+function buildDisplayPile(pile, commanderInstanceId) {
+  const seenStackable    = new Map(); // name → index in result
+  const seenNonStackable = new Set(); // id/name key
+  const result           = [];
+
+  // Commander first (commanders are never stackable in practice)
   if (commanderInstanceId) {
     const cmd = pile.find(c => c.instanceId === commanderInstanceId);
-    if (cmd) {
-      const key = cmd.id ?? cmd.name;
-      seen.add(key);
+    if (cmd && !isStackable(cmd)) {
+      seenNonStackable.add(cmd.id ?? cmd.name);
       result.push(cmd);
     }
   }
-  // Pass 2: remaining unique cards in original order
+
   for (const card of pile) {
-    const key = card.id ?? card.name;
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(card);
+    if (commanderInstanceId && card.instanceId === commanderInstanceId) continue;
+
+    if (isStackable(card)) {
+      if (seenStackable.has(card.name)) {
+        const i = seenStackable.get(card.name);
+        result[i] = { ...result[i], qty: result[i].qty + (card.qty ?? 1) };
+      } else {
+        seenStackable.set(card.name, result.length);
+        result.push({ ...card, qty: card.qty ?? 1 });
+      }
+    } else {
+      const key = card.id ?? card.name;
+      if (!seenNonStackable.has(key)) {
+        seenNonStackable.add(key);
+        result.push(card);
+      }
     }
   }
+
   return result;
+}
+
+// Total logical card count (stackables contribute their qty, non-stackables contribute 1)
+function totalCount(pile) {
+  return pile.reduce((sum, c) => sum + (c.qty ?? 1), 0);
 }
 
 function ImageIcon({ color }) {
@@ -56,7 +86,7 @@ function ListIcon({ color }) {
   );
 }
 
-// NAV_HEIGHT (60) + STACK & SWIPE button (~52px) + gap (10px) + safe area
+// NAV_HEIGHT (60) + STACK & SWIPE button (~52px) + gap (18px)
 const FAB_CLEARANCE = NAV_HEIGHT + 52 + 18;
 
 export default function PileScreen({
@@ -68,12 +98,12 @@ export default function PileScreen({
   decks = [],
   activeDeckId = null,
 }) {
-  const [viewMode,     setViewMode]     = useState("list");
-  const [activeTab,    setActiveTab]    = useState(initialTab ?? "deck");
-  const [reviewMode,   setReviewMode]   = useState(null);
-  const [lightbox,     setLightbox]     = useState(null);
-  const [copied,       setCopied]       = useState(false);
-  const [cmdModalOpen, setCmdModalOpen] = useState(false);
+  const [viewMode,      setViewMode]      = useState("list");
+  const [activeTab,     setActiveTab]     = useState(initialTab ?? "deck");
+  const [reviewMode,    setReviewMode]    = useState(null);
+  const [lightbox,      setLightbox]      = useState(null);
+  const [copied,        setCopied]        = useState(false);
+  const [cmdModalOpen,  setCmdModalOpen]  = useState(false);
   const [cmdSearchOpen, setCmdSearchOpen] = useState(false);
 
   // Drag-to-reorder (list view, deck tab only)
@@ -103,20 +133,12 @@ export default function PileScreen({
   const commanderName = reviewCommanderCard?.name ?? null;
   const hasCommander  = Boolean(reviewCommanderCard);
 
-  // Deduplicated views — render-time only, never mutates Supabase state
-  const displayPile      = deduplicatePile(pile, commander);
-  const displayMaybeboard = (() => {
-    const seen = new Set();
-    return maybeboard.filter(c => {
-      const key = c.id ?? c.name;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  })();
+  // ── Display piles (render-time only — do not write these back to Supabase) ──
+  const displayPile       = buildDisplayPile(pile, commander);
+  const displayMaybeboard = buildDisplayPile(maybeboard, null);
 
-  const activeCards    = activeTab === "deck" ? displayPile : displayMaybeboard;
-  const activeRawCards = activeTab === "deck" ? pile        : maybeboard;
+  const activeCards        = activeTab === "deck" ? displayPile       : displayMaybeboard;
+  const activeCardsRawLen  = activeTab === "deck" ? totalCount(pile)  : totalCount(maybeboard);
 
   // Bottom padding clears the fixed STACK & SWIPE button + nav bar
   const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${FAB_CLEARANCE}px + 40px)`;
@@ -137,6 +159,35 @@ export default function PileScreen({
     onMaybeboardChange(m => m.filter(c => c.instanceId !== instanceId));
   }
 
+  // Qty +/– for stackable cards.
+  // For a single entry with explicit qty (import/swipe-new): increment/decrement qty field.
+  // For multiple individual entries (legacy data): add/remove individual copies.
+  function handleStackableQtyChange(displayCard, delta) {
+    const entries = pile.filter(c => c.name === displayCard.name);
+    if (entries.length === 0) return;
+
+    if (entries.length === 1) {
+      const entry  = entries[0];
+      const current = entry.qty ?? 1;
+      const next    = current + delta;
+      if (next <= 0) {
+        onPileChange(pile.filter(c => c.name !== displayCard.name));
+      } else {
+        onPileChange(pile.map(c => c.name === displayCard.name ? { ...c, qty: next } : c));
+      }
+    } else {
+      // Legacy multi-entry path
+      if (delta > 0) {
+        const template = entries[0];
+        const clone    = { ...template, instanceId: crypto.randomUUID(), qty: undefined };
+        onPileChange([...pile, clone]);
+      } else {
+        const lastId = entries[entries.length - 1].instanceId;
+        onPileChange(pile.filter(c => c.instanceId !== lastId));
+      }
+    }
+  }
+
   function onCardPointerDown(card) {
     lpFiredRef.current = false;
     lpTimerRef.current = setTimeout(() => {
@@ -152,7 +203,7 @@ export default function PileScreen({
     openLightbox(card);
   }
 
-  // ── Drag-to-reorder (operates on displayPile to match rendered indices) ────
+  // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
 
   function onDragHandleDown(e, srcIdx) {
     e.stopPropagation();
@@ -163,7 +214,7 @@ export default function PileScreen({
   function onDragMove(e) {
     if (!drag) return;
     const deltaY = e.clientY - drag.startY;
-    const ROW_H = 50;
+    const ROW_H  = 50;
     const targetIdx = Math.max(0, Math.min(displayPile.length - 1, drag.srcIdx + Math.round(deltaY / ROW_H)));
     setDrag(d => ({ ...d, currentY: e.clientY, targetIdx }));
   }
@@ -225,23 +276,28 @@ export default function PileScreen({
   // ── Export ─────────────────────────────────────────────────────────────────
 
   function handleCopy() {
-    navigator.clipboard?.writeText(buildExportText(pile, commander)).then(() => {
+    const text = buildExportText(displayPile, commander, pile);
+    navigator.clipboard?.writeText(text).then(() => {
       setCopied(true); setTimeout(() => setCopied(false), 2000);
     });
   }
 
   function handleMoxfield() {
-    navigator.clipboard?.writeText(buildExportText(pile, commander));
+    navigator.clipboard?.writeText(buildExportText(displayPile, commander, pile));
     window.open("https://www.moxfield.com/import", "_blank", "noopener,noreferrer");
   }
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
   function renderListRow(card, isCommander, onRemove, rowIdx, isDraggable) {
-    // Strip Scryfall brace notation: {8}{R} → "8 R". Plain strings pass through unchanged.
-    const mana = card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
+    const stackable    = isStackable(card);
+    // Mana cost: strip Scryfall brace notation {8}{R} → "8 R". Plain strings unchanged.
+    const mana         = !stackable
+      ? (card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "")
+      : "";
     const isDragging   = drag?.srcIdx === rowIdx;
     const isDropTarget = drag && drag.targetIdx === rowIdx && drag.srcIdx !== rowIdx;
+
     return (
       <div
         key={card.instanceId}
@@ -257,9 +313,9 @@ export default function PileScreen({
           borderBottomColor: isDropTarget && drag.targetIdx > drag.srcIdx ? "var(--primary)" : "rgba(255,255,255,0.05)",
           background: isDragging ? "rgba(91,143,255,0.08)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
           opacity: isDragging ? 0.5 : 1,
-          cursor: "pointer",
+          cursor: stackable ? "default" : "pointer",
         }}
-        onClick={() => !drag && openLightbox(card)}
+        onClick={() => !drag && !stackable && openLightbox(card)}
       >
         {isDraggable && (
           <div
@@ -275,6 +331,7 @@ export default function PileScreen({
         {isCommander && (
           <span style={{ fontSize: 12, marginRight: 6, flexShrink: 0 }}>👑</span>
         )}
+
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 14, color: isCommander ? "gold" : "var(--text)",
@@ -289,15 +346,58 @@ export default function PileScreen({
             </div>
           )}
         </div>
-        {mana && (
-          <span style={{
-            fontSize: 11, color: "rgba(255,255,255,0.4)",
-            flexShrink: 0, marginLeft: 8, marginRight: 8,
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}>
-            {mana}
-          </span>
+
+        {/* Stackable: qty controls instead of mana cost */}
+        {stackable ? (
+          <div
+            style={{
+              display: "flex", alignItems: "center", gap: 0,
+              flexShrink: 0, marginLeft: 8, marginRight: 4,
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={e => { e.stopPropagation(); handleStackableQtyChange(card, -1); }}
+              style={{
+                width: 26, height: 26, border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "6px 0 0 6px", background: "rgba(255,255,255,0.04)",
+                color: "var(--text)", cursor: "pointer", fontSize: 14, lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >−</button>
+            <div style={{
+              minWidth: 28, height: 26,
+              border: "1px solid rgba(255,255,255,0.12)", borderLeft: "none", borderRight: "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 12, color: "var(--text)",
+              background: "rgba(255,255,255,0.02)",
+              paddingInline: 4,
+            }}>
+              {card.qty ?? 1}
+            </div>
+            <button
+              onClick={e => { e.stopPropagation(); handleStackableQtyChange(card, +1); }}
+              style={{
+                width: 26, height: 26, border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "0 6px 6px 0", background: "rgba(255,255,255,0.04)",
+                color: "var(--text)", cursor: "pointer", fontSize: 14, lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >+</button>
+          </div>
+        ) : (
+          mana && (
+            <span style={{
+              fontSize: 11, color: "rgba(255,255,255,0.4)",
+              flexShrink: 0, marginLeft: 8, marginRight: 8,
+              fontFamily: "'IBM Plex Mono', monospace",
+            }}>
+              {mana}
+            </span>
+          )
         )}
+
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
@@ -342,6 +442,20 @@ export default function PileScreen({
         {isCommander && (
           <div style={{ position: "absolute", top: 4, left: 5, fontSize: 14, lineHeight: 1, pointerEvents: "none",
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))" }}>👑</div>
+        )}
+        {/* Qty badge for stackable cards in grid view */}
+        {isStackable(card) && (card.qty ?? 1) > 1 && (
+          <div style={{
+            position: "absolute", bottom: 5, left: 5,
+            background: "rgba(0,0,0,0.78)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            borderRadius: 4, padding: "1px 5px",
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 11, color: "var(--text)", lineHeight: "16px",
+            pointerEvents: "none",
+          }}>
+            {card.qty}×
+          </div>
         )}
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
@@ -422,13 +536,13 @@ export default function PileScreen({
             </span>
           )}
 
-          {/* Count */}
+          {/* Card count — total logical cards (stackable qty summed) */}
           <span style={{
             fontSize: 12, color: "var(--muted)",
             fontFamily: "'IBM Plex Mono', monospace",
             flexShrink: 0,
           }}>
-            {activeCards.length}
+            {activeCardsRawLen}
           </span>
 
           {/* List/Grid toggle */}
@@ -506,7 +620,7 @@ export default function PileScreen({
             </span>
           </div>
         ) : viewMode === "list" ? (
-          /* List view — rendered from deduplicated pile */
+          /* List view */
           activeTab === "deck"
             ? displayPile.map((card, i) => renderListRow(card, commander === card.instanceId, handleRemove, i, true))
             : displayMaybeboard.map((card, i) => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), i, false))

@@ -3,7 +3,9 @@ import { useState } from "react";
 const UA = "DeckStack/1.0 (deck-stack.vercel.app)";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
+const isBasicLand  = c => Boolean(c?.type_line?.includes("Basic Land"));
+const isAnyNumber  = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
+const isStackable  = c => isBasicLand(c) || isAnyNumber(c);
 
 function parseMoxfieldId(url) {
   const m = url.match(/moxfield\.com\/decks\/([A-Za-z0-9_-]+)/);
@@ -189,15 +191,28 @@ export default function ImportSheet({ open, onClose, onImport }) {
     }
 
     // ── Build pile ────────────────────────────────────────────────────────────
-    const resolvedMap = new Map(resolved.map(c => [c.name.toLowerCase(), c]));
-    const pile = [];
-    let commanderCard = null;
-    let basicsFiltered = 0;
+    // Stackable cards (basics + any-number) collapse into a single entry with qty.
+    // Non-stackable cards get one entry per copy.
+    const resolvedMap  = new Map(resolved.map(c => [c.name.toLowerCase(), c]));
+    const pile         = [];
+    const stackableIdx = new Map(); // name → pile index for merging
+    let commanderCard  = null;
 
     for (const entry of parsed) {
       const card = resolvedMap.get(entry.name.toLowerCase());
       if (!card) continue;
-      if (isBasicLand(card)) { basicsFiltered += entry.qty; continue; }
+
+      if (isStackable(card)) {
+        if (stackableIdx.has(card.name)) {
+          const i = stackableIdx.get(card.name);
+          pile[i] = { ...pile[i], qty: pile[i].qty + entry.qty };
+        } else {
+          stackableIdx.set(card.name, pile.length);
+          pile.push({ ...card, instanceId: crypto.randomUUID(), qty: entry.qty });
+        }
+        continue;
+      }
+
       for (let q = 0; q < entry.qty; q++) {
         const cardEntry = { ...card, instanceId: crypto.randomUUID() };
         pile.push(cardEntry);
@@ -207,8 +222,12 @@ export default function ImportSheet({ open, onClose, onImport }) {
       }
     }
 
-    if (basicsFiltered > 0) {
-      console.log(`Filtered ${basicsFiltered} basic land${basicsFiltered !== 1 ? "s" : ""} from import`);
+    if (stackableIdx.size > 0) {
+      const totalQty = [...stackableIdx.keys()].reduce((sum, name) => {
+        const i = stackableIdx.get(name);
+        return sum + pile[i].qty;
+      }, 0);
+      console.log(`Collapsed ${totalQty} stackable card${totalQty !== 1 ? "s" : ""} into ${stackableIdx.size} row${stackableIdx.size !== 1 ? "s" : ""} (import)`);
     }
 
     if (notFound.length > 0) {

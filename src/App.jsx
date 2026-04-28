@@ -14,6 +14,8 @@ function ensureInstanceIds(cards) {
 }
 
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
+const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
+const isStackable = c => isBasicLand(c) || isAnyNumber(c);
 
 function computeDeckName(commanderCard, query) {
   if (commanderCard?.name) return commanderCard.name;
@@ -562,6 +564,27 @@ export default function App() {
     }
   }
 
+  // ── Swipe keep — merges stackable cards rather than pushing duplicates ──────
+  function handleSwipePileChange(newPile) {
+    // Undo/remove passes the pile with one fewer entry — let it through unchanged.
+    if (newPile.length !== pile.length + 1) {
+      setPile(newPile);
+      return;
+    }
+    const added = newPile[newPile.length - 1];
+    if (!isStackable(added)) {
+      setPile(newPile);
+      return;
+    }
+    // Stackable: find existing entry or create first occurrence with qty:1
+    const existingIdx = pile.findIndex(c => c.name === added.name);
+    if (existingIdx >= 0) {
+      setPile(pile.map((c, i) => i === existingIdx ? { ...c, qty: (c.qty ?? 1) + 1 } : c));
+    } else {
+      setPile([...pile, { ...added, qty: 1 }]);
+    }
+  }
+
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function goToStack() {
     if (swipeMounted) setScreen("swipe");
@@ -614,7 +637,7 @@ export default function App() {
             key={swipeKey}
             cards={swipeCards.slice(0, swipeDisplayLimit)}
             pile={pile}
-            onPileChange={setPile}
+            onPileChange={handleSwipePileChange}
             maybeboard={maybeboard}
             onMaybeboardChange={setMaybeboard}
             onGoToPile={goToPile}
