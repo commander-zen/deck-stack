@@ -182,6 +182,8 @@ export default function App() {
     const timer = setTimeout(async () => {
       const name = computeDeckName(s.commanderCard, s.query);
       try {
+        // PERSISTS: all state changes — debounced backup (covers swipe-keep,
+        // commander long-press, and any mutation not explicitly saved immediately)
         await saveDeck(sessionId, {
           id: s.activeDeckId, name,
           commander_name: s.commanderCard?.name ?? null,
@@ -326,7 +328,13 @@ export default function App() {
         swipe_index: 0, query: q,
         last_opened_at: new Date().toISOString(),
       };
-      if (sessionId) saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(console.error);
+      if (sessionId) {
+        // PERSISTS: create/update deck on search
+        saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(err => {
+          console.error("Failed to save deck on search:", err);
+          showToast("Couldn't save brew — check your connection");
+        });
+      }
 
       // Background-fetch remaining Scryfall pages (up to 175 total)
       if (nextPage) {
@@ -353,7 +361,14 @@ export default function App() {
   // ── Clear pile ────────────────────────────────────────────────────────────
   async function handleClearPile() {
     if (sessionId && activeDeckId) {
-      deleteDeck(sessionId, activeDeckId, authUser?.id ?? null).catch(console.error);
+      try {
+        // PERSISTS: delete deck (clear pile) — awaited so local state only clears on success
+        await deleteDeck(sessionId, activeDeckId, authUser?.id ?? null);
+      } catch (err) {
+        console.error("Failed to delete deck:", err);
+        showToast("Couldn't delete brew — try again");
+        return; // Don't clear local state if the DB delete failed
+      }
       setDecks(ds => ds.filter(d => d.id !== activeDeckId));
     }
     setPile([]); setCommander(null); setCommanderCard(null);
@@ -405,7 +420,13 @@ export default function App() {
         last_opened_at: new Date().toISOString(),
       };
       setDecks(ds => ds.map(d => d.id === activeDeckId ? { ...d, ...deckPayload } : d));
-      if (sessionId) saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(console.error);
+      if (sessionId) {
+        // PERSISTS: update deck (import into active brew)
+        saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(err => {
+          console.error("Failed to save imported deck:", err);
+          showToast("Import saved locally — cloud sync failed");
+        });
+      }
     } else {
       // No active brew — create exactly one new deck
       const newDeckId = crypto.randomUUID();
@@ -421,7 +442,13 @@ export default function App() {
       };
       setActiveDeckId(newDeckId);
       setDecks(ds => [newDeck, ...ds]);
-      if (sessionId) saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(console.error);
+      if (sessionId) {
+        // PERSISTS: create deck (import into new brew)
+        saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(err => {
+          console.error("Failed to save imported deck:", err);
+          showToast("Import saved locally — cloud sync failed");
+        });
+      }
     }
   }
 
@@ -432,6 +459,7 @@ export default function App() {
 
     if (sessionId && activeDeckId) {
       const s = stateRef.current;
+      // PERSISTS: save current deck state before switching
       saveDeck(sessionId, {
         id: s.activeDeckId,
         name: computeDeckName(s.commanderCard, s.query),
@@ -440,7 +468,10 @@ export default function App() {
         commander_card: s.commanderCard ?? null,
         pile: s.pile, maybeboard: s.maybeboard,
         swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-      }, s.authUser?.id ?? null).catch(console.error);
+      }, s.authUser?.id ?? null).catch(err => {
+        console.error("Failed to save deck before switch:", err);
+        showToast("Couldn't save recent changes");
+      });
     }
 
     setActiveDeckId(deckId);
@@ -456,6 +487,7 @@ export default function App() {
   function handleNewDeck() {
     if (sessionId && activeDeckId) {
       const s = stateRef.current;
+      // PERSISTS: save current deck state before new brew
       saveDeck(sessionId, {
         id: s.activeDeckId,
         name: computeDeckName(s.commanderCard, s.query),
@@ -464,7 +496,10 @@ export default function App() {
         commander_card: s.commanderCard ?? null,
         pile: s.pile, maybeboard: s.maybeboard,
         swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-      }, s.authUser?.id ?? null).catch(console.error);
+      }, s.authUser?.id ?? null).catch(err => {
+        console.error("Failed to save deck before new brew:", err);
+        showToast("Couldn't save recent changes");
+      });
     }
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
@@ -474,6 +509,7 @@ export default function App() {
 
   // ── Delete deck ───────────────────────────────────────────────────────────
   async function handleDeleteDeck(deckId) {
+    // PERSISTS: delete deck — awaited; throws to BrewsScreen which shows deleteError
     await deleteDeck(sessionId, deckId, authUser?.id ?? null);
     const remaining = decks.filter(d => d.id !== deckId);
     setDecks(remaining);
@@ -545,6 +581,8 @@ export default function App() {
   }
 
   // ── Commander card lock guard (prevents UI pickers from overwriting a brew's commander) ──
+  // PERSISTS: commanderCard change — `commanderCard` is in the auto-save dep array so
+  // the debounced save fires automatically within 1500ms of any change here.
   function handleCommanderCardChange(newCard) {
     const activeDeckCommander = activeDeckId
       ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
@@ -563,6 +601,8 @@ export default function App() {
   function handleSaveFromPileScreen(newPile, newMaybeboard) {
     const s = stateRef.current;
     if (!s.sessionId || !s.activeDeckId) return;
+    // PERSISTS: pile and maybeboard mutations (immediate write ahead of auto-save;
+    // covers remove card, move pile↔maybeboard, qty change, drag reorder)
     saveDeck(s.sessionId, {
       id: s.activeDeckId,
       name: computeDeckName(s.commanderCard, s.query),
@@ -579,6 +619,8 @@ export default function App() {
   }
 
   // ── Commander assignment guard ────────────────────────────────────────────
+  // PERSISTS: commander change — `commander` is in the auto-save dep array so
+  // the debounced save fires automatically within 1500ms of any change here.
   function handleCommanderChange(instanceId) {
     if (!instanceId) { setCommander(null); return; }
     const card = pile.find(c => c.instanceId === instanceId);
@@ -604,6 +646,7 @@ export default function App() {
     }
     const deck = decks.find(d => d.id === deckId);
     if (sessionId && deck) {
+      // PERSISTS: set commander card for named deck
       saveDeck(sessionId, {
         id: deckId,
         name: deck.name,
@@ -615,7 +658,10 @@ export default function App() {
         swipe_cards: deck.swipe_cards ?? [],
         swipe_index: deck.swipe_index ?? 0,
         query: deck.query ?? null,
-      }, authUser?.id ?? null).catch(console.error);
+      }, authUser?.id ?? null).catch(err => {
+        console.error("Failed to save commander:", err);
+        showToast("Couldn't save commander — try again");
+      });
     }
   }
 
