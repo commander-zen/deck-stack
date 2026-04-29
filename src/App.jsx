@@ -9,6 +9,16 @@ import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
 import { getSession, onAuthChange } from "./lib/auth.js";
 
+function readLocalDecks() {
+  try { return JSON.parse(localStorage.getItem("deckstack_decks") ?? "[]"); }
+  catch { return []; }
+}
+
+function readLocalSession() {
+  try { return JSON.parse(sessionStorage.getItem("deckstack_session") ?? "null"); }
+  catch { return null; }
+}
+
 function ensureInstanceIds(cards) {
   return (cards || []).map(c => c.instanceId ? c : { ...c, instanceId: crypto.randomUUID() });
 }
@@ -26,7 +36,7 @@ function computeDeckName(commanderCard, query) {
 export default function App() {
   const [appReady,     setAppReady]     = useState(false);
   const [sessionId,    setSessionId]    = useState(null);
-  const [decks,        setDecks]        = useState([]);
+  const [decks,        setDecks]        = useState(readLocalDecks);
   const [activeDeckId, setActiveDeckId] = useState(null);
 
   const [pile,          setPile]          = useState([]);
@@ -65,33 +75,52 @@ export default function App() {
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // Absolute backstop: if initBackground hangs (e.g. Supabase storage-lock
-    // timeout, network hang that doesn't reject), unblock the app after 5s.
+    // Absolute backstop: unblock after 5 s if Supabase hangs.
     const safetyTimer = setTimeout(() => setAppReady(true), 5000);
 
     async function initBackground() {
+      // ── Fast-path 1: active session in sessionStorage ─────────────────────
+      // survives F5 refresh; cleared automatically on tab/window close.
+      const localSession = readLocalSession();
+      if (localSession) {
+        if (localSession.id) setActiveDeckId(localSession.id);
+        restoreDeck(localSession);
+        clearTimeout(safetyTimer);
+        setAppReady(true);
+      }
+
+      // ── Fast-path 2: deck list from localStorage ──────────────────────────
+      // renders the brews list and last-opened deck instantly on return visits.
+      if (!localSession) {
+        const localDecks = readLocalDecks(); // same data as decks lazy-init
+        if (localDecks.length > 0) {
+          setActiveDeckId(localDecks[0].id);
+          restoreDeck(localDecks[0]);
+          clearTimeout(safetyTimer);
+          setAppReady(true);
+        }
+      }
+
+      // ── Background: Supabase sync ─────────────────────────────────────────
+      // Always runs; updates decks list and mirrors it to localStorage.
+      // Only re-restores the active deck when no local session was available.
       try {
         const sid = await getOrCreateSession();
         setSessionId(sid);
-        // Wait for the session check before rendering — avoids a false "signed out"
-        // flash while localStorage is being read. onAuthStateChange alone fires
-        // INITIAL_SESSION (not SIGNED_IN) on hard refresh and isn't guaranteed to
-        // beat the first render.
         const session = await getSession();
         const user = session?.user ?? null;
         setAuthUser(user);
         const dbDecks = await loadDecks(sid, user?.id ?? null);
         if (dbDecks.length > 0) {
           setDecks(dbDecks);
-          const latest = dbDecks[0];
-          setActiveDeckId(latest.id);
-          restoreDeck(latest);
+          if (!localSession) {
+            setActiveDeckId(dbDecks[0].id);
+            restoreDeck(dbDecks[0]);
+          }
         }
       } catch (err) {
         console.error("Failed to init from Supabase:", err);
       } finally {
-        // Single guaranteed call-site — runs after try OR catch, and before
-        // any hanging promise can block the UI indefinitely.
         clearTimeout(safetyTimer);
         setAppReady(true);
       }
@@ -213,6 +242,36 @@ export default function App() {
     }, 1500);
     return () => clearTimeout(timer);
   }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady, authUser]);
+
+  // ── Mirror decks to localStorage (instant restore on next mount) ──────────
+  useEffect(() => {
+    if (!appReady) return;
+    try { localStorage.setItem("deckstack_decks", JSON.stringify(decks)); }
+    catch (err) { console.warn("localStorage decks write failed:", err); }
+  }, [decks, appReady]);
+
+  // ── Write active session to sessionStorage (survives refresh, not tab-close)
+  useEffect(() => {
+    if (!appReady || !activeDeckId) return;
+    const s = stateRef.current;
+    const timer = setTimeout(() => {
+      try {
+        sessionStorage.setItem("deckstack_session", JSON.stringify({
+          id:                    s.activeDeckId,
+          name:                  computeDeckName(s.commanderCard, s.query),
+          commander_name:        s.commanderCard?.name ?? null,
+          commander_instance_id: s.commander ?? null,
+          commander_card:        s.commanderCard ?? null,
+          pile:                  s.pile,
+          maybeboard:            s.maybeboard,
+          swipe_cards:           s.swipeCards,
+          swipe_index:           s.swipeIndex,
+          query:                 s.query,
+        }));
+      } catch (err) { console.warn("sessionStorage write failed:", err); }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, appReady]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -371,6 +430,7 @@ export default function App() {
       }
       setDecks(ds => ds.filter(d => d.id !== activeDeckId));
     }
+    sessionStorage.removeItem("deckstack_session");
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
     setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
@@ -501,6 +561,7 @@ export default function App() {
         showToast("Couldn't save recent changes");
       });
     }
+    sessionStorage.removeItem("deckstack_session");
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
     setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
