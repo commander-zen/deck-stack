@@ -15,9 +15,9 @@ function ColorPip({ color }) {
   );
 }
 
-export default function PileSwipeScreen({ cards: cardsProp, onKeep, onPass, onDone, commanderCard, mode }) {
+export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKeep, onPass, onDone, commanderCard, mode }) {
   const [snapshot]  = useState(() => [...cardsProp]);
-  const [idx,       setIdx]     = useState(0);
+  const [idx,       setIdx]     = useState(startIndex);
   const [offset,    setOffset]  = useState(0);
   const [dragging,  setDragging]= useState(false);
   const [badge,     setBadge]   = useState(null);

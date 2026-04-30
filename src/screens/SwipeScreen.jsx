@@ -129,9 +129,13 @@ export default function SwipeScreen({
 
     setTimeout(() => {
       if (keep) {
-        const cardEntry = { ...card, instanceId: crypto.randomUUID() };
-        setHistory(h => [...h, { card: cardEntry, kept: true }]);
-        onPileChange([...pile, cardEntry]);
+        const alreadyInPile = !isStackable(card) && card.oracle_id &&
+          pile.some(c => c.oracle_id === card.oracle_id);
+        if (!alreadyInPile) {
+          const cardEntry = { ...card, instanceId: crypto.randomUUID() };
+          setHistory(h => [...h, { card: cardEntry, kept: true }]);
+          onPileChange(prev => [...prev, cardEntry]);
+        }
       } else {
         // Left swipe on Stack = discard entirely — not saved anywhere
         setHistory(h => [...h, { card, kept: false }]);

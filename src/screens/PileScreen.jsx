@@ -68,6 +68,26 @@ function totalCount(pile) {
   return pile.reduce((sum, c) => sum + (c.qty ?? 1), 0);
 }
 
+// ── Deduplicate by oracle_id for pile review ──────────────────────────────────
+function dedupeByOracleId(cards) {
+  const seen = new Set();
+  const duplicates = [];
+  const result = [];
+  for (const card of cards) {
+    const key = card.oracle_id ?? card.id ?? card.name;
+    if (seen.has(key)) {
+      duplicates.push(card.name);
+    } else {
+      seen.add(key);
+      result.push(card);
+    }
+  }
+  if (duplicates.length > 0) {
+    console.warn("Duplicate oracle_ids removed from pile review:", duplicates);
+  }
+  return result;
+}
+
 function ImageIcon({ color }) {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -99,13 +119,15 @@ export default function PileScreen({
   activeDeckId = null,
   onSave,
 }) {
-  const [viewMode,      setViewMode]      = useState("list");
-  const [activeTab,     setActiveTab]     = useState(initialTab ?? "deck");
-  const [reviewMode,    setReviewMode]    = useState(null);
-  const [lightbox,      setLightbox]      = useState(null);
-  const [copied,        setCopied]        = useState(false);
-  const [cmdModalOpen,  setCmdModalOpen]  = useState(false);
-  const [cmdSearchOpen, setCmdSearchOpen] = useState(false);
+  const [deckViewMode,   setDeckViewMode]   = useState("grid"); // image view by default
+  const [maybeViewMode,  setMaybeViewMode]  = useState("list"); // text view by default
+  const [activeTab,      setActiveTab]      = useState(initialTab ?? "deck");
+  const [reviewMode,     setReviewMode]     = useState(null);
+  const [reviewCards,    setReviewCards]    = useState([]);
+  const [reviewStartIdx, setReviewStartIdx] = useState(0);
+  const [copied,         setCopied]         = useState(false);
+  const [cmdModalOpen,   setCmdModalOpen]   = useState(false);
+  const [cmdSearchOpen,  setCmdSearchOpen]  = useState(false);
 
   // Drag-to-reorder (list view, deck tab only)
   const [drag, setDrag] = useState(null);
@@ -119,10 +141,6 @@ export default function PileScreen({
   useEffect(() => {
     window.scrollTo(0, scrollPos.current[activeTab] ?? 0);
   }, [activeTab]);
-
-  const lbDragStartY = useRef(null);
-  const [lbDragY,    setLbDragY]    = useState(0);
-  const [lbDragging, setLbDragging] = useState(false);
 
   const lpTimerRef = useRef(null);
   const lpFiredRef = useRef(false);
@@ -138,12 +156,34 @@ export default function PileScreen({
   const displayPile       = buildDisplayPile(pile, commander);
   const displayMaybeboard = buildDisplayPile(maybeboard, null);
 
-  const activeCards        = activeTab === "deck" ? displayPile       : displayMaybeboard;
-  const activeCardsRawLen  = activeTab === "deck" ? totalCount(pile)  : totalCount(maybeboard);
+  const activeCards       = activeTab === "deck" ? displayPile       : displayMaybeboard;
+  const activeCardsRawLen = activeTab === "deck" ? totalCount(pile)  : totalCount(maybeboard);
+
+  // Derived view mode for the active tab
+  const viewMode = activeTab === "deck" ? deckViewMode : maybeViewMode;
 
   // Bottom padding clears the fixed STACK & SWIPE button + nav bar
   const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${FAB_CLEARANCE}px + 40px)`;
   const fabBottom  = `calc(max(10px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 8px)`;
+
+  // ── Review entry ───────────────────────────────────────────────────────────
+
+  function enterReview(mode) {
+    const raw     = mode === "deck" ? pile : maybeboard;
+    const deduped = dedupeByOracleId(raw);
+    setReviewCards(deduped);
+    setReviewStartIdx(0);
+    setReviewMode(mode);
+  }
+
+  function enterReviewAt(card, mode) {
+    const raw     = mode === "deck" ? pile : maybeboard;
+    const deduped = dedupeByOracleId(raw);
+    const startIdx = deduped.findIndex(c => c.instanceId === card.instanceId);
+    setReviewCards(deduped);
+    setReviewStartIdx(Math.max(0, startIdx));
+    setReviewMode(mode);
+  }
 
   // ── Card interactions ──────────────────────────────────────────────────────
 
@@ -152,13 +192,11 @@ export default function PileScreen({
     const newPile = pile.filter(c => c.instanceId !== instanceId);
     onPileChange(newPile);
     onSave?.(newPile, maybeboard);
-    if (lightbox?.instanceId === instanceId) setLightbox(null);
     if (commander === instanceId) onCommanderChange(null);
   }
 
   function handleRemoveMaybe(instanceId, e) {
     e?.stopPropagation();
-    if (lightbox?.instanceId === instanceId) setLightbox(null);
     const newMaybe = maybeboard.filter(c => c.instanceId !== instanceId);
     onMaybeboardChange(newMaybe);
     onSave?.(pile, newMaybe);
@@ -208,7 +246,7 @@ export default function PileScreen({
 
   function onCardClick(card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
-    openLightbox(card);
+    enterReviewAt(card, activeTab);
   }
 
   // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
@@ -237,31 +275,6 @@ export default function PileScreen({
       onSave?.(next, maybeboard);
     }
     setDrag(null);
-  }
-
-  // ── Lightbox ───────────────────────────────────────────────────────────────
-
-  function openLightbox(card) { setLightbox(card); setLbDragY(0); }
-
-  function closeLightbox() {
-    setLightbox(null); setLbDragY(0);
-    setLbDragging(false); lbDragStartY.current = null;
-  }
-
-  function onLbPointerDown(e) {
-    lbDragStartY.current = e.clientY;
-    setLbDragging(true); setLbDragY(0);
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }
-
-  function onLbPointerMove(e) {
-    if (!lbDragging || lbDragStartY.current === null) return;
-    setLbDragY(Math.max(0, e.clientY - lbDragStartY.current));
-  }
-
-  function onLbPointerUp() {
-    lbDragStartY.current = null; setLbDragging(false);
-    if (lbDragY > 100) closeLightbox(); else setLbDragY(0);
   }
 
   // ── Review handlers ────────────────────────────────────────────────────────
@@ -306,7 +319,7 @@ export default function PileScreen({
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
-  function renderListRow(card, isCommander, onRemove, rowIdx, isDraggable) {
+  function renderListRow(card, isCommander, onRemove, rowIdx, isDraggable, onTap) {
     const stackable    = isStackable(card);
     // Mana cost: strip Scryfall brace notation {8}{R} → "8 R". Plain strings unchanged.
     const mana         = !stackable
@@ -332,7 +345,7 @@ export default function PileScreen({
           opacity: isDragging ? 0.5 : 1,
           cursor: stackable ? "default" : "pointer",
         }}
-        onClick={() => !drag && !stackable && openLightbox(card)}
+        onClick={() => !drag && !stackable && onTap?.(card, rowIdx)}
       >
         {isDraggable && (
           <div
@@ -494,7 +507,8 @@ export default function PileScreen({
       {/* PileSwipeScreen overlay */}
       {reviewMode && (
         <PileSwipeScreen
-          cards={reviewMode === "deck" ? pile : maybeboard}
+          cards={reviewCards}
+          startIndex={reviewStartIdx}
           mode={reviewMode}
           commanderCard={reviewCommanderCard}
           onKeep={handleReviewKeep}
@@ -564,7 +578,10 @@ export default function PileScreen({
 
           {/* List/Grid toggle */}
           <button
-            onClick={() => setViewMode(v => v === "list" ? "grid" : "list")}
+            onClick={() => {
+              if (activeTab === "deck") setDeckViewMode(v => v === "list" ? "grid" : "list");
+              else setMaybeViewMode(v => v === "list" ? "grid" : "list");
+            }}
             style={{
               background: "transparent", border: "none",
               color: "rgba(255,255,255,0.45)", cursor: "pointer",
@@ -639,8 +656,14 @@ export default function PileScreen({
         ) : viewMode === "list" ? (
           /* List view */
           activeTab === "deck"
-            ? displayPile.map((card, i) => renderListRow(card, commander === card.instanceId, handleRemove, i, true))
-            : displayMaybeboard.map((card, i) => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), i, false))
+            ? displayPile.map((card, i) => renderListRow(
+                card, commander === card.instanceId, handleRemove, i, true,
+                (c) => enterReviewAt(c, "deck")
+              ))
+            : displayMaybeboard.map((card, i) => renderListRow(
+                card, false, (id, e) => handleRemoveMaybe(id, e), i, false,
+                (c) => enterReviewAt(c, "maybe")
+              ))
         ) : (
           /* Grid view */
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -705,7 +728,7 @@ export default function PileScreen({
           pointerEvents: "auto",
         }}>
           <button
-            onClick={() => setReviewMode(activeTab)}
+            onClick={() => enterReview(activeTab)}
             style={{
               width: "100%",
               padding: "14px 20px",
@@ -745,49 +768,6 @@ export default function PileScreen({
         decks={decks}
         excludeDeckId={activeDeckId}
       />
-
-      {/* ── Lightbox ── */}
-      {lightbox && (
-        <div
-          onClick={closeLightbox}
-          style={{
-            position: "fixed", inset: 0, zIndex: 500,
-            background: `rgba(0,0,0,${Math.max(0.92 - lbDragY / 300, 0.3)})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <button
-            onClick={closeLightbox}
-            style={{
-              position: "absolute", top: 20, right: 20,
-              background: "rgba(255,255,255,0.12)", border: "none", borderRadius: "50%",
-              width: 36, height: 36, color: "rgba(255,255,255,0.8)",
-              fontSize: 16, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10,
-            }}
-          >✕</button>
-          <img
-            src={getCardImage(lightbox, "normal")}
-            alt={lightbox.name}
-            draggable={false}
-            onPointerDown={onLbPointerDown}
-            onPointerMove={onLbPointerMove}
-            onPointerUp={onLbPointerUp}
-            onPointerCancel={onLbPointerUp}
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: "min(90vw, 400px)", maxHeight: "85dvh",
-              objectFit: "contain", borderRadius: 16,
-              boxShadow: "0 24px 64px rgba(0,0,0,0.9)",
-              transform: `translateY(${lbDragY}px)`,
-              transition: lbDragging ? "none" : "transform 0.22s ease",
-              cursor: lbDragging ? "grabbing" : "grab",
-              touchAction: "none", userSelect: "none",
-              opacity: Math.max(1 - lbDragY / 250, 0.2),
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }
