@@ -106,6 +106,7 @@ export async function fetchFirstPageForSwipe(query, commanderCard = null, option
   if (commanderCard?.color_identity?.length > 0) {
     baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
   }
+  baseQuery += " -type:sticker -type:attraction";
   let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=${order}&unique=cards`;
   if (dir !== "auto") url += `&dir=${dir}`;
   let res;
@@ -149,6 +150,7 @@ export async function fetchForSwipe(query, commanderCard = null, options = {}) {
   if (commanderCard?.color_identity?.length > 0) {
     baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
   }
+  baseQuery += " -type:sticker -type:attraction";
   let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=random&unique=cards`;
 
   while (url && results.length < CAP) {

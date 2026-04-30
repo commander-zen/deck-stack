@@ -369,9 +369,7 @@ export default function App() {
         ));
       }
 
-      setPile([]); setCommander(null); setMaybeboard([]);
       setQuery(q); setSwipeCards(firstCards); setSwipeIndex(0); setSwipeDisplayLimit(20);
-      // Restore locked commander into state so it survives the pile reset
       if (lockedCard) setCommanderCard(lockedCard);
       setSwipeMounted(true);
       setSwipeKey(k => k + 1);
@@ -381,9 +379,9 @@ export default function App() {
       const deckPayload = {
         id: targetDeckId, name: deckName,
         commander_name: effectiveCommanderCard?.name ?? null,
-        commander_instance_id: null,
+        commander_instance_id: commander ?? null,
         commander_card: effectiveCommanderCard ?? null,
-        pile: [], maybeboard: [], swipe_cards: firstCards,
+        pile, maybeboard, swipe_cards: firstCards,
         swipe_index: 0, query: q,
         last_opened_at: new Date().toISOString(),
       };
