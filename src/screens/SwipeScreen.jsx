@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { getCardImage, searchCommanders } from "../lib/scryfall.js";
+import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
-import CommanderModal from "../components/CommanderModal.jsx";
 
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
 const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
@@ -36,8 +35,9 @@ export default function SwipeScreen({
   maybeboard, onMaybeboardChange,
   onGoToPile, onGoToSearch, onSearchMore, commanderCard, onCommanderCardChange,
   initialIndex, onIndexChange,
-  swipeOrder = "name", swipeDir = "auto", onSortChange,
+  swipeOrder = "name", swipeDir = "desc", onSortChange,
   onGoToBrews,
+  activeDeckId, onSavePile,
 }) {
   // Deduplicate swipe queue: skip oracle_id already seen in the queue or kept in pile.
   // Stackables (basic lands + any-number cards) are always allowed through.
@@ -63,21 +63,14 @@ export default function SwipeScreen({
   const [faceIdx,      setFaceIdx]      = useState(0);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
 
-  // Inline commander picker
-  const [cmdPickerOpen, setCmdPickerOpen]   = useState(false);
-  const [cmdQuery,      setCmdQuery]        = useState("");
-  const [cmdResults,    setCmdResults]      = useState([]);
-  const [cmdModalOpen,  setCmdModalOpen]    = useState(false);
-  const cmdAbortRef = useRef(null);
-  const cmdInputRef = useRef(null);
-
   // Onboarding tip
   const [showTip,    setShowTip]    = useState(false);
   const [tipDismiss, setTipDismiss] = useState(false);
   const tipShownRef = useRef(false);
 
-  const didMountRef = useRef(false);
-  const dragStartRef = useRef(null);
+  const didMountRef   = useRef(false);
+  const dragStartRef  = useRef(null);
+  const saveTimerRef  = useRef(null);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
@@ -117,44 +110,13 @@ export default function SwipeScreen({
     return () => window.removeEventListener("keydown", handler);
   });
 
-  // Commander search autocomplete
+  // Debounced pile save — only updates an existing brew record, never creates
   useEffect(() => {
-    if (!cmdQuery.trim()) { setCmdResults([]); return; }
-    const timer = setTimeout(async () => {
-      cmdAbortRef.current?.abort();
-      const ctrl = new AbortController();
-      cmdAbortRef.current = ctrl;
-      try {
-        const results = await searchCommanders(cmdQuery, { signal: ctrl.signal });
-        if (!ctrl.signal.aborted) setCmdResults(results.slice(0, 5));
-      } catch { /* aborted */ }
-    }, 280);
-    return () => clearTimeout(timer);
-  }, [cmdQuery]);
-
-  function openCmdPicker() {
-    setCmdPickerOpen(true);
-    setCmdQuery("");
-    setCmdResults([]);
-    setTimeout(() => cmdInputRef.current?.focus(), 50);
-  }
-
-  function closeCmdPicker() {
-    setCmdPickerOpen(false);
-    setCmdQuery("");
-    setCmdResults([]);
-    cmdAbortRef.current?.abort();
-  }
-
-  function selectCommander(c) {
-    onCommanderCardChange?.(c);
-    closeCmdPicker();
-  }
-
-  function clearCommander() {
-    onCommanderCardChange?.(null);
-    closeCmdPicker();
-  }
+    if (!activeDeckId) return;
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => onSavePile?.(pile), 1000);
+    return () => clearTimeout(saveTimerRef.current);
+  }, [pile, activeDeckId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Swipe logic ────────────────────────────────────────────────────────────
 
@@ -200,7 +162,7 @@ export default function SwipeScreen({
   // ── Pointer events ─────────────────────────────────────────────────────────
 
   function onPointerDown(e) {
-    if (animOut || done || cmdPickerOpen) return;
+    if (animOut || done) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragStartRef.current = e.clientX;
     setDragging(true);
@@ -266,203 +228,104 @@ export default function SwipeScreen({
         }} />
       )}
 
-      {/* ── Commander row ── */}
+      {/* ── Commander row — display only ── */}
       <div style={{
         position: "relative", zIndex: 20, flexShrink: 0,
         background: "rgba(13,13,15,0.85)",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
         backdropFilter: "blur(10px)",
       }}>
-        {cmdPickerOpen ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px" }}>
-            <input
-              ref={cmdInputRef}
-              value={cmdQuery}
-              onChange={e => setCmdQuery(e.target.value)}
-              onBlur={() => setTimeout(closeCmdPicker, 160)}
-              placeholder="Search commander…"
-              autoComplete="off"
-              style={{
-                flex: 1, background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 8, padding: "5px 10px",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 16, color: "var(--text)",
-                outline: "none", caretColor: "var(--secondary)",
-              }}
-            />
-            <button
-              onMouseDown={closeCmdPicker}
-              style={{
-                background: "transparent", border: "none",
-                color: "var(--muted)", cursor: "pointer",
-                fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
-              }}
-            >✕</button>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 7,
+          padding: "6px 8px",
+        }}>
+          {/* ← Back to Search */}
+          <button
+            onClick={() => onGoToSearch?.()}
+            style={{
+              background: "transparent", border: "none",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer",
+              fontSize: 18, lineHeight: 1,
+              padding: "4px 4px", flexShrink: 0,
+            }}
+          >←</button>
 
-            {/* Dropdown */}
-            {cmdResults.length > 0 && (
-              <div style={{
-                position: "absolute", top: "calc(100% + 0px)", left: 0, right: 0,
-                background: "var(--panel2)", borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.08)",
-                overflow: "hidden", zIndex: 200,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
-              }}>
-                {commanderCard && (
-                  <button
-                    onMouseDown={clearCommander}
-                    style={{
-                      width: "100%", padding: "9px 12px",
-                      background: "transparent", border: "none",
-                      borderBottom: "1px solid rgba(255,255,255,0.05)",
-                      color: "var(--danger)", cursor: "pointer",
-                      fontFamily: "'Bebas Neue', sans-serif",
-                      fontSize: 12, letterSpacing: 2, textAlign: "left",
-                    }}
-                  >
-                    REMOVE COMMANDER
-                  </button>
-                )}
-                {cmdResults.map(c => {
-                  const thumb = getCardImage(c, "art_crop");
-                  return (
-                    <button
-                      key={c.id}
-                      onMouseDown={() => selectCommander(c)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 8,
-                        width: "100%", padding: "8px 12px",
-                        background: "transparent", border: "none",
-                        borderBottom: "1px solid rgba(255,255,255,0.04)",
-                        cursor: "pointer", textAlign: "left",
-                      }}
-                      onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                      onMouseOut={e => e.currentTarget.style.background = "transparent"}
-                    >
-                      {thumb && (
-                        <img src={thumb} alt={c.name} draggable={false}
-                          style={{ width: 42, height: 30, objectFit: "cover", borderRadius: 3, flexShrink: 0 }} />
-                      )}
-                      <span style={{ fontSize: 13, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {c.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Commander thumbnail */}
+          {cmdArt ? (
+            <img
+              src={cmdArt}
+              alt={commanderCard.name}
+              draggable={false}
+              style={{ width: 52, height: 37, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+            />
+          ) : (
+            <div style={{
+              width: 52, height: 37, borderRadius: 4, flexShrink: 0,
+              background: "rgba(255,255,255,0.05)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 16, opacity: 0.4 }}>👑</span>
+            </div>
+          )}
+
+          {/* Commander name */}
+          <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+            {commanderCard ? (
+              <>
+                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+                  COMMANDER
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {commanderCard.name}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 12, color: "var(--muted)" }}>No commander</div>
             )}
           </div>
-        ) : (
-          <div
-            onClick={() => {
-              if (sortMenuOpen) { setSortMenuOpen(false); return; }
-              commanderCard ? setCmdModalOpen(true) : openCmdPicker();
+
+          {/* Color pips */}
+          <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
+            {commanderCard?.color_identity?.map(c => <ColorPip key={c} color={c} />)}
+          </div>
+
+          {/* Dir toggle — desc ↔ asc only, no neutral state */}
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              const next = swipeDir === "asc" ? "desc" : "asc";
+              onSortChange?.(swipeOrder, next);
             }}
             style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 7,
-              padding: "6px 8px",
-              cursor: "pointer",
+              flexShrink: 0,
+              width: 26, height: 26, borderRadius: 5,
+              border: "1px solid rgba(255,255,255,0.2)",
+              background: "transparent",
+              color: "var(--text)",
+              cursor: "pointer", fontSize: 13,
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >
-            {/* ← Back to Search */}
-            <button
-              onClick={e => { e.stopPropagation(); onGoToSearch?.(); }}
-              style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.5)", cursor: "pointer",
-                fontSize: 18, lineHeight: 1,
-                padding: "4px 4px", flexShrink: 0,
-              }}
-            >←</button>
+            {swipeDir === "asc" ? "↑" : "↓"}
+          </button>
 
-            {/* Thumbnail */}
-            {cmdArt ? (
-              <img
-                src={cmdArt}
-                alt={commanderCard.name}
-                draggable={false}
-                style={{ width: 52, height: 37, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
-              />
-            ) : (
-              <div style={{
-                width: 52, height: 37, borderRadius: 4, flexShrink: 0,
-                background: "rgba(255,255,255,0.05)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <span style={{ fontSize: 16, opacity: 0.4 }}>👑</span>
-              </div>
-            )}
-
-            {/* Info */}
-            <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-              {commanderCard ? (
-                <>
-                  <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
-                    COMMANDER
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {commanderCard.name}
-                  </div>
-                </>
-              ) : (
-                <div style={{ fontSize: 12, color: "var(--muted)" }}>Set commander…</div>
-              )}
-            </div>
-
-            {/* Color pips */}
-            <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
-              {commanderCard?.color_identity?.map(c => <ColorPip key={c} color={c} />)}
-            </div>
-
-            {/* Edit commander */}
-            <button
-              onClick={e => { e.stopPropagation(); openCmdPicker(); }}
-              style={{
-                background: "transparent", border: "none",
-                fontSize: 13, color: "var(--muted)", cursor: "pointer",
-                padding: "4px 2px", lineHeight: 1, flexShrink: 0,
-              }}
-            >✎</button>
-
-            {/* Dir toggle */}
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                const next = swipeDir === "auto" ? "asc" : swipeDir === "asc" ? "desc" : "auto";
-                onSortChange?.(swipeOrder, next);
-              }}
-              style={{
-                flexShrink: 0,
-                width: 26, height: 26, borderRadius: 5,
-                border: swipeDir !== "auto" ? "1px solid rgba(255,255,255,0.2)" : "1px solid transparent",
-                background: "transparent",
-                color: swipeDir !== "auto" ? "var(--text)" : "rgba(255,255,255,0.3)",
-                cursor: "pointer", fontSize: 13,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              {swipeDir === "asc" ? "↑" : swipeDir === "desc" ? "↓" : "↕"}
-            </button>
-
-            {/* Sort menu button */}
-            <button
-              onClick={e => { e.stopPropagation(); setSortMenuOpen(o => !o); }}
-              style={{
-                flexShrink: 0,
-                padding: "3px 7px", borderRadius: 5,
-                border: sortMenuOpen ? "1px solid var(--primary)" : "1px solid rgba(255,255,255,0.1)",
-                background: sortMenuOpen ? "rgba(91,143,255,0.12)" : "transparent",
-                color: sortMenuOpen ? "var(--primary)" : "rgba(255,255,255,0.4)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 10, letterSpacing: 1, cursor: "pointer", lineHeight: 1,
-                marginRight: 2,
-              }}
-            >
-              {SORT_OPTIONS.find(o => o.value === swipeOrder)?.label ?? "SORT"}
-            </button>
-          </div>
-        )}
+          {/* Sort menu button */}
+          <button
+            onClick={e => { e.stopPropagation(); setSortMenuOpen(o => !o); }}
+            style={{
+              flexShrink: 0,
+              padding: "3px 7px", borderRadius: 5,
+              border: sortMenuOpen ? "1px solid var(--primary)" : "1px solid rgba(255,255,255,0.1)",
+              background: sortMenuOpen ? "rgba(91,143,255,0.12)" : "transparent",
+              color: sortMenuOpen ? "var(--primary)" : "rgba(255,255,255,0.4)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 10, letterSpacing: 1, cursor: "pointer", lineHeight: 1,
+              marginRight: 2,
+            }}
+          >
+            {SORT_OPTIONS.find(o => o.value === swipeOrder)?.label ?? "SORT"}
+          </button>
+        </div>
 
         {/* Sort dropdown */}
         {sortMenuOpen && (
@@ -720,12 +583,6 @@ export default function SwipeScreen({
           </div>
         </div>
       )}
-
-      {/* ── Commander card modal ── */}
-      <CommanderModal
-        card={cmdModalOpen ? commanderCard : null}
-        onClose={() => setCmdModalOpen(false)}
-      />
 
       {/* ── Onboarding tip overlay ── */}
       {showTip && (

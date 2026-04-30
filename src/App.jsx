@@ -50,7 +50,7 @@ export default function App() {
   const [swipeKey,          setSwipeKey]          = useState(0);
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   const [swipeOrder,    setSwipeOrder]    = useState("name");
-  const [swipeDir,      setSwipeDir]      = useState("auto");
+  const [swipeDir,      setSwipeDir]      = useState("desc");
   // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
@@ -314,7 +314,7 @@ export default function App() {
 
     try {
       setSwipeOrder("name");
-      setSwipeDir("auto");
+      setSwipeDir("desc");
       const { cards: rawFirstCards, nextPage } = await fetchFirstPageForSwipe(q, effectiveCommanderCard, { order: "name", dir: "auto" });
       const firstCards = rawFirstCards.filter(c => !isBasicLand(c));
       if (rawFirstCards.length !== firstCards.length) {
@@ -811,6 +811,8 @@ export default function App() {
             swipeDir={swipeDir}
             onSortChange={handleSortChange}
             onGoToBrews={goToProfile}
+            activeDeckId={activeDeckId}
+            onSavePile={newPile => handleSaveFromPileScreen(newPile, maybeboard)}
           />
         </div>
       )}
