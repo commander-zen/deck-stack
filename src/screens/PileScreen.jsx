@@ -143,9 +143,9 @@ export default function PileScreen({
     window.scrollTo(0, scrollPos.current[activeTab] ?? 0);
   }, [activeTab]);
 
-  const lpTimerRef   = useRef(null);
-  const lpFiredRef   = useRef(false);
-  const cardLastTap  = useRef({ oracleId: null, time: 0 });
+  const lpTimerRef = useRef(null);
+  const lpFiredRef = useRef(false);
+  const tapTimes   = useRef({});
 
   const reviewCommanderCard =
     commanderCard ??
@@ -248,15 +248,18 @@ export default function PileScreen({
 
   function onCardClick(card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
-    const oracleId = card.oracle_id ?? card.id;
-    const now = Date.now();
-    if (oracleId && oracleId === cardLastTap.current.oracleId && now - cardLastTap.current.time < 300) {
-      cardLastTap.current = { oracleId: null, time: 0 };
-      onDoubleTag?.(oracleId);
-      return; // skip enterReviewAt on second tap
-    }
-    cardLastTap.current = { oracleId, time: now };
     enterReviewAt(card, activeTab);
+  }
+
+  function handleCardTouch(e, oracleId) {
+    const now = Date.now();
+    if (now - (tapTimes.current[oracleId] ?? 0) < 300) {
+      e.preventDefault();
+      onDoubleTag?.(oracleId);
+      tapTimes.current[oracleId] = 0;
+      return;
+    }
+    tapTimes.current[oracleId] = now;
   }
 
   // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
@@ -345,6 +348,7 @@ export default function PileScreen({
         onPointerMove={drag ? onDragMove : undefined}
         onPointerUp={drag ? onDragEnd : undefined}
         onPointerCancel={drag ? onDragEnd : undefined}
+        onTouchEnd={!stackable ? (e) => handleCardTouch(e, card.oracle_id ?? card.id) : undefined}
         style={{
           display: "flex", alignItems: "center",
           padding: "9px 14px",
@@ -460,6 +464,7 @@ export default function PileScreen({
         onPointerDown={() => activeTab === "deck" && onCardPointerDown(card)}
         onPointerUp={onCardPointerUp}
         onPointerCancel={onCardPointerUp}
+        onTouchEnd={(e) => handleCardTouch(e, card.oracle_id ?? card.id)}
         onClick={() => onCardClick(card)}
         style={{
           position: "relative", aspectRatio: "63/88",
@@ -668,29 +673,11 @@ export default function PileScreen({
           activeTab === "deck"
             ? displayPile.map((card, i) => renderListRow(
                 card, commander === card.instanceId, handleRemove, i, true,
-                (c) => {
-                  const oid = c.oracle_id ?? c.id;
-                  const now = Date.now();
-                  if (oid && oid === cardLastTap.current.oracleId && now - cardLastTap.current.time < 300) {
-                    cardLastTap.current = { oracleId: null, time: 0 };
-                    onDoubleTag?.(oid); return;
-                  }
-                  cardLastTap.current = { oracleId: oid, time: now };
-                  enterReviewAt(c, "deck");
-                }
+                (c) => enterReviewAt(c, "deck")
               ))
             : displayMaybeboard.map((card, i) => renderListRow(
                 card, false, (id, e) => handleRemoveMaybe(id, e), i, false,
-                (c) => {
-                  const oid = c.oracle_id ?? c.id;
-                  const now = Date.now();
-                  if (oid && oid === cardLastTap.current.oracleId && now - cardLastTap.current.time < 300) {
-                    cardLastTap.current = { oracleId: null, time: 0 };
-                    onDoubleTag?.(oid); return;
-                  }
-                  cardLastTap.current = { oracleId: oid, time: now };
-                  enterReviewAt(c, "maybe");
-                }
+                (c) => enterReviewAt(c, "maybe")
               ))
         ) : (
           /* Grid view */

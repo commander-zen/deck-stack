@@ -72,7 +72,7 @@ export default function SwipeScreen({
   const didMountRef   = useRef(false);
   const dragStartRef  = useRef(null);
   const saveTimerRef  = useRef(null);
-  const lastTapRef    = useRef(0);
+  const lastTapTime   = useRef(0);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
@@ -190,15 +190,20 @@ export default function SwipeScreen({
     dragStartRef.current = null;
     if (dx > SWIPE_THRESHOLD)       doResolve(true);
     else if (dx < -SWIPE_THRESHOLD) doResolve(false);
-    else {
-      // No swipe — check for double-tap
-      const now = Date.now();
-      if (now - lastTapRef.current < 300 && card?.oracle_id) {
-        onDoubleTag?.(card.oracle_id);
-      }
-      lastTapRef.current = now;
-      setOffset(0); setBadge(null);
+    else { setOffset(0); setBadge(null); }
+  }
+
+  function handleCardTouch(e) {
+    const dx = dragStartRef.current !== null
+      ? Math.abs((e.changedTouches?.[0]?.clientX ?? 0) - dragStartRef.current)
+      : 0;
+    if (dx >= 10) return; // was a swipe, not a tap
+    const now = Date.now();
+    if (now - lastTapTime.current < 300 && card?.oracle_id) {
+      e.preventDefault();
+      onDoubleTag?.(card.oracle_id);
     }
+    lastTapTime.current = now;
   }
 
   const artUrl   = card ? getCardImage(card, "art_crop") : null;
@@ -477,6 +482,7 @@ export default function SwipeScreen({
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
+              onTouchEnd={handleCardTouch}
             >
               {badge === "keep" && (
                 <div style={{

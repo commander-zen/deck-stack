@@ -29,20 +29,41 @@ export const VEGGIE_RULES = {
   },
 };
 
-// Lands: type-based, not oracle tag based
-// Plan: commander-derived, TBD
+// Oracle tags not available from /cards/collection — detection uses oracle_text heuristics
 
 export function autoDetectCategory(card) {
-  // Lands check first
+  // Mana Base: type_line check (reliable)
   if (card.type_line?.toLowerCase().includes("land")) return "Mana Base";
 
-  const tags = card.oracle_tags ?? card.keywords ?? [];
-  for (const [category, rule] of Object.entries(VEGGIE_RULES)) {
-    if (tags.includes(rule.anchor) && rule.qualifiers.some(q => tags.includes(q))) {
-      return category;
-    }
+  const text     = (card.oracle_text ?? "").toLowerCase();
+  const typeLine = (card.type_line ?? "").toLowerCase();
+
+  // Ramp — "add" + mana symbol or "mana" on a non-land permanent or spell
+  if (
+    text.includes("add") && (text.includes("mana") || text.includes("{")) &&
+    (typeLine.includes("artifact") || typeLine.includes("creature") ||
+     typeLine.includes("enchantment") || typeLine.includes("sorcery") ||
+     typeLine.includes("instant"))
+  ) return "Ramp";
+
+  // Card Advantage
+  if (text.includes("draw") && (text.includes("card") || text.includes("cards"))) {
+    return "Card Advantage";
   }
-  return null; // no match
+
+  // Mass Disruption — check before Disruption (more specific)
+  if (
+    text.includes("destroy all") || text.includes("exile all") ||
+    text.includes("each creature") || text.includes("all creatures")
+  ) return "Mass Disruption";
+
+  // Disruption
+  if (
+    text.includes("destroy target") || text.includes("exile target") ||
+    text.includes("counter target") || text.includes("counter spell")
+  ) return "Disruption";
+
+  return null;
 }
 
 export function calcWrecScore(wrecTags) {
