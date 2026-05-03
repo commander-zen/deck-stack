@@ -38,6 +38,7 @@ export default function SwipeScreen({
   swipeOrder = "name", swipeDir = "desc", onSortChange,
   onGoToBrews,
   activeDeckId, onSavePile,
+  onDoubleTag,
 }) {
   // Deduplicate swipe queue: skip oracle_id already seen in the queue or kept in pile.
   // Stackables (basic lands + any-number cards) are always allowed through.
@@ -71,6 +72,7 @@ export default function SwipeScreen({
   const didMountRef   = useRef(false);
   const dragStartRef  = useRef(null);
   const saveTimerRef  = useRef(null);
+  const lastTapRef    = useRef(0);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
@@ -188,7 +190,15 @@ export default function SwipeScreen({
     dragStartRef.current = null;
     if (dx > SWIPE_THRESHOLD)       doResolve(true);
     else if (dx < -SWIPE_THRESHOLD) doResolve(false);
-    else { setOffset(0); setBadge(null); }
+    else {
+      // No swipe — check for double-tap
+      const now = Date.now();
+      if (now - lastTapRef.current < 300 && card?.oracle_id) {
+        onDoubleTag?.(card.oracle_id);
+      }
+      lastTapRef.current = now;
+      setOffset(0); setBadge(null);
+    }
   }
 
   const artUrl   = card ? getCardImage(card, "art_crop") : null;

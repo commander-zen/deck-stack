@@ -1,11 +1,12 @@
-import { useState, useRef } from "react";
-import { getCardImage } from "../lib/scryfall.js";
+import { WREC_CATEGORIES, WREC_TARGETS, calcWrecScore } from "../constants/wrec.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
-const PRESET_TAGS = ["Ramp", "Card Advantage", "Disruption", "Mass Disruption", "Lands", "Plan"];
-const BOTTOM_PAD  = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 20px)`;
+const BOTTOM_PAD = `calc(max(18px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 20px)`;
 
-// Build oracle_id → first matching card object from pile
+function formatMana(card) {
+  return card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
+}
+
 function buildOracleMap(pile) {
   const map = new Map();
   for (const card of pile) {
@@ -15,11 +16,9 @@ function buildOracleMap(pile) {
   return map;
 }
 
-// Cards whose oracle_id appears in no tag array
-function getUntaggedCards(pile, brewTags, allTagNames) {
-  const tagged = new Set();
-  allTagNames.forEach(tag => (brewTags[tag] ?? []).forEach(id => tagged.add(id)));
-  const seen = new Set();
+function getUntagged(pile, wrecTags) {
+  const tagged = new Set(Object.values(wrecTags).flat());
+  const seen   = new Set();
   const result = [];
   for (const card of pile) {
     const key = card.oracle_id ?? card.id ?? card.name;
@@ -31,209 +30,148 @@ function getUntaggedCards(pile, brewTags, allTagNames) {
   return result;
 }
 
-function TrashIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/>
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-      <path d="M10 11v6M14 11v6"/>
-      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-    </svg>
-  );
+function scoreColor(score) {
+  const n = parseFloat(score);
+  if (n >= 0.9 && n <= 1.1)  return "var(--success)";
+  if (n >= 0.7 && n <= 1.3)  return "var(--active)";
+  return "var(--danger)";
 }
 
-export default function TagsScreen({
-  pile,
-  brewTags,
-  setBrewTags,
-  customTagNames,
-  setCustomTagNames,
-}) {
-  const [dragOver,        setDragOver]        = useState(null);
-  const [showNewTagInput, setShowNewTagInput] = useState(false);
-  const [newTagInput,     setNewTagInput]     = useState("");
-  const newTagRef = useRef(null);
+export default function TagsScreen({ pile, wrecTags, autoTagged }) {
+  const oracleMap  = buildOracleMap(pile);
+  const score      = calcWrecScore(wrecTags);
+  const color      = scoreColor(score);
+  const untagged   = getUntagged(pile, wrecTags);
 
-  const oracleMap    = buildOracleMap(pile);
-  const allTagNames  = [...PRESET_TAGS, ...customTagNames];
-  const untaggedCards = getUntaggedCards(pile, brewTags, allTagNames);
+  function renderProgressBar(count, target) {
+    const ratio      = Math.min(count / target, 1);
+    const isOver     = count > target;
+    const overCount  = isOver ? count - target : 0;
+    const barColor   = count >= target ? "var(--success)" : "var(--primary)";
 
-  function getTagCards(tagName) {
-    return (brewTags[tagName] ?? []).map(id => oracleMap.get(id)).filter(Boolean);
-  }
-
-  // ── Drag handlers ────────────────────────────────────────────────────────
-
-  function onDragStart(e, oracleId, sourceTag) {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("oracle_id", oracleId);
-    e.dataTransfer.setData("source_tag", sourceTag);
-  }
-
-  function onDragOver(e, targetTag) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (dragOver !== targetTag) setDragOver(targetTag);
-  }
-
-  function onDragLeave(e) {
-    if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(null);
-  }
-
-  function onDrop(e, targetTag) {
-    e.preventDefault();
-    setDragOver(null);
-    const oracleId  = e.dataTransfer.getData("oracle_id");
-    const sourceTag = e.dataTransfer.getData("source_tag");
-    if (!oracleId || sourceTag === targetTag) return;
-
-    const next = { ...brewTags };
-
-    // Remove from source (Untagged is virtual — nothing to remove from next)
-    if (sourceTag !== "Untagged") {
-      next[sourceTag] = (next[sourceTag] ?? []).filter(id => id !== oracleId);
-    }
-
-    if (targetTag === "Untagged") {
-      // Drop into Untagged = remove from every tag
-      allTagNames.forEach(tag => {
-        next[tag] = (next[tag] ?? []).filter(id => id !== oracleId);
-      });
-    } else {
-      const existing = next[targetTag] ?? [];
-      if (!existing.includes(oracleId)) {
-        next[targetTag] = [...existing, oracleId];
-      }
-    }
-
-    setBrewTags(next);
-  }
-
-  // ── Custom tag management ───────────────────────────────────────────────
-
-  function commitNewTag() {
-    const name = newTagInput.trim();
-    if (name && !allTagNames.includes(name) && name !== "Untagged") {
-      setCustomTagNames(prev => [...prev, name]);
-    }
-    setNewTagInput("");
-    setShowNewTagInput(false);
-  }
-
-  function deleteCustomTag(tagName) {
-    setCustomTagNames(prev => prev.filter(n => n !== tagName));
-    const { [tagName]: _removed, ...rest } = brewTags;
-    setBrewTags(rest);
-  }
-
-  // ── Renders ──────────────────────────────────────────────────────────────
-
-  function renderCardTile(card, tagName) {
-    const imgUrl   = getCardImage(card, "normal");
-    const oracleId = card.oracle_id ?? card.id ?? card.name;
     return (
-      <div
-        key={oracleId}
-        draggable
-        onDragStart={e => onDragStart(e, oracleId, tagName)}
-        style={{
-          position: "relative",
-          width: 64,
-          aspectRatio: "63/88",
-          borderRadius: 7,
-          overflow: "hidden",
-          cursor: "grab",
-          flexShrink: 0,
-          background: "var(--panel2)",
-        }}
-      >
-        {imgUrl ? (
-          <img
-            src={imgUrl}
-            alt={card.name}
-            draggable={false}
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
-          />
-        ) : (
+      <div style={{
+        height: 4, borderRadius: 2,
+        background: "rgba(255,255,255,0.08)",
+        overflow: "hidden",
+        position: "relative",
+        marginTop: 4,
+      }}>
+        {/* Normal fill */}
+        <div style={{
+          position: "absolute", left: 0, top: 0, bottom: 0,
+          width: `${ratio * 100}%`,
+          background: isOver ? "var(--success)" : barColor,
+          borderRadius: 2,
+          transition: "width 0.3s ease",
+        }} />
+        {/* Overflow indicator — a red notch at the right edge when over target */}
+        {isOver && (
           <div style={{
-            width: "100%", height: "100%",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 9, color: "rgba(255,255,255,0.4)", padding: 4, textAlign: "center",
-          }}>
-            {card.name}
-          </div>
+            position: "absolute", right: 0, top: 0, bottom: 0,
+            width: `${Math.min((overCount / target) * 100, 30)}%`,
+            background: "var(--danger)",
+            borderRadius: "0 2px 2px 0",
+          }} />
         )}
       </div>
     );
   }
 
-  function renderBucket(tagName, cards, isCustom, isUntagged) {
-    const isOver = dragOver === tagName;
+  function renderCardRow(card, isPlan) {
+    if (!card) return null;
+    const oracleId  = card.oracle_id ?? card.id ?? card.name;
+    const mana      = formatMana(card);
+    const isAuto    = autoTagged?.has(oracleId);
     return (
       <div
-        key={tagName}
-        onDragOver={e => onDragOver(e, tagName)}
-        onDragLeave={onDragLeave}
-        onDrop={e => onDrop(e, tagName)}
+        key={oracleId}
         style={{
-          borderRadius: 12,
-          border: isOver
-            ? "1px solid var(--primary)"
-            : "1px solid rgba(255,255,255,0.07)",
-          background: isOver ? "rgba(91,143,255,0.06)" : "var(--panel)",
-          transition: "border-color 0.15s, background 0.15s",
-          marginBottom: 8,
-          overflow: "hidden",
+          display: "flex", alignItems: "center",
+          padding: "7px 14px",
+          borderTop: "1px solid rgba(255,255,255,0.04)",
         }}
       >
-        {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center",
-          padding: "10px 14px",
-          borderBottom: cards.length > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
-        }}>
-          <span style={{
-            flex: 1,
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 13, letterSpacing: 2,
-            color: isUntagged ? "var(--muted)" : "var(--text)",
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 13, color: "var(--text)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {tagName}
-          </span>
+            {card.name}
+          </div>
+        </div>
+        {isAuto && (
           <span style={{
+            fontSize: 10, color: "var(--muted)",
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 11, color: "var(--muted)",
-            marginRight: isCustom ? 10 : 0,
+            marginRight: 8, flexShrink: 0,
           }}>
-            {cards.length}
+            ✦ auto
           </span>
-          {isCustom && (
-            <button
-              onClick={() => deleteCustomTag(tagName)}
-              style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.25)", cursor: "pointer",
-                padding: "2px 3px", lineHeight: 1, display: "flex", alignItems: "center",
-              }}
-              onMouseOver={e => e.currentTarget.style.color = "var(--danger)"}
-              onMouseOut={e => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
-              title={`Delete ${tagName}`}
-            >
-              <TrashIcon />
-            </button>
-          )}
+        )}
+        {mana && (
+          <span style={{
+            fontSize: 11, color: "rgba(255,255,255,0.35)",
+            fontFamily: "'IBM Plex Mono', monospace",
+            flexShrink: 0,
+          }}>
+            {mana}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  function renderBucket(cat) {
+    const target  = WREC_TARGETS[cat];
+    const ids     = wrecTags[cat] ?? [];
+    const count   = ids.length;
+    const isPlan  = cat === "Plan";
+    const cards   = ids.map(id => oracleMap.get(id)).filter(Boolean);
+
+    return (
+      <div key={cat} style={{
+        background: "var(--panel)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: 12,
+        marginBottom: 8,
+        overflow: "hidden",
+      }}>
+        {/* Bucket header */}
+        <div style={{ padding: "10px 14px 8px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 13, letterSpacing: 2, color: "var(--text)",
+              flex: 1,
+            }}>
+              {cat}
+            </span>
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 11,
+              color: count >= target ? "var(--success)" : count === 0 ? "var(--muted)" : "var(--text)",
+            }}>
+              {isPlan ? "0" : count} / {target}
+            </span>
+          </div>
+          {renderProgressBar(isPlan ? 0 : count, target)}
         </div>
 
-        {/* Card tiles */}
-        {cards.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: "10px 12px" }}>
-            {cards.map(card => renderCardTile(card, tagName))}
+        {/* Card list */}
+        {isPlan ? (
+          <div style={{ padding: "8px 14px 10px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+            Auto-detection coming soon — double-tap cards to assign manually
           </div>
-        ) : !isUntagged ? (
-          <div style={{ padding: "12px 14px", color: "var(--muted)", fontSize: 12, fontStyle: "italic" }}>
-            Drop cards here
+        ) : cards.length > 0 ? (
+          <div style={{ paddingBottom: 4 }}>
+            {cards.map(card => renderCardRow(card, false))}
           </div>
-        ) : null}
+        ) : (
+          <div style={{ padding: "8px 14px 10px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+            No cards — double-tap any card to assign
+          </div>
+        )}
       </div>
     );
   }
@@ -248,17 +186,35 @@ export default function TagsScreen({
         background: "rgba(13,13,15,0.96)",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", alignItems: "center",
-        padding: "0 16px", height: 52, gap: 10,
       }}>
-        <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 4, color: "var(--primary)" }}>
-          TAGS
-        </span>
-        {pile.length > 0 && (
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--muted)" }}>
-            {pile.length} cards
+        <div style={{
+          display: "flex", alignItems: "center",
+          padding: "0 16px", height: 52, gap: 12,
+        }}>
+          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 4, color: "var(--primary)", flex: 1 }}>
+            WREC SCORE
           </span>
-        )}
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 20, color,
+            letterSpacing: 1,
+          }}>
+            {score}
+          </span>
+        </div>
+
+        {/* Warning banner — always visible */}
+        <div style={{
+          padding: "7px 16px",
+          background: "rgba(245,158,11,0.08)",
+          borderTop: "1px solid rgba(245,158,11,0.15)",
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <span style={{ fontSize: 13 }}>⚠</span>
+          <span style={{ fontSize: 12, color: "rgba(245,158,11,0.7)", fontFamily: "'DM Sans', sans-serif" }}>
+            Auto-generated — review tags for accuracy
+          </span>
+        </div>
       </div>
 
       {/* Content */}
@@ -268,61 +224,37 @@ export default function TagsScreen({
             No cards in pile yet
             <br />
             <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
-              Swipe right on the Stack to add cards
+              Swipe right on the Stack to start building
             </span>
           </div>
         ) : (
           <>
-            {/* Preset + custom buckets */}
-            {allTagNames.map(tagName =>
-              renderBucket(tagName, getTagCards(tagName), customTagNames.includes(tagName), false)
+            {WREC_CATEGORIES.map(cat => renderBucket(cat))}
+
+            {/* Untagged section */}
+            {untagged.length > 0 && (
+              <div style={{
+                background: "var(--panel)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 12,
+                overflow: "hidden",
+              }}>
+                <div style={{
+                  padding: "10px 14px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 13, letterSpacing: 2, color: "var(--muted)" }}>
+                    UNTAGGED
+                  </span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "var(--muted)" }}>
+                    {untagged.length}
+                  </span>
+                </div>
+                <div style={{ paddingBottom: 4 }}>
+                  {untagged.map(card => renderCardRow(card, false))}
+                </div>
+              </div>
             )}
-
-            {/* Untagged — always last */}
-            {renderBucket("Untagged", untaggedCards, false, true)}
-
-            {/* Add custom tag */}
-            <div style={{ paddingTop: 4 }}>
-              {showNewTagInput ? (
-                <input
-                  ref={newTagRef}
-                  autoFocus
-                  value={newTagInput}
-                  onChange={e => setNewTagInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter")  commitNewTag();
-                    if (e.key === "Escape") { setShowNewTagInput(false); setNewTagInput(""); }
-                  }}
-                  onBlur={commitNewTag}
-                  placeholder="Tag name…"
-                  style={{
-                    width: "100%", boxSizing: "border-box",
-                    background: "var(--panel2)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    borderRadius: 10, padding: "11px 14px",
-                    color: "var(--text)", fontSize: 14,
-                    fontFamily: "'DM Sans', sans-serif",
-                    outline: "none",
-                  }}
-                />
-              ) : (
-                <button
-                  onClick={() => setShowNewTagInput(true)}
-                  style={{
-                    width: "100%", padding: "12px 14px",
-                    background: "transparent",
-                    border: "1px dashed rgba(255,255,255,0.12)",
-                    borderRadius: 12, cursor: "pointer",
-                    color: "var(--muted)",
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: 13, letterSpacing: 2,
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                  }}
-                >
-                  ＋ NEW TAG
-                </button>
-              )}
-            </div>
           </>
         )}
       </div>

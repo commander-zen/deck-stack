@@ -118,6 +118,7 @@ export default function PileScreen({
   decks = [],
   activeDeckId = null,
   onSave,
+  onDoubleTag,
 }) {
   const [deckViewMode,   setDeckViewMode]   = useState("grid"); // image view by default
   const [maybeViewMode,  setMaybeViewMode]  = useState("list"); // text view by default
@@ -142,8 +143,9 @@ export default function PileScreen({
     window.scrollTo(0, scrollPos.current[activeTab] ?? 0);
   }, [activeTab]);
 
-  const lpTimerRef = useRef(null);
-  const lpFiredRef = useRef(false);
+  const lpTimerRef   = useRef(null);
+  const lpFiredRef   = useRef(false);
+  const cardLastTap  = useRef({ oracleId: null, time: 0 });
 
   const reviewCommanderCard =
     commanderCard ??
@@ -246,6 +248,14 @@ export default function PileScreen({
 
   function onCardClick(card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
+    const oracleId = card.oracle_id ?? card.id;
+    const now = Date.now();
+    if (oracleId && oracleId === cardLastTap.current.oracleId && now - cardLastTap.current.time < 300) {
+      cardLastTap.current = { oracleId: null, time: 0 };
+      onDoubleTag?.(oracleId);
+      return; // skip enterReviewAt on second tap
+    }
+    cardLastTap.current = { oracleId, time: now };
     enterReviewAt(card, activeTab);
   }
 
@@ -658,11 +668,29 @@ export default function PileScreen({
           activeTab === "deck"
             ? displayPile.map((card, i) => renderListRow(
                 card, commander === card.instanceId, handleRemove, i, true,
-                (c) => enterReviewAt(c, "deck")
+                (c) => {
+                  const oid = c.oracle_id ?? c.id;
+                  const now = Date.now();
+                  if (oid && oid === cardLastTap.current.oracleId && now - cardLastTap.current.time < 300) {
+                    cardLastTap.current = { oracleId: null, time: 0 };
+                    onDoubleTag?.(oid); return;
+                  }
+                  cardLastTap.current = { oracleId: oid, time: now };
+                  enterReviewAt(c, "deck");
+                }
               ))
             : displayMaybeboard.map((card, i) => renderListRow(
                 card, false, (id, e) => handleRemoveMaybe(id, e), i, false,
-                (c) => enterReviewAt(c, "maybe")
+                (c) => {
+                  const oid = c.oracle_id ?? c.id;
+                  const now = Date.now();
+                  if (oid && oid === cardLastTap.current.oracleId && now - cardLastTap.current.time < 300) {
+                    cardLastTap.current = { oracleId: null, time: 0 };
+                    onDoubleTag?.(oid); return;
+                  }
+                  cardLastTap.current = { oracleId: oid, time: now };
+                  enterReviewAt(c, "maybe");
+                }
               ))
         ) : (
           /* Grid view */

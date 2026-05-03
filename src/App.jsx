@@ -4,6 +4,8 @@ import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import TagsScreen    from "./screens/TagsScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
+import WrecTagPicker from "./components/WrecTagPicker.jsx";
+import { autoDetectCategory } from "./constants/wrec.js";
 import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav, { NAV_HEIGHT } from "./components/BottomNav.jsx";
 import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js";
@@ -44,8 +46,9 @@ export default function App() {
   const [commander,     setCommander]     = useState(null);
   const [commanderCard, setCommanderCard] = useState(null);
   const [maybeboard,    setMaybeboard]    = useState([]);
-  const [brewTags,       setBrewTags]       = useState({});
-  const [customTagNames, setCustomTagNames] = useState([]);
+  const [wrecTags,       setWrecTags]       = useState({});
+  const [autoTagged,     setAutoTagged]     = useState(new Set());
+  const [pendingTagCard, setPendingTagCard] = useState(null);
   const [query,         setQuery]         = useState("");
   const [swipeCards,    setSwipeCards]    = useState([]);
   const [swipeIndex,    setSwipeIndex]    = useState(0);
@@ -67,7 +70,7 @@ export default function App() {
 
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
-  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser, decks, brewTags, customTagNames };
+  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser, decks, wrecTags };
 
   // Grow the visible swipe batch as the user approaches the end of the current window
   useEffect(() => {
@@ -147,8 +150,8 @@ export default function App() {
     setQuery(deck.query || "");
     setCommanderCard(deck.commander_card || null);
     setCommander(cid && p.some(c => c.instanceId === cid) ? cid : null);
-    setBrewTags(deck.tags ?? {});
-    setCustomTagNames(deck.custom_tags ?? []);
+    setWrecTags(deck.tags ?? {});
+    setAutoTagged(new Set()); // loaded tags are user-confirmed; start fresh
 
     if (sc.length > 0) {
       setSwipeMounted(true);
@@ -209,6 +212,55 @@ export default function App() {
     return unsubscribe;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Reactive auto-tag — runs after every pile change ─────────────────────
+  // Detects cards entering/leaving the pile and updates wrecTags accordingly.
+  const prevPileRef = useRef([]);
+  useEffect(() => {
+    const prev = prevPileRef.current;
+    prevPileRef.current = pile;
+
+    if (pile.length < prev.length) {
+      // Cards removed — purge their oracle_ids from wrecTags and autoTagged
+      const kept = new Set(pile.map(c => c.oracle_id).filter(Boolean));
+      const removed = prev.map(c => c.oracle_id).filter(id => id && !kept.has(id));
+      if (removed.length === 0) return;
+      setWrecTags(t => {
+        const next = {};
+        for (const [cat, ids] of Object.entries(t)) next[cat] = ids.filter(id => !removed.includes(id));
+        return next;
+      });
+      setAutoTagged(s => { const n = new Set(s); removed.forEach(id => n.delete(id)); return n; });
+      return;
+    }
+
+    if (pile.length > prev.length) {
+      // Cards added — auto-detect category for new oracle_ids not yet tagged
+      const prevInstances = new Set(prev.map(c => c.instanceId));
+      const newCards = pile.filter(c => !prevInstances.has(c.instanceId) && c.oracle_id);
+      if (newCards.length === 0) return;
+
+      const candidates = newCards.map(c => ({ oracleId: c.oracle_id, category: autoDetectCategory(c) }))
+        .filter(x => x.category);
+      if (candidates.length === 0) return;
+
+      setWrecTags(prev => {
+        const alreadyTagged = new Set(Object.values(prev).flat());
+        const next = { ...prev };
+        for (const { oracleId, category } of candidates) {
+          if (alreadyTagged.has(oracleId)) continue;
+          alreadyTagged.add(oracleId);
+          next[category] = [...(next[category] ?? []), oracleId];
+        }
+        return next;
+      });
+      setAutoTagged(s => {
+        const n = new Set(s);
+        candidates.forEach(({ oracleId }) => n.add(oracleId));
+        return n;
+      });
+    }
+  }, [pile]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Debounced auto-save ───────────────────────────────────────────────────
   useEffect(() => {
     if (!appReady || !sessionId || !activeDeckId) return;
@@ -225,7 +277,7 @@ export default function App() {
           commander_card: s.commanderCard ?? null,
           pile: s.pile, maybeboard: s.maybeboard,
           swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
-          tags: s.brewTags, custom_tags: s.customTagNames,
+          tags: s.wrecTags,
         }, s.authUser?.id ?? null);
         const now = new Date().toISOString();
         setDecks(ds => ds.map(d =>
@@ -238,8 +290,7 @@ export default function App() {
                 swipe_index: s.swipeIndex,
                 commander_instance_id: s.commander,
                 commander_card: s.commanderCard,
-                tags: s.brewTags,
-                custom_tags: s.customTagNames,
+                tags: s.wrecTags,
                 last_opened_at: now,
               }
             : d
@@ -249,7 +300,7 @@ export default function App() {
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, brewTags, customTagNames, activeDeckId, sessionId, appReady, authUser]);
+  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, wrecTags, activeDeckId, sessionId, appReady, authUser]);
 
   // ── Mirror decks to localStorage (instant restore on next mount) ──────────
   useEffect(() => {
@@ -275,13 +326,12 @@ export default function App() {
           swipe_cards:           s.swipeCards,
           swipe_index:           s.swipeIndex,
           query:                 s.query,
-          tags:                  s.brewTags,
-          custom_tags:           s.customTagNames,
+          tags:                  s.wrecTags,
         }));
       } catch (err) { console.warn("sessionStorage write failed:", err); }
     }, 250);
     return () => clearTimeout(timer);
-  }, [pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, brewTags, customTagNames, activeDeckId, appReady]);
+  }, [pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, wrecTags, activeDeckId, appReady]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -442,7 +492,7 @@ export default function App() {
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
     setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
-    setBrewTags({}); setCustomTagNames([]);
+    setWrecTags({}); setAutoTagged(new Set()); setPendingTagCard(null);
     setError(null); setScreen("search");
   }
 
@@ -574,7 +624,7 @@ export default function App() {
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
     setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
-    setBrewTags({}); setCustomTagNames([]);
+    setWrecTags({}); setAutoTagged(new Set()); setPendingTagCard(null);
     setScreen("search");
   }
 
@@ -595,7 +645,7 @@ export default function App() {
         setPile([]); setCommander(null); setCommanderCard(null);
         setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
         setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
-        setBrewTags({}); setCustomTagNames([]);
+        setWrecTags({}); setAutoTagged(new Set()); setPendingTagCard(null);
         setScreen("search");
       }
     }
@@ -686,8 +736,7 @@ export default function App() {
       swipe_cards: s.swipeCards,
       swipe_index: s.swipeIndex,
       query: s.query,
-      tags: s.brewTags,
-      custom_tags: s.customTagNames,
+      tags: s.wrecTags,
       last_opened_at: new Date().toISOString(),
     }, s.authUser?.id ?? null).catch(err => console.error("Immediate save failed:", err));
   }
@@ -740,24 +789,61 @@ export default function App() {
   }
 
   // ── Swipe keep — merges stackable cards rather than pushing duplicates ──────
-  function handleSwipePileChange(newPile) {
-    // Undo/remove passes the pile with one fewer entry — let it through unchanged.
-    if (newPile.length !== pile.length + 1) {
-      setPile(newPile);
+  function handleSwipePileChange(newPileOrUpdater) {
+    if (typeof newPileOrUpdater === "function") {
+      // Functional update from SwipeScreen — apply updater then handle stackable merge inside setPile
+      setPile(prev => {
+        const next = newPileOrUpdater(prev);
+        if (next.length !== prev.length + 1) return next;
+        const added = next[next.length - 1];
+        if (!isStackable(added)) return next;
+        const idx = prev.findIndex(c => c.name === added.name);
+        if (idx >= 0) return prev.map((c, i) => i === idx ? { ...c, qty: (c.qty ?? 1) + 1 } : c);
+        return [...prev, { ...added, qty: 1 }];
+      });
       return;
     }
-    const added = newPile[newPile.length - 1];
+    // Array form (undo/remove path)
+    if (newPileOrUpdater.length !== pile.length + 1) {
+      setPile(newPileOrUpdater);
+      return;
+    }
+    const added = newPileOrUpdater[newPileOrUpdater.length - 1];
     if (!isStackable(added)) {
-      setPile(newPile);
+      setPile(newPileOrUpdater);
       return;
     }
-    // Stackable: find existing entry or create first occurrence with qty:1
     const existingIdx = pile.findIndex(c => c.name === added.name);
     if (existingIdx >= 0) {
       setPile(pile.map((c, i) => i === existingIdx ? { ...c, qty: (c.qty ?? 1) + 1 } : c));
     } else {
       setPile([...pile, { ...added, qty: 1 }]);
     }
+  }
+
+  // ── Double-tap tag picker ─────────────────────────────────────────────────
+
+  function handleDoubleTag(oracleId) {
+    if (!oracleId) return;
+    const card = pile.find(c => c.oracle_id === oracleId)
+      ?? maybeboard.find(c => c.oracle_id === oracleId);
+    if (card) setPendingTagCard(card);
+  }
+
+  function handleAssignTag(oracleId, category) {
+    setWrecTags(prev => {
+      // Remove from any existing category
+      const next = {};
+      for (const [cat, ids] of Object.entries(prev)) {
+        next[cat] = ids.filter(id => id !== oracleId);
+      }
+      // Add to new category
+      if (category) next[category] = [...(next[category] ?? []), oracleId];
+      return next;
+    });
+    // Mark as user-confirmed (remove from autoTagged)
+    setAutoTagged(prev => { const n = new Set(prev); n.delete(oracleId); return n; });
+    setPendingTagCard(null);
   }
 
   // ── Nav helpers ───────────────────────────────────────────────────────────
@@ -830,6 +916,7 @@ export default function App() {
             onGoToBrews={goToProfile}
             activeDeckId={activeDeckId}
             onSavePile={newPile => handleSaveFromPileScreen(newPile, maybeboard)}
+            onDoubleTag={handleDoubleTag}
           />
         </div>
       )}
@@ -849,16 +936,15 @@ export default function App() {
           decks={decks}
           activeDeckId={activeDeckId}
           onSave={handleSaveFromPileScreen}
+          onDoubleTag={handleDoubleTag}
         />
       )}
 
       {screen === "tags" && (
         <TagsScreen
           pile={pile}
-          brewTags={brewTags}
-          setBrewTags={setBrewTags}
-          customTagNames={customTagNames}
-          setCustomTagNames={setCustomTagNames}
+          wrecTags={wrecTags}
+          autoTagged={autoTagged}
         />
       )}
 
@@ -899,6 +985,16 @@ export default function App() {
         }}>
           {toastMsg}
         </div>
+      )}
+
+      {/* ── WREC tag picker (double-tap, z-index 400) ── */}
+      {pendingTagCard && (
+        <WrecTagPicker
+          card={pendingTagCard}
+          wrecTags={wrecTags}
+          onAssign={handleAssignTag}
+          onClose={() => setPendingTagCard(null)}
+        />
       )}
 
       {/* ── Bottom nav ── */}
