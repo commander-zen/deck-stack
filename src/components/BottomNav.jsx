@@ -27,6 +27,15 @@ function MaybeIcon({ color }) {
   );
 }
 
+function TagsIcon({ color }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+  );
+}
+
 function BrewsIcon({ color }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -37,7 +46,7 @@ function BrewsIcon({ color }) {
   );
 }
 
-export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe, onGoToProfile }) {
+export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe, onGoToTags, onGoToProfile }) {
   const active   = "var(--primary)";
   const inactive = "rgba(255,255,255,0.35)";
 
@@ -45,6 +54,7 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
     { id: "stack", label: "STACK", Icon: StackIcon, isActive: screen === "search" || screen === "swipe", onClick: onGoToStack },
     { id: "pile",  label: "PILE",  Icon: PileIcon,  isActive: screen === "pile",  onClick: onGoToPile },
     { id: "maybe", label: "MAYBE", Icon: MaybeIcon, isActive: screen === "maybe", onClick: onGoToMaybe },
+    { id: "tags",  label: "TAGS",  Icon: TagsIcon,  isActive: screen === "tags",  onClick: onGoToTags },
     { id: "brews", label: "BREWS", Icon: BrewsIcon, isActive: screen === "brews", onClick: onGoToProfile },
   ];
 

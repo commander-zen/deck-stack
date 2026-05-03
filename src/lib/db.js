@@ -34,24 +34,25 @@ export async function loadDecks(sessionId, userId) {
 
 export async function saveDeck(sessionId, deck, userId) {
   if (!supabase) return;
-  const { error } = await supabase.from("decks").upsert(
-    {
-      id: deck.id,
-      session_id: sessionId,
-      user_id: userId ?? null,
-      name: deck.name,
-      commander_name: deck.commander_name ?? null,
-      commander_instance_id: deck.commander_instance_id ?? null,
-      commander_card: deck.commander_card ?? null,
-      pile: deck.pile ?? [],
-      maybeboard: deck.maybeboard ?? [],
-      swipe_cards: deck.swipe_cards ?? [],
-      swipe_index: deck.swipe_index ?? 0,
-      query: deck.query ?? null,
-      last_opened_at: new Date().toISOString(),
-    },
-    { onConflict: "id" }
-  );
+  const payload = {
+    id: deck.id,
+    session_id: sessionId,
+    user_id: userId ?? null,
+    name: deck.name,
+    commander_name: deck.commander_name ?? null,
+    commander_instance_id: deck.commander_instance_id ?? null,
+    commander_card: deck.commander_card ?? null,
+    pile: deck.pile ?? [],
+    maybeboard: deck.maybeboard ?? [],
+    swipe_cards: deck.swipe_cards ?? [],
+    swipe_index: deck.swipe_index ?? 0,
+    query: deck.query ?? null,
+    last_opened_at: new Date().toISOString(),
+  };
+  // Only include tags when explicitly provided so unrelated saves don't overwrite them
+  if (deck.tags !== undefined)        payload.tags        = deck.tags;
+  if (deck.custom_tags !== undefined) payload.custom_tags = deck.custom_tags;
+  const { error } = await supabase.from("decks").upsert(payload, { onConflict: "id" });
   if (error) throw error;
 }
 

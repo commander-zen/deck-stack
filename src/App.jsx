@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
+import TagsScreen    from "./screens/TagsScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
 import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav, { NAV_HEIGHT } from "./components/BottomNav.jsx";
@@ -43,6 +44,8 @@ export default function App() {
   const [commander,     setCommander]     = useState(null);
   const [commanderCard, setCommanderCard] = useState(null);
   const [maybeboard,    setMaybeboard]    = useState([]);
+  const [brewTags,       setBrewTags]       = useState({});
+  const [customTagNames, setCustomTagNames] = useState([]);
   const [query,         setQuery]         = useState("");
   const [swipeCards,    setSwipeCards]    = useState([]);
   const [swipeIndex,    setSwipeIndex]    = useState(0);
@@ -51,7 +54,7 @@ export default function App() {
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   const [swipeOrder,    setSwipeOrder]    = useState("name");
   const [swipeDir,      setSwipeDir]      = useState("desc");
-  // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
+  // screen: "search" | "swipe" | "pile" | "maybe" | "tags" | "brews"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
@@ -64,7 +67,7 @@ export default function App() {
 
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
-  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser, decks };
+  stateRef.current = { pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, sessionId, authUser, decks, brewTags, customTagNames };
 
   // Grow the visible swipe batch as the user approaches the end of the current window
   useEffect(() => {
@@ -144,6 +147,8 @@ export default function App() {
     setQuery(deck.query || "");
     setCommanderCard(deck.commander_card || null);
     setCommander(cid && p.some(c => c.instanceId === cid) ? cid : null);
+    setBrewTags(deck.tags ?? {});
+    setCustomTagNames(deck.custom_tags ?? []);
 
     if (sc.length > 0) {
       setSwipeMounted(true);
@@ -220,6 +225,7 @@ export default function App() {
           commander_card: s.commanderCard ?? null,
           pile: s.pile, maybeboard: s.maybeboard,
           swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
+          tags: s.brewTags, custom_tags: s.customTagNames,
         }, s.authUser?.id ?? null);
         const now = new Date().toISOString();
         setDecks(ds => ds.map(d =>
@@ -232,6 +238,8 @@ export default function App() {
                 swipe_index: s.swipeIndex,
                 commander_instance_id: s.commander,
                 commander_card: s.commanderCard,
+                tags: s.brewTags,
+                custom_tags: s.customTagNames,
                 last_opened_at: now,
               }
             : d
@@ -241,7 +249,7 @@ export default function App() {
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, activeDeckId, sessionId, appReady, authUser]);
+  }, [pile, swipeCards, swipeIndex, commander, commanderCard, maybeboard, query, brewTags, customTagNames, activeDeckId, sessionId, appReady, authUser]);
 
   // ── Mirror decks to localStorage (instant restore on next mount) ──────────
   useEffect(() => {
@@ -267,11 +275,13 @@ export default function App() {
           swipe_cards:           s.swipeCards,
           swipe_index:           s.swipeIndex,
           query:                 s.query,
+          tags:                  s.brewTags,
+          custom_tags:           s.customTagNames,
         }));
       } catch (err) { console.warn("sessionStorage write failed:", err); }
     }, 250);
     return () => clearTimeout(timer);
-  }, [pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, activeDeckId, appReady]);
+  }, [pile, commander, commanderCard, maybeboard, swipeCards, swipeIndex, query, brewTags, customTagNames, activeDeckId, appReady]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -432,6 +442,7 @@ export default function App() {
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
     setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
+    setBrewTags({}); setCustomTagNames([]);
     setError(null); setScreen("search");
   }
 
@@ -563,6 +574,7 @@ export default function App() {
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
     setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
+    setBrewTags({}); setCustomTagNames([]);
     setScreen("search");
   }
 
@@ -583,6 +595,7 @@ export default function App() {
         setPile([]); setCommander(null); setCommanderCard(null);
         setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
         setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
+        setBrewTags({}); setCustomTagNames([]);
         setScreen("search");
       }
     }
@@ -673,6 +686,8 @@ export default function App() {
       swipe_cards: s.swipeCards,
       swipe_index: s.swipeIndex,
       query: s.query,
+      tags: s.brewTags,
+      custom_tags: s.customTagNames,
       last_opened_at: new Date().toISOString(),
     }, s.authUser?.id ?? null).catch(err => console.error("Immediate save failed:", err));
   }
@@ -757,6 +772,8 @@ export default function App() {
 
   function goToMaybe() { setScreen("maybe"); }
 
+  function goToTags() { setScreen("tags"); }
+
   function goToProfile() { setScreen("brews"); }
 
   const showNav = true;
@@ -835,6 +852,16 @@ export default function App() {
         />
       )}
 
+      {screen === "tags" && (
+        <TagsScreen
+          pile={pile}
+          brewTags={brewTags}
+          setBrewTags={setBrewTags}
+          customTagNames={customTagNames}
+          setCustomTagNames={setCustomTagNames}
+        />
+      )}
+
       {screen === "brews" && (
         <BrewsScreen
           decks={decks}
@@ -881,6 +908,7 @@ export default function App() {
           onGoToStack={goToStack}
           onGoToPile={goToPile}
           onGoToMaybe={goToMaybe}
+          onGoToTags={goToTags}
           onGoToProfile={goToProfile}
         />
       )}
