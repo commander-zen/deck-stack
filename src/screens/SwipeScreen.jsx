@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
-import { useDoubleTap } from "../hooks/useDoubleTap.js";
 
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
 const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
@@ -70,9 +69,11 @@ export default function SwipeScreen({
   const [tipDismiss, setTipDismiss] = useState(false);
   const tipShownRef = useRef(false);
 
-  const didMountRef   = useRef(false);
-  const dragStartRef  = useRef(null);
-  const saveTimerRef  = useRef(null);
+  const didMountRef      = useRef(false);
+  const dragStartRef     = useRef(null);
+  const saveTimerRef     = useRef(null);
+  const lastTapTime      = useRef(0);
+  const lastPointerDxRef = useRef(0);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
@@ -171,6 +172,7 @@ export default function SwipeScreen({
     if (animOut || done) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragStartRef.current = e.clientX;
+    lastPointerDxRef.current = 0;
     setDragging(true);
   }
 
@@ -187,15 +189,12 @@ export default function SwipeScreen({
     if (!dragging) return;
     setDragging(false);
     const dx = dragStartRef.current !== null ? e.clientX - dragStartRef.current : 0;
+    lastPointerDxRef.current = Math.abs(dx);
     dragStartRef.current = null;
     if (dx > SWIPE_THRESHOLD)       doResolve(true);
     else if (dx < -SWIPE_THRESHOLD) doResolve(false);
     else { setOffset(0); setBadge(null); }
   }
-
-  const handleDoubleTap = useDoubleTap(() => {
-    if (card?.oracle_id) onDoubleTag?.(card.oracle_id);
-  });
 
   const artUrl   = card ? getCardImage(card, "art_crop") : null;
   const cmdArt   = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
@@ -473,8 +472,16 @@ export default function SwipeScreen({
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              onTouchStart={handleDoubleTap}
-              onTouchEnd={(e) => e.preventDefault()}
+              onClick={() => {
+                if (lastPointerDxRef.current >= 10) return; // was a drag
+                const now = Date.now();
+                const last = lastTapTime.current;
+                lastTapTime.current = now;
+                if (now - last < 350) {
+                  lastTapTime.current = 0;
+                  onDoubleTag?.(card?.oracle_id);
+                }
+              }}
             >
               {badge === "keep" && (
                 <div style={{

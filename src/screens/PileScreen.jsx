@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
 import CommanderModal from "../components/CommanderModal.jsx";
@@ -246,25 +246,18 @@ export default function PileScreen({
 
   function onCardPointerUp() { clearTimeout(lpTimerRef.current); }
 
-  function onCardClick(card) {
+  function handleCardClick(oracleId, card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
-    enterReviewAt(card, activeTab);
-  }
-
-  // touchstart fires before any synthetic click delay — reliable on iOS Safari.
-  // e.preventDefault() on the second tap blocks the ghost click so onClick doesn't
-  // double-fire; first-tap click still fires normally for review entry.
-  const handleCardTouch = useCallback((e, oracleId) => {
     const now = Date.now();
-    if (now - (tapTimes.current[oracleId] ?? 0) < 300) {
-      e.preventDefault();
-      e.stopPropagation();
-      onDoubleTag?.(oracleId);
+    const last = tapTimes.current[oracleId] ?? 0;
+    tapTimes.current[oracleId] = now;
+    if (now - last < 350) {
       tapTimes.current[oracleId] = 0;
+      onDoubleTag?.(oracleId);
       return;
     }
-    tapTimes.current[oracleId] = now;
-  }, [onDoubleTag]);
+    enterReviewAt(card, activeTab);
+  }
 
   // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
 
@@ -352,7 +345,6 @@ export default function PileScreen({
         onPointerMove={drag ? onDragMove : undefined}
         onPointerUp={drag ? onDragEnd : undefined}
         onPointerCancel={drag ? onDragEnd : undefined}
-        onTouchStart={!stackable ? (e) => handleCardTouch(e, card.oracle_id ?? card.id) : undefined}
         style={{
           display: "flex", alignItems: "center",
           padding: "9px 14px",
@@ -363,7 +355,7 @@ export default function PileScreen({
           opacity: isDragging ? 0.5 : 1,
           cursor: stackable ? "default" : "pointer",
         }}
-        onClick={() => !drag && !stackable && onTap?.(card, rowIdx)}
+        onClick={() => !drag && !stackable && handleCardClick(card.oracle_id ?? card.id, card)}
       >
         {isDraggable && (
           <div
@@ -468,8 +460,7 @@ export default function PileScreen({
         onPointerDown={() => activeTab === "deck" && onCardPointerDown(card)}
         onPointerUp={onCardPointerUp}
         onPointerCancel={onCardPointerUp}
-        onTouchStart={(e) => handleCardTouch(e, card.oracle_id ?? card.id)}
-        onClick={() => onCardClick(card)}
+        onClick={() => handleCardClick(card.oracle_id ?? card.id, card)}
         style={{
           position: "relative", aspectRatio: "63/88",
           borderRadius: 10, overflow: "hidden", cursor: "pointer",
