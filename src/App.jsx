@@ -65,8 +65,9 @@ export default function App() {
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
   const [toastMsg,      setToastMsg]      = useState(null);
 
-  const bgFetchAbort = useRef(null);
-  const toastTimer   = useRef(null);
+  const bgFetchAbort   = useRef(null);
+  const toastTimer     = useRef(null);
+  const initFetchedRef = useRef(false);
 
   // Stable refs so closures don't go stale
   const stateRef = useRef({});
@@ -85,6 +86,8 @@ export default function App() {
     const safetyTimer = setTimeout(() => setAppReady(true), 5000);
 
     async function initBackground() {
+      initFetchedRef.current = true; // prevent INITIAL_SESSION handler from duplicating this fetch
+
       // ── Fast-path 1: active session in sessionStorage ─────────────────────
       // survives F5 refresh; cleared automatically on tab/window close.
       const localSession = readLocalSession();
@@ -172,11 +175,11 @@ export default function App() {
       const s = stateRef.current;
 
       if (event === "INITIAL_SESSION" && user) {
-        // Hard refresh with an existing stored session. Supabase v2 fires
-        // INITIAL_SESSION here (not SIGNED_IN), so deck loading must be
-        // handled explicitly. initBackground() is the primary path; this
-        // acts as a fallback in case that failed before reaching loadDecks.
+        // Supabase v2 fires INITIAL_SESSION on hard refresh when a stored session
+        // exists. initBackground() is the primary fetch path and always runs on
+        // mount — only fall back here if it didn't reach loadDecks (e.g. crashed).
         setAuthUser(user);
+        if (initFetchedRef.current) return;
         try {
           const dbDecks = await loadDecks(s.sessionId, user.id);
           if (dbDecks.length > 0 && stateRef.current.decks.length === 0) {
