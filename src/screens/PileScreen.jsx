@@ -130,7 +130,7 @@ export default function PileScreen({
   onDoubleTag,
   wrecTags = {},
 }) {
-  const [deckViewMode,   setDeckViewMode]   = useState("grid"); // image view by default
+  const [deckViewMode,   setDeckViewMode]   = useState("list"); // list view by default
   const [maybeViewMode,  setMaybeViewMode]  = useState("list"); // text view by default
   const [activeTab,      setActiveTab]      = useState(initialTab ?? "deck");
   const [reviewMode,     setReviewMode]     = useState(null);
@@ -532,6 +532,19 @@ export default function PileScreen({
             {card.qty}×
           </div>
         )}
+        {(() => {
+          const cat = getWrecCategory(card.oracle_id ?? card.id);
+          const chip = cat ? WREC_CHIP[cat] : null;
+          return chip ? (
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              height: 4,
+              background: chip.bg,
+              borderRadius: "0 0 6px 6px",
+              pointerEvents: "none",
+            }} />
+          ) : null;
+        })()}
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
