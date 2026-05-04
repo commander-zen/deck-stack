@@ -123,11 +123,10 @@ export default function TagsScreen({ pile, wrecTags, autoTagged }) {
   }
 
   function renderBucket(cat) {
-    const target  = WREC_TARGETS[cat];
-    const ids     = wrecTags[cat] ?? [];
-    const count   = ids.length;
-    const isPlan  = cat === "Plan";
-    const cards   = ids.map(id => oracleMap.get(id)).filter(Boolean);
+    const target = WREC_TARGETS[cat];
+    const ids    = wrecTags[cat] ?? [];
+    const count  = ids.length;
+    const cards  = ids.map(id => oracleMap.get(id)).filter(Boolean);
 
     return (
       <div key={cat} style={{
@@ -152,18 +151,14 @@ export default function TagsScreen({ pile, wrecTags, autoTagged }) {
               fontSize: 11,
               color: count >= target ? "var(--success)" : count === 0 ? "var(--muted)" : "var(--text)",
             }}>
-              {isPlan ? "0" : count} / {target}
+              {count} / {target}
             </span>
           </div>
-          {renderProgressBar(isPlan ? 0 : count, target)}
+          {renderProgressBar(count, target)}
         </div>
 
         {/* Card list */}
-        {isPlan ? (
-          <div style={{ padding: "8px 14px 10px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
-            Auto-detection coming soon — double-tap cards to assign manually
-          </div>
-        ) : cards.length > 0 ? (
+        {cards.length > 0 ? (
           <div style={{ paddingBottom: 4 }}>
             {cards.map(card => renderCardRow(card, false))}
           </div>
