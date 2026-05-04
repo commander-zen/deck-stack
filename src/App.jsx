@@ -927,6 +927,7 @@ export default function App() {
           activeDeckId={activeDeckId}
           onSave={handleSaveFromPileScreen}
           onDoubleTag={handleDoubleTag}
+          wrecTags={wrecTags}
         />
       )}
 

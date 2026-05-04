@@ -109,6 +109,15 @@ function ListIcon({ color }) {
 // NAV_HEIGHT (60) + STACK & SWIPE button (~52px) + gap (18px)
 const FAB_CLEARANCE = NAV_HEIGHT + 52 + 18;
 
+const WREC_CHIP = {
+  "Ramp":            { label: "RAMP",     color: "#f59e0b", bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.35)" },
+  "Card Advantage":  { label: "CARD ADV", color: "#5b8fff", bg: "rgba(91,143,255,0.12)",  border: "rgba(91,143,255,0.35)" },
+  "Disruption":      { label: "DISRUPT",  color: "#ff4d6d", bg: "rgba(255,77,109,0.12)",  border: "rgba(255,77,109,0.35)" },
+  "Mass Disruption": { label: "MASS DIS", color: "#f97316", bg: "rgba(249,115,22,0.12)",  border: "rgba(249,115,22,0.35)" },
+  "Mana Base":       { label: "MANA",     color: "#34d399", bg: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.35)" },
+  "Plan":            { label: "PLAN",     color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.35)" },
+};
+
 export default function PileScreen({
   pile, onPileChange, onClearPile,
   commander, onCommanderChange,
@@ -119,6 +128,7 @@ export default function PileScreen({
   activeDeckId = null,
   onSave,
   onDoubleTag,
+  wrecTags = {},
 }) {
   const [deckViewMode,   setDeckViewMode]   = useState("grid"); // image view by default
   const [maybeViewMode,  setMaybeViewMode]  = useState("list"); // text view by default
@@ -145,7 +155,6 @@ export default function PileScreen({
 
   const lpTimerRef = useRef(null);
   const lpFiredRef = useRef(false);
-  const tapTimes   = useRef({});
 
   const reviewCommanderCard =
     commanderCard ??
@@ -246,16 +255,16 @@ export default function PileScreen({
 
   function onCardPointerUp() { clearTimeout(lpTimerRef.current); }
 
+  function getWrecCategory(oracleId) {
+    if (!oracleId) return null;
+    for (const [cat, ids] of Object.entries(wrecTags)) {
+      if ((ids ?? []).includes(oracleId)) return cat;
+    }
+    return null;
+  }
+
   function handleCardClick(oracleId, card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
-    const now = Date.now();
-    const last = tapTimes.current[oracleId] ?? 0;
-    tapTimes.current[oracleId] = now;
-    if (now - last < 350) {
-      tapTimes.current[oracleId] = 0;
-      onDoubleTag?.(oracleId);
-      return;
-    }
     enterReviewAt(card, activeTab);
   }
 
@@ -335,6 +344,9 @@ export default function PileScreen({
     const mana         = !stackable
       ? (card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "")
       : "";
+    const rowOracleId  = card.oracle_id ?? card.id;
+    const wrecCat      = !stackable ? getWrecCategory(rowOracleId) : null;
+    const wrecChipDef  = wrecCat ? WREC_CHIP[wrecCat] : null;
     const isDragging   = drag?.srcIdx === rowIdx;
     const isDropTarget = drag && drag.targetIdx === rowIdx && drag.srcIdx !== rowIdx;
 
@@ -384,6 +396,29 @@ export default function PileScreen({
             <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1 }}>
               {card.type_line}
             </div>
+          )}
+          {!stackable && rowOracleId && (
+            <button
+              onClick={e => { e.stopPropagation(); onDoubleTag?.(rowOracleId); }}
+              style={{
+                marginTop: 4,
+                display: "inline-flex", alignItems: "center",
+                padding: "1px 6px",
+                borderRadius: 4,
+                border: wrecChipDef
+                  ? `1px solid ${wrecChipDef.border}`
+                  : "1px dashed rgba(255,255,255,0.18)",
+                background: wrecChipDef ? wrecChipDef.bg : "transparent",
+                color: wrecChipDef ? wrecChipDef.color : "var(--muted)",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 9, letterSpacing: 0.5,
+                lineHeight: "14px",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              {wrecChipDef ? wrecChipDef.label : "UNTAG"}
+            </button>
           )}
         </div>
 
