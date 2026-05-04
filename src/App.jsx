@@ -498,76 +498,66 @@ export default function App() {
 
   // ── Import deck ───────────────────────────────────────────────────────────
   async function handleImport(importedPile, importedCommanderCard) {
-    // A brew's commander is immutable once set — pile.length is not the gate.
-    const activeDeckCommander = activeDeckId
-      ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
-      : null;
-    const commanderLockedCard = activeDeckCommander
-      ?? (commander !== null ? (pile.find(c => c.instanceId === commander) ?? commanderCard) : null);
-    const commanderLocked = commanderLockedCard !== null;
-    const effectiveCommanderCard = commanderLocked ? commanderLockedCard : (importedCommanderCard ?? null);
-    const effectiveCommander     = commanderLocked ? commander            : (importedCommanderCard?.instanceId ?? null);
+    const effectiveCommanderCard = importedCommanderCard ?? null;
+    const effectiveCommander     = importedCommanderCard?.instanceId ?? null;
+    const deckName = effectiveCommanderCard?.name || "Imported Deck";
 
-    const deckName = effectiveCommanderCard?.name || importedCommanderCard?.name || "Imported Deck";
-
-    // Block if a different brew already uses this commander
-    if (!commanderLocked && effectiveCommanderCard) {
-      const duplicate = commanderAlreadyBrewed(effectiveCommanderCard, activeDeckId ?? null);
+    // Block if any brew already uses this commander
+    if (effectiveCommanderCard) {
+      const duplicate = commanderAlreadyBrewed(effectiveCommanderCard);
       if (duplicate) {
         showToast(`A brew for ${effectiveCommanderCard.name} already exists`);
         return;
       }
     }
 
-    // Shared state updates regardless of path
+    // Save current active brew before switching away (same pattern as handleNewDeck)
+    if (sessionId && activeDeckId) {
+      const s = stateRef.current;
+      saveDeck(sessionId, {
+        id: s.activeDeckId,
+        name: computeDeckName(s.commanderCard, s.query),
+        commander_name: s.commanderCard?.name ?? null,
+        commander_instance_id: s.commander ?? null,
+        commander_card: s.commanderCard ?? null,
+        pile: s.pile, maybeboard: s.maybeboard,
+        swipe_cards: s.swipeCards, swipe_index: s.swipeIndex, query: s.query,
+        tags: s.wrecTags,
+      }, s.authUser?.id ?? null).catch(err => {
+        console.error("Failed to save deck before import:", err);
+      });
+    }
+
+    // Always INSERT a new brew — never overwrite the active brew
+    const newDeckId = crypto.randomUUID();
+    const newDeck = {
+      id: newDeckId, name: deckName,
+      commander_name: effectiveCommanderCard?.name ?? null,
+      commander_instance_id: effectiveCommander,
+      commander_card: effectiveCommanderCard ?? null,
+      pile: importedPile, maybeboard: [],
+      swipe_cards: [], swipe_index: 0, query: "",
+      last_opened_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+
     setPile(importedPile);
     setCommander(effectiveCommander);
     setCommanderCard(effectiveCommanderCard);
     setSwipeCards([]); setSwipeIndex(0); setMaybeboard([]); setQuery("");
     setSwipeMounted(false);
+    setWrecTags({}); setAutoTagged(new Set()); setPendingTagCard(null);
     setScreen("pile");
 
-    if (activeDeckId) {
-      // Load into the current active brew — don't create a second deck
-      const deckPayload = {
-        id: activeDeckId, name: deckName,
-        commander_name: effectiveCommanderCard?.name ?? null,
-        commander_instance_id: effectiveCommander,
-        commander_card: effectiveCommanderCard ?? null,
-        pile: importedPile, maybeboard: [],
-        swipe_cards: [], swipe_index: 0, query: "",
-        last_opened_at: new Date().toISOString(),
-      };
-      setDecks(ds => ds.map(d => d.id === activeDeckId ? { ...d, ...deckPayload } : d));
-      if (sessionId) {
-        // PERSISTS: update deck (import into active brew)
-        saveDeck(sessionId, deckPayload, authUser?.id ?? null).catch(err => {
-          console.error("Failed to save imported deck:", err);
-          showToast("Import saved locally — cloud sync failed");
-        });
-      }
-    } else {
-      // No active brew — create exactly one new deck
-      const newDeckId = crypto.randomUUID();
-      const newDeck = {
-        id: newDeckId, name: deckName,
-        commander_name: effectiveCommanderCard?.name ?? null,
-        commander_instance_id: effectiveCommander,
-        commander_card: effectiveCommanderCard ?? null,
-        pile: importedPile, maybeboard: [],
-        swipe_cards: [], swipe_index: 0, query: "",
-        last_opened_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-      };
-      setActiveDeckId(newDeckId);
-      setDecks(ds => [newDeck, ...ds]);
-      if (sessionId) {
-        // PERSISTS: create deck (import into new brew)
-        saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(err => {
-          console.error("Failed to save imported deck:", err);
-          showToast("Import saved locally — cloud sync failed");
-        });
-      }
+    setActiveDeckId(newDeckId);
+    setDecks(ds => [newDeck, ...ds]);
+
+    if (sessionId) {
+      // PERSISTS: create deck (import always creates a new brew)
+      saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(err => {
+        console.error("Failed to save imported deck:", err);
+        showToast("Import saved locally — cloud sync failed");
+      });
     }
   }
 
