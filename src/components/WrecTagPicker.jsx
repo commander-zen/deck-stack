@@ -48,12 +48,10 @@ export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {WREC_CATEGORIES.map(cat => {
             const isActive = cat === currentCat;
-            const isPlan   = cat === "Plan";
             return (
               <button
                 key={cat}
-                onClick={() => !isPlan && onAssign(oracleId, cat)}
-                disabled={isPlan}
+                onClick={() => onAssign(oracleId, cat)}
                 style={{
                   width: "100%", padding: "11px 14px",
                   borderRadius: 10,
@@ -62,18 +60,16 @@ export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
                     : "1px solid rgba(255,255,255,0.08)",
                   background: isActive
                     ? "rgba(91,143,255,0.15)"
-                    : isPlan
-                      ? "rgba(255,255,255,0.02)"
-                      : "rgba(255,255,255,0.04)",
-                  color: isActive ? "var(--primary)" : isPlan ? "var(--muted)" : "var(--text)",
+                    : "rgba(255,255,255,0.04)",
+                  color: isActive ? "var(--primary)" : "var(--text)",
                   fontFamily: "'Bebas Neue', sans-serif",
                   fontSize: 13, letterSpacing: 2,
-                  cursor: isPlan ? "default" : "pointer",
+                  cursor: "pointer",
                   textAlign: "left",
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                 }}
               >
-                <span>{cat}{isPlan ? "  —  COMING SOON" : ""}</span>
+                <span>{cat}</span>
                 {isActive && <span style={{ fontSize: 12 }}>✓</span>}
               </button>
             );

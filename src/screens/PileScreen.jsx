@@ -397,7 +397,7 @@ export default function PileScreen({
               {card.type_line}
             </div>
           )}
-          {!stackable && rowOracleId && (
+          {!stackable && rowOracleId && !isCommander && (
             <button
               onClick={e => { e.stopPropagation(); onDoubleTag?.(rowOracleId); }}
               style={{
@@ -532,7 +532,7 @@ export default function PileScreen({
             {card.qty}×
           </div>
         )}
-        {(() => {
+        {!isCommander && (() => {
           const cat = getWrecCategory(card.oracle_id ?? card.id);
           const chip = cat ? WREC_CHIP[cat] : null;
           return chip ? (
