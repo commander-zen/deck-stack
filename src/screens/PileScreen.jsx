@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
 import CommanderModal from "../components/CommanderModal.jsx";
@@ -251,16 +251,20 @@ export default function PileScreen({
     enterReviewAt(card, activeTab);
   }
 
-  function handleCardTouch(e, oracleId) {
+  // touchstart fires before any synthetic click delay — reliable on iOS Safari.
+  // e.preventDefault() on the second tap blocks the ghost click so onClick doesn't
+  // double-fire; first-tap click still fires normally for review entry.
+  const handleCardTouch = useCallback((e, oracleId) => {
     const now = Date.now();
     if (now - (tapTimes.current[oracleId] ?? 0) < 300) {
       e.preventDefault();
+      e.stopPropagation();
       onDoubleTag?.(oracleId);
       tapTimes.current[oracleId] = 0;
       return;
     }
     tapTimes.current[oracleId] = now;
-  }
+  }, [onDoubleTag]);
 
   // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
 
@@ -348,7 +352,7 @@ export default function PileScreen({
         onPointerMove={drag ? onDragMove : undefined}
         onPointerUp={drag ? onDragEnd : undefined}
         onPointerCancel={drag ? onDragEnd : undefined}
-        onTouchEnd={!stackable ? (e) => handleCardTouch(e, card.oracle_id ?? card.id) : undefined}
+        onTouchStart={!stackable ? (e) => handleCardTouch(e, card.oracle_id ?? card.id) : undefined}
         style={{
           display: "flex", alignItems: "center",
           padding: "9px 14px",
@@ -464,7 +468,7 @@ export default function PileScreen({
         onPointerDown={() => activeTab === "deck" && onCardPointerDown(card)}
         onPointerUp={onCardPointerUp}
         onPointerCancel={onCardPointerUp}
-        onTouchEnd={(e) => handleCardTouch(e, card.oracle_id ?? card.id)}
+        onTouchStart={(e) => handleCardTouch(e, card.oracle_id ?? card.id)}
         onClick={() => onCardClick(card)}
         style={{
           position: "relative", aspectRatio: "63/88",

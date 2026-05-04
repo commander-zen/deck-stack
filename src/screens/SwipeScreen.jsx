@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
+import { useDoubleTap } from "../hooks/useDoubleTap.js";
 
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
 const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
@@ -72,7 +73,6 @@ export default function SwipeScreen({
   const didMountRef   = useRef(false);
   const dragStartRef  = useRef(null);
   const saveTimerRef  = useRef(null);
-  const lastTapTime   = useRef(0);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
@@ -193,18 +193,9 @@ export default function SwipeScreen({
     else { setOffset(0); setBadge(null); }
   }
 
-  function handleCardTouch(e) {
-    const dx = dragStartRef.current !== null
-      ? Math.abs((e.changedTouches?.[0]?.clientX ?? 0) - dragStartRef.current)
-      : 0;
-    if (dx >= 10) return; // was a swipe, not a tap
-    const now = Date.now();
-    if (now - lastTapTime.current < 300 && card?.oracle_id) {
-      e.preventDefault();
-      onDoubleTag?.(card.oracle_id);
-    }
-    lastTapTime.current = now;
-  }
+  const handleDoubleTap = useDoubleTap(() => {
+    if (card?.oracle_id) onDoubleTag?.(card.oracle_id);
+  });
 
   const artUrl   = card ? getCardImage(card, "art_crop") : null;
   const cmdArt   = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
@@ -482,7 +473,8 @@ export default function SwipeScreen({
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
-              onTouchEnd={handleCardTouch}
+              onTouchStart={handleDoubleTap}
+              onTouchEnd={(e) => e.preventDefault()}
             >
               {badge === "keep" && (
                 <div style={{
