@@ -9,6 +9,7 @@
   --muted:     #555566;
   --active:    #f59e0b;
   --text:      #e8e8f0;
+  --gc-gold:   #C9A84C;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

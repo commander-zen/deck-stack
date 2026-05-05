@@ -824,19 +824,18 @@ export default function App() {
   }
 
   function handleAssignTag(oracleId, category) {
+    if (!category) return;
     setWrecTags(prev => {
-      // Remove from any existing category
-      const next = {};
-      for (const [cat, ids] of Object.entries(prev)) {
-        next[cat] = ids.filter(id => id !== oracleId);
-      }
-      // Add to new category
-      if (category) next[category] = [...(next[category] ?? []), oracleId];
-      return next;
+      const current = prev[category] ?? [];
+      const isTagged = current.includes(oracleId);
+      return {
+        ...prev,
+        [category]: isTagged
+          ? current.filter(id => id !== oracleId)
+          : [...current, oracleId],
+      };
     });
-    // Mark as user-confirmed (remove from autoTagged)
     setAutoTagged(prev => { const n = new Set(prev); n.delete(oracleId); return n; });
-    setPendingTagCard(null);
   }
 
   // ── Nav helpers ───────────────────────────────────────────────────────────

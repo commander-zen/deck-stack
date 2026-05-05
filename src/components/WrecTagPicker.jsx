@@ -3,10 +3,9 @@ import WrecCategoryButtons from "./WrecCategoryButtons.jsx";
 export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
   const oracleId = card.oracle_id ?? card.id;
 
-  let currentCat = null;
-  for (const [cat, ids] of Object.entries(wrecTags)) {
-    if (ids.includes(oracleId)) { currentCat = cat; break; }
-  }
+  const currentTags = Object.entries(wrecTags)
+    .filter(([, ids]) => ids.includes(oracleId))
+    .map(([cat]) => cat);
 
   const mana = card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
 
@@ -37,16 +36,11 @@ export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
               {mana}
             </div>
           )}
-          {currentCat && (
-            <div style={{ fontSize: 11, color: "var(--primary)", marginTop: 4, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: 1.5 }}>
-              {currentCat}
-            </div>
-          )}
         </div>
 
         <WrecCategoryButtons
-          currentCat={currentCat}
-          onAssign={cat => onAssign(oracleId, cat)}
+          currentTags={currentTags}
+          onToggle={cat => onAssign(oracleId, cat)}
         />
       </div>
     </>

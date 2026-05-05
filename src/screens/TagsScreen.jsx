@@ -39,7 +39,7 @@ function scoreColor(score) {
 
 export default function TagsScreen({ pile, wrecTags, autoTagged }) {
   const oracleMap  = buildOracleMap(pile);
-  const score      = calcWrecScore(wrecTags);
+  const score      = calcWrecScore(wrecTags, pile);
   const color      = scoreColor(score);
   const untagged   = getUntagged(pile, wrecTags);
 

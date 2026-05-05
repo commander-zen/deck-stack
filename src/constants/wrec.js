@@ -75,12 +75,24 @@ export function autoDetectCategory(card) {
   return null;
 }
 
-export function calcWrecScore(wrecTags) {
+export function calcWrecScore(wrecTags, pile = []) {
+  // Collect oracle_ids of basic lands in pile for score-time Mana Base inclusion
+  const basicOracleIds = new Set(
+    pile.filter(c => c.type_line?.toLowerCase().includes("basic")).map(c => c.oracle_id).filter(Boolean)
+  );
+
   const ratios = WREC_CATEGORIES.map(cat => {
-    const count  = (wrecTags[cat] ?? []).length;
+    let count;
+    if (cat === "Mana Base") {
+      // Union of tagged Mana Base oracle_ids and basic land oracle_ids (no double-count)
+      const union = new Set([...(wrecTags["Mana Base"] ?? []), ...basicOracleIds]);
+      count = union.size;
+    } else {
+      count = (wrecTags[cat] ?? []).length;
+    }
     const target = WREC_TARGETS[cat];
     return count / target;
   });
   const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length;
-  return avg.toFixed(3); // "0.842" batting average style
+  return avg.toFixed(3);
 }

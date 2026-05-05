@@ -6,6 +6,7 @@ import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
 import WrecCategoryButtons from "../components/WrecCategoryButtons.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { WREC_CHIP } from "../constants/wrec.js";
+import { useGameChangers } from "../hooks/useGameChangers.js";
 
 // ── Card-type helpers ─────────────────────────────────────────────────────────
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
@@ -139,6 +140,9 @@ export default function PileScreen({
   // Drag-to-reorder (list view, deck tab only)
   const [drag, setDrag] = useState(null);
 
+  const { gameChangerIds } = useGameChangers();
+  const hasGameChanger = pile.some(c => gameChangerIds.has(c.oracle_id ?? ""));
+
   const scrollPos = useRef({ deck: 0, maybe: 0 });
   useEffect(() => {
     scrollPos.current[activeTab] = window.scrollY;
@@ -251,12 +255,11 @@ export default function PileScreen({
 
   function onCardPointerUp() { clearTimeout(lpTimerRef.current); }
 
-  function getWrecCategory(oracleId) {
-    if (!oracleId) return null;
-    for (const [cat, ids] of Object.entries(wrecTags)) {
-      if ((ids ?? []).includes(oracleId)) return cat;
-    }
-    return null;
+  function getWrecCategories(oracleId) {
+    if (!oracleId) return [];
+    return Object.entries(wrecTags)
+      .filter(([, ids]) => (ids ?? []).includes(oracleId))
+      .map(([cat]) => cat);
   }
 
   function handleCardClick(oracleId, card) {
@@ -341,8 +344,8 @@ export default function PileScreen({
       ? (card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "")
       : "";
     const rowOracleId  = card.oracle_id ?? card.id;
-    const wrecCat      = !stackable ? getWrecCategory(rowOracleId) : null;
-    const wrecChipDef  = wrecCat ? WREC_CHIP[wrecCat] : null;
+    const wrecCats     = !stackable ? getWrecCategories(rowOracleId) : [];
+    const isGC         = !isCommander && gameChangerIds.has(rowOracleId ?? "");
     const isDragging   = drag?.srcIdx === rowIdx;
     const isDropTarget = drag && drag.targetIdx === rowIdx && drag.srcIdx !== rowIdx;
 
@@ -356,10 +359,12 @@ export default function PileScreen({
         style={{
           display: "flex", alignItems: "center",
           padding: "9px 14px",
+          paddingLeft: isGC ? 11 : 14,
+          borderLeft: isGC ? "3px solid var(--gc-gold)" : "none",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
           borderTop: isDropTarget && drag.targetIdx < drag.srcIdx ? "2px solid var(--primary)" : "none",
           borderBottomColor: isDropTarget && drag.targetIdx > drag.srcIdx ? "var(--primary)" : "rgba(255,255,255,0.05)",
-          background: isDragging ? "rgba(91,143,255,0.08)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
+          background: isDragging ? "rgba(91,143,255,0.08)" : isGC ? "rgba(201,168,76,0.05)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
           opacity: isDragging ? 0.5 : 1,
           cursor: stackable ? "default" : "pointer",
         }}
@@ -385,8 +390,14 @@ export default function PileScreen({
             fontSize: 14, color: isCommander ? "gold" : "var(--text)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             fontWeight: isCommander ? 500 : 400,
+            display: "flex", alignItems: "center", gap: 4,
           }}>
-            {card.name}
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {card.name}
+            </span>
+            {isGC && (
+              <span style={{ color: "var(--gc-gold)", fontSize: 11, flexShrink: 0 }}>⚡</span>
+            )}
           </div>
           {card.type_line && (
             <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1 }}>
@@ -394,26 +405,30 @@ export default function PileScreen({
             </div>
           )}
           {!stackable && rowOracleId && !isCommander && (
-            <button
-              style={{
-                marginTop: 4,
-                display: "inline-flex", alignItems: "center",
-                padding: "1px 6px",
-                borderRadius: 4,
-                border: wrecChipDef
-                  ? `1px solid ${wrecChipDef.border}`
-                  : "1px dashed rgba(255,255,255,0.18)",
-                background: wrecChipDef ? wrecChipDef.bg : "transparent",
-                color: wrecChipDef ? wrecChipDef.color : "var(--muted)",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9, letterSpacing: 0.5,
-                lineHeight: "14px",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >
-              {wrecChipDef ? wrecChipDef.label : "UNTAG"}
-            </button>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 4 }}>
+              {wrecCats.length === 0 ? (
+                <span style={{
+                  display: "inline-flex", alignItems: "center",
+                  padding: "1px 6px", borderRadius: 4,
+                  border: "1px dashed rgba(255,255,255,0.18)",
+                  background: "transparent", color: "var(--muted)",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 9, letterSpacing: 0.5, lineHeight: "14px",
+                }}>UNTAG</span>
+              ) : wrecCats.map(cat => {
+                const chip = WREC_CHIP[cat];
+                return chip ? (
+                  <span key={cat} style={{
+                    display: "inline-flex", alignItems: "center",
+                    padding: "1px 6px", borderRadius: 4,
+                    border: `1px solid ${chip.border}`,
+                    background: chip.bg, color: chip.color,
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 9, letterSpacing: 0.5, lineHeight: "14px",
+                  }}>{chip.label}</span>
+                ) : null;
+              })}
+            </div>
           )}
         </div>
 
@@ -484,6 +499,7 @@ export default function PileScreen({
 
   function renderGridCard(card, isCommander, onRemove) {
     const imgUrl = getCardImage(card, "normal");
+    const isGC   = !isCommander && gameChangerIds.has(card.oracle_id ?? "");
     return (
       <div
         key={card.instanceId}
@@ -495,8 +511,8 @@ export default function PileScreen({
           position: "relative", aspectRatio: "63/88",
           borderRadius: 10, overflow: "hidden", cursor: "pointer",
           background: "var(--panel)",
-          outline: isCommander ? "2px solid gold" : "none",
-          outlineOffset: isCommander ? 2 : 0,
+          outline: isCommander ? "2px solid gold" : isGC ? "2px solid var(--gc-gold)" : "none",
+          outlineOffset: (isCommander || isGC) ? 2 : 0,
         }}
       >
         {imgUrl ? (
@@ -528,18 +544,41 @@ export default function PileScreen({
           </div>
         )}
         {!isCommander && (() => {
-          const cat = getWrecCategory(card.oracle_id ?? card.id);
-          const chip = cat ? WREC_CHIP[cat] : null;
-          return chip ? (
+          const cats  = getWrecCategories(card.oracle_id ?? card.id);
+          const chips = cats.map(c => WREC_CHIP[c]).filter(Boolean);
+          if (chips.length === 0) return null;
+          const pct = 100 / chips.length;
+          const gradient = chips.map((ch, i) =>
+            `${ch.color} ${i * pct}%, ${ch.color} ${(i + 1) * pct}%`
+          ).join(", ");
+          return (
             <div style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
               height: 4,
-              background: chip.bg,
+              background: `linear-gradient(to right, ${gradient})`,
               borderRadius: "0 0 6px 6px",
               pointerEvents: "none",
             }} />
-          ) : null;
+          );
         })()}
+        {isGC && (
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            padding: "3px 6px",
+            background: "rgba(0,0,0,0.72)",
+            borderTop: "1px solid rgba(201,168,76,0.5)",
+            display: "flex", alignItems: "center", gap: 3,
+            pointerEvents: "none",
+          }}>
+            <span style={{ color: "var(--gc-gold)", fontSize: 9 }}>⚡</span>
+            <span style={{
+              color: "var(--gc-gold)",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 8, letterSpacing: 0.5,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>GAME CHANGER</span>
+          </div>
+        )}
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
@@ -562,12 +601,7 @@ export default function PileScreen({
         const dc         = detailCard;
         const oracleId   = dc.oracle_id ?? dc.id;
         const mana       = dc.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
-        const currentCat = getWrecCategory(oracleId);
-
-        function assignAndClose(cat) {
-          onAssignTag?.(oracleId, cat);
-          setDetailCard(null);
-        }
+        const currentTags = getWrecCategories(oracleId);
 
         return (
           <>
@@ -606,8 +640,8 @@ export default function PileScreen({
               </div>
 
               <WrecCategoryButtons
-                currentCat={currentCat}
-                onAssign={assignAndClose}
+                currentTags={currentTags}
+                onToggle={cat => onAssignTag?.(oracleId, cat)}
               />
             </div>
           </>
@@ -685,6 +719,28 @@ export default function PileScreen({
           }}>
             {activeCardsRawLen}
           </span>
+
+          {/* Bracket badge — deck tab only */}
+          {activeTab === "deck" && pile.length > 0 && (
+            <span
+              title={hasGameChanger ? "Contains Game Changer cards" : "Full bracket detection coming soon"}
+              style={{
+                flexShrink: 0,
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 9, letterSpacing: 0.5,
+                padding: "2px 6px", borderRadius: 4,
+                border: hasGameChanger
+                  ? "1px solid rgba(239,68,68,0.45)"
+                  : "1px solid rgba(255,255,255,0.1)",
+                background: hasGameChanger
+                  ? "rgba(239,68,68,0.12)"
+                  : "rgba(255,255,255,0.04)",
+                color: hasGameChanger ? "#ef4444" : "var(--muted)",
+              }}
+            >
+              {hasGameChanger ? "BRACKET 4" : "BRACKET 2–3"}
+            </span>
+          )}
 
           {/* List/Grid toggle */}
           <button
