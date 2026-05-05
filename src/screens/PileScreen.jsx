@@ -395,7 +395,6 @@ export default function PileScreen({
           )}
           {!stackable && rowOracleId && !isCommander && (
             <button
-              onClick={e => { e.stopPropagation(); onDoubleTag?.(rowOracleId); }}
               style={{
                 marginTop: 4,
                 display: "inline-flex", alignItems: "center",
