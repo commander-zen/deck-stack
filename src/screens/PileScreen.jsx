@@ -3,7 +3,9 @@ import { getCardImage } from "../lib/scryfall.js";
 import PileSwipeScreen from "../components/PileSwipeScreen.jsx";
 import CommanderModal from "../components/CommanderModal.jsx";
 import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
+import WrecCategoryButtons from "../components/WrecCategoryButtons.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
+import { WREC_CHIP } from "../constants/wrec.js";
 
 // ── Card-type helpers ─────────────────────────────────────────────────────────
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
@@ -109,14 +111,6 @@ function ListIcon({ color }) {
 // NAV_HEIGHT (60) + STACK & SWIPE button (~52px) + gap (18px)
 const FAB_CLEARANCE = NAV_HEIGHT + 52 + 18;
 
-const WREC_CHIP = {
-  "Ramp":            { label: "RAMP",     color: "#f59e0b", bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.35)" },
-  "Card Advantage":  { label: "CARD ADV", color: "#5b8fff", bg: "rgba(91,143,255,0.12)",  border: "rgba(91,143,255,0.35)" },
-  "Disruption":      { label: "DISRUPT",  color: "#ff4d6d", bg: "rgba(255,77,109,0.12)",  border: "rgba(255,77,109,0.35)" },
-  "Mass Disruption": { label: "MASS DIS", color: "#f97316", bg: "rgba(249,115,22,0.12)",  border: "rgba(249,115,22,0.35)" },
-  "Mana Base":       { label: "MANA",     color: "#34d399", bg: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.35)" },
-  "Plan":            { label: "PLAN",     color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.35)" },
-};
 
 export default function PileScreen({
   pile, onPileChange, onClearPile,
@@ -612,51 +606,10 @@ export default function PileScreen({
                 </div>
               </div>
 
-              {/* Category buttons — 2-col grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: currentCat ? 8 : 0 }}>
-                {Object.entries(WREC_CHIP).map(([cat, chip]) => {
-                  const isActive = cat === currentCat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => isActive ? assignAndClose(null) : assignAndClose(cat)}
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: 10,
-                        border: isActive ? `1px solid ${chip.border}` : "1px solid rgba(255,255,255,0.08)",
-                        background: isActive ? chip.bg : "rgba(255,255,255,0.04)",
-                        color: isActive ? chip.color : "var(--text)",
-                        fontFamily: "'Bebas Neue', sans-serif",
-                        fontSize: 13, letterSpacing: 2,
-                        cursor: "pointer",
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                      }}
-                    >
-                      <span>{chip.label}</span>
-                      {isActive && <span style={{ fontSize: 11, color: chip.color }}>✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Remove tag — only shown when tagged */}
-              {currentCat && (
-                <button
-                  onClick={() => assignAndClose(null)}
-                  style={{
-                    width: "100%", padding: "10px 14px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,80,80,0.2)",
-                    background: "transparent",
-                    color: "rgba(255,80,80,0.6)",
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: 12, letterSpacing: 2,
-                    cursor: "pointer",
-                  }}
-                >
-                  REMOVE TAG
-                </button>
-              )}
+              <WrecCategoryButtons
+                currentCat={currentCat}
+                onAssign={assignAndClose}
+              />
             </div>
           </>
         );

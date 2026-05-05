@@ -1,4 +1,4 @@
-import { WREC_CATEGORIES } from "../constants/wrec.js";
+import WrecCategoryButtons from "./WrecCategoryButtons.jsx";
 
 export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
   const oracleId = card.oracle_id ?? card.id;
@@ -44,56 +44,10 @@ export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
           )}
         </div>
 
-        {/* Category buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {WREC_CATEGORIES.map(cat => {
-            const isActive = cat === currentCat;
-            return (
-              <button
-                key={cat}
-                onClick={() => onAssign(oracleId, cat)}
-                style={{
-                  width: "100%", padding: "11px 14px",
-                  borderRadius: 10,
-                  border: isActive
-                    ? "1px solid var(--primary)"
-                    : "1px solid rgba(255,255,255,0.08)",
-                  background: isActive
-                    ? "rgba(91,143,255,0.15)"
-                    : "rgba(255,255,255,0.04)",
-                  color: isActive ? "var(--primary)" : "var(--text)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 13, letterSpacing: 2,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                }}
-              >
-                <span>{cat}</span>
-                {isActive && <span style={{ fontSize: 12 }}>✓</span>}
-              </button>
-            );
-          })}
-
-          {currentCat && (
-            <button
-              onClick={() => onAssign(oracleId, null)}
-              style={{
-                width: "100%", padding: "10px 14px",
-                marginTop: 4,
-                borderRadius: 10,
-                border: "1px solid rgba(255,80,80,0.2)",
-                background: "transparent",
-                color: "rgba(255,80,80,0.6)",
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 12, letterSpacing: 2,
-                cursor: "pointer",
-              }}
-            >
-              REMOVE TAG
-            </button>
-          )}
-        </div>
+        <WrecCategoryButtons
+          currentCat={currentCat}
+          onAssign={cat => onAssign(oracleId, cat)}
+        />
       </div>
     </>
   );

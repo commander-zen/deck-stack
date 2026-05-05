@@ -1,3 +1,12 @@
+export const WREC_CHIP = {
+  "Ramp":            { label: "RAMP",     color: "#f59e0b", bg: "rgba(245,158,11,0.12)",  border: "rgba(245,158,11,0.35)" },
+  "Card Advantage":  { label: "CARD ADV", color: "#5b8fff", bg: "rgba(91,143,255,0.12)",  border: "rgba(91,143,255,0.35)" },
+  "Disruption":      { label: "DISRUPT",  color: "#ff4d6d", bg: "rgba(255,77,109,0.12)",  border: "rgba(255,77,109,0.35)" },
+  "Mass Disruption": { label: "MASS DIS", color: "#f97316", bg: "rgba(249,115,22,0.12)",  border: "rgba(249,115,22,0.35)" },
+  "Mana Base":       { label: "MANA",     color: "#34d399", bg: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.35)" },
+  "Plan":            { label: "PLAN",     color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.35)" },
+};
+
 export const WREC_TARGETS = {
   Ramp: 10,
   "Card Advantage": 12,
