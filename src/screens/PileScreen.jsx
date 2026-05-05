@@ -315,9 +315,7 @@ export default function PileScreen({
       ? (card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "")
       : "";
     const rowOracleId = card.oracle_id ?? card.id;
-    const wrecCats    = !stackable
-      ? getWrecCategories(rowOracleId).filter(c => c !== "Mana Base")
-      : [];
+    const wrecCats    = !stackable ? getWrecCategories(rowOracleId) : [];
     const isGC        = !isCommander && gameChangerIds.has(rowOracleId ?? "");
 
     return (
