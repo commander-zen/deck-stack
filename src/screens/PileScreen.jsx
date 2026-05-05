@@ -141,7 +141,8 @@ export default function PileScreen({
   const [drag, setDrag] = useState(null);
 
   const { gameChangerIds } = useGameChangers();
-  const hasGameChanger = pile.some(c => gameChangerIds.has(c.oracle_id ?? ""));
+  const gcCount  = pile.filter(c => gameChangerIds.has(c.oracle_id ?? "")).length;
+  const bracket  = gcCount === 0 ? 2 : gcCount <= 3 ? 3 : 4;
 
   const scrollPos = useRef({ deck: 0, maybe: 0 });
   useEffect(() => {
@@ -721,26 +722,34 @@ export default function PileScreen({
           </span>
 
           {/* Bracket badge — deck tab only */}
-          {activeTab === "deck" && pile.length > 0 && (
-            <span
-              title={hasGameChanger ? "Contains Game Changer cards" : "Full bracket detection coming soon"}
-              style={{
-                flexShrink: 0,
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9, letterSpacing: 0.5,
-                padding: "2px 6px", borderRadius: 4,
-                border: hasGameChanger
-                  ? "1px solid rgba(239,68,68,0.45)"
-                  : "1px solid rgba(255,255,255,0.1)",
-                background: hasGameChanger
-                  ? "rgba(239,68,68,0.12)"
-                  : "rgba(255,255,255,0.04)",
-                color: hasGameChanger ? "#ef4444" : "var(--muted)",
-              }}
-            >
-              {hasGameChanger ? "BRACKET 4" : "BRACKET 2–3"}
-            </span>
-          )}
+          {activeTab === "deck" && pile.length > 0 && (() => {
+            const bracketColor =
+              bracket === 4 ? { color: "#ef4444", border: "rgba(239,68,68,0.45)",  bg: "rgba(239,68,68,0.10)"  } :
+              bracket === 3 ? { color: "#f59e0b", border: "rgba(245,158,11,0.45)", bg: "rgba(245,158,11,0.10)" } :
+                              { color: "var(--muted)", border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.04)" };
+            return (
+              <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
+                <span style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 9, letterSpacing: 0.5,
+                  padding: "2px 6px", borderRadius: 4,
+                  border: `1px solid ${bracketColor.border}`,
+                  background: bracketColor.bg,
+                  color: bracketColor.color,
+                  whiteSpace: "nowrap",
+                }}>
+                  BRACKET {bracket}
+                </span>
+                <span style={{
+                  fontSize: 8, color: "var(--muted)",
+                  fontFamily: "'DM Sans', sans-serif",
+                  whiteSpace: "nowrap",
+                }}>
+                  Estimated · excl. combos
+                </span>
+              </div>
+            );
+          })()}
 
           {/* List/Grid toggle */}
           <button
