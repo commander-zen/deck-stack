@@ -137,8 +137,6 @@ export default function PileScreen({
   const [cmdSearchOpen,  setCmdSearchOpen]  = useState(false);
   const [detailCard,     setDetailCard]     = useState(null);
 
-  // Drag-to-reorder (list view, deck tab only)
-  const [drag, setDrag] = useState(null);
 
   const { gameChangerIds } = useGameChangers();
   const gcCount  = pile.filter(c => gameChangerIds.has(c.oracle_id ?? "")).length;
@@ -268,34 +266,6 @@ export default function PileScreen({
     setDetailCard(card);
   }
 
-  // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
-
-  function onDragHandleDown(e, srcIdx) {
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDrag({ srcIdx, targetIdx: srcIdx, startY: e.clientY, currentY: e.clientY });
-  }
-
-  function onDragMove(e) {
-    if (!drag) return;
-    const deltaY = e.clientY - drag.startY;
-    const ROW_H  = 50;
-    const targetIdx = Math.max(0, Math.min(displayPile.length - 1, drag.srcIdx + Math.round(deltaY / ROW_H)));
-    setDrag(d => ({ ...d, currentY: e.clientY, targetIdx }));
-  }
-
-  function onDragEnd() {
-    if (!drag) return;
-    if (drag.targetIdx !== drag.srcIdx) {
-      const next = [...displayPile];
-      const [moved] = next.splice(drag.srcIdx, 1);
-      next.splice(drag.targetIdx, 0, moved);
-      onPileChange(next);
-      onSave?.(next, maybeboard);
-    }
-    setDrag(null);
-  }
-
   // ── Review handlers ────────────────────────────────────────────────────────
 
   function handleReviewKeep(card) {
@@ -338,75 +308,53 @@ export default function PileScreen({
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
-  function renderListRow(card, isCommander, onRemove, rowIdx, isDraggable, onTap) {
-    const stackable    = isStackable(card);
-    // Mana cost: strip Scryfall brace notation {8}{R} → "8 R". Plain strings unchanged.
-    const mana         = !stackable
+  function renderListRow(card, isCommander, onRemove) {
+    const basic       = isBasicLand(card);
+    const stackable   = isStackable(card);
+    const mana        = !stackable
       ? (card.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "")
       : "";
-    const rowOracleId  = card.oracle_id ?? card.id;
-    const wrecCats     = !stackable ? getWrecCategories(rowOracleId) : [];
-    const isGC         = !isCommander && gameChangerIds.has(rowOracleId ?? "");
-    const isDragging   = drag?.srcIdx === rowIdx;
-    const isDropTarget = drag && drag.targetIdx === rowIdx && drag.srcIdx !== rowIdx;
+    const rowOracleId = card.oracle_id ?? card.id;
+    const wrecCats    = !stackable
+      ? getWrecCategories(rowOracleId).filter(c => c !== "Mana Base")
+      : [];
+    const isGC        = !isCommander && gameChangerIds.has(rowOracleId ?? "");
 
     return (
       <div
         key={card.instanceId}
-        data-row-idx={rowIdx}
-        onPointerMove={drag ? onDragMove : undefined}
-        onPointerUp={drag ? onDragEnd : undefined}
-        onPointerCancel={drag ? onDragEnd : undefined}
         style={{
           display: "flex", alignItems: "center",
-          padding: "9px 14px",
+          padding: "8px 14px",
           paddingLeft: isGC ? 11 : 14,
           borderLeft: isGC ? "3px solid var(--gc-gold)" : "none",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
-          borderTop: isDropTarget && drag.targetIdx < drag.srcIdx ? "2px solid var(--primary)" : "none",
-          borderBottomColor: isDropTarget && drag.targetIdx > drag.srcIdx ? "var(--primary)" : "rgba(255,255,255,0.05)",
-          background: isDragging ? "rgba(91,143,255,0.08)" : isGC ? "rgba(201,168,76,0.05)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
-          opacity: isDragging ? 0.5 : 1,
+          background: isGC ? "rgba(201,168,76,0.05)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
           cursor: stackable ? "default" : "pointer",
         }}
-        onClick={() => !drag && !stackable && handleCardClick(card.oracle_id ?? card.id, card)}
+        onClick={() => !stackable && handleCardClick(card.oracle_id ?? card.id, card)}
       >
-        {isDraggable && (
-          <div
-            onPointerDown={e => onDragHandleDown(e, rowIdx)}
-            style={{
-              marginRight: 8, flexShrink: 0,
-              color: "rgba(255,255,255,0.2)", cursor: "grab",
-              fontSize: 14, lineHeight: 1, padding: "4px 2px",
-              touchAction: "none", userSelect: "none",
-            }}
-          >⠿</div>
-        )}
         {isCommander && (
           <span style={{ fontSize: 12, marginRight: 6, flexShrink: 0 }}>👑</span>
         )}
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
+        {/* Name + GC icon */}
+        <div style={{
+          flex: 1, minWidth: 0,
+          display: "flex", alignItems: "center", gap: 4,
+        }}>
+          <span style={{
             fontSize: 14, color: isCommander ? "gold" : "var(--text)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             fontWeight: isCommander ? 500 : 400,
-            display: "flex", alignItems: "center", gap: 4,
           }}>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {card.name}
-            </span>
-            {isGC && (
-              <span style={{ color: "var(--gc-gold)", fontSize: 11, flexShrink: 0 }}>⚡</span>
-            )}
-          </div>
-          {card.type_line && (
-            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1 }}>
-              {card.type_line}
-            </div>
+            {card.name}
+          </span>
+          {isGC && (
+            <span style={{ color: "var(--gc-gold)", fontSize: 11, flexShrink: 0 }}>⚡</span>
           )}
           {!stackable && rowOracleId && !isCommander && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginTop: 4 }}>
+            <>
               {wrecCats.length === 0 ? (
                 <span style={{
                   display: "inline-flex", alignItems: "center",
@@ -415,6 +363,7 @@ export default function PileScreen({
                   background: "transparent", color: "var(--muted)",
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: 9, letterSpacing: 0.5, lineHeight: "14px",
+                  flexShrink: 0,
                 }}>UNTAG</span>
               ) : wrecCats.map(cat => {
                 const chip = WREC_CHIP[cat];
@@ -426,20 +375,18 @@ export default function PileScreen({
                     background: chip.bg, color: chip.color,
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 9, letterSpacing: 0.5, lineHeight: "14px",
+                    flexShrink: 0,
                   }}>{chip.label}</span>
                 ) : null;
               })}
-            </div>
+            </>
           )}
         </div>
 
-        {/* Stackable: qty controls instead of mana cost */}
-        {stackable ? (
+        {/* Qty controls — basic lands only */}
+        {basic && (
           <div
-            style={{
-              display: "flex", alignItems: "center", gap: 0,
-              flexShrink: 0, marginLeft: 8, marginRight: 4,
-            }}
+            style={{ display: "flex", alignItems: "center", flexShrink: 0, marginLeft: 8, marginRight: 4 }}
             onClick={e => e.stopPropagation()}
           >
             <button
@@ -472,16 +419,17 @@ export default function PileScreen({
               }}
             >+</button>
           </div>
-        ) : (
-          mana && (
-            <span style={{
-              fontSize: 11, color: "rgba(255,255,255,0.4)",
-              flexShrink: 0, marginLeft: 8, marginRight: 8,
-              fontFamily: "'IBM Plex Mono', monospace",
-            }}>
-              {mana}
-            </span>
-          )
+        )}
+
+        {/* Mana cost — non-stackable only */}
+        {!stackable && mana && (
+          <span style={{
+            fontSize: 11, color: "rgba(255,255,255,0.4)",
+            flexShrink: 0, marginLeft: 8, marginRight: 8,
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}>
+            {mana}
+          </span>
         )}
 
         <button
@@ -831,14 +779,8 @@ export default function PileScreen({
         ) : viewMode === "list" ? (
           /* List view */
           activeTab === "deck"
-            ? displayPile.map((card, i) => renderListRow(
-                card, commander === card.instanceId, handleRemove, i, true,
-                (c) => enterReviewAt(c, "deck")
-              ))
-            : displayMaybeboard.map((card, i) => renderListRow(
-                card, false, (id, e) => handleRemoveMaybe(id, e), i, false,
-                (c) => enterReviewAt(c, "maybe")
-              ))
+            ? displayPile.map(card => renderListRow(card, commander === card.instanceId, handleRemove))
+            : displayMaybeboard.map(card => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e)))
         ) : (
           /* Grid view */
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

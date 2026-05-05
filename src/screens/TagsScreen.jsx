@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { WREC_CATEGORIES, WREC_TARGETS, calcWrecScore } from "../constants/wrec.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 
@@ -42,6 +43,7 @@ export default function TagsScreen({ pile, wrecTags, autoTagged }) {
   const score      = calcWrecScore(wrecTags, pile);
   const color      = scoreColor(score);
   const untagged   = getUntagged(pile, wrecTags);
+  const [collapsed, setCollapsed] = useState({});
 
   function renderProgressBar(count, target) {
     const ratio      = Math.min(count / target, 1);
@@ -123,10 +125,11 @@ export default function TagsScreen({ pile, wrecTags, autoTagged }) {
   }
 
   function renderBucket(cat) {
-    const target = WREC_TARGETS[cat];
-    const ids    = wrecTags[cat] ?? [];
-    const count  = ids.length;
-    const cards  = ids.map(id => oracleMap.get(id)).filter(Boolean);
+    const target    = WREC_TARGETS[cat];
+    const ids       = wrecTags[cat] ?? [];
+    const count     = ids.length;
+    const cards     = ids.map(id => oracleMap.get(id)).filter(Boolean);
+    const isCollapsed = collapsed[cat] ?? false;
 
     return (
       <div key={cat} style={{
@@ -136,15 +139,21 @@ export default function TagsScreen({ pile, wrecTags, autoTagged }) {
         marginBottom: 8,
         overflow: "hidden",
       }}>
-        {/* Bucket header */}
-        <div style={{ padding: "10px 14px 8px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        {/* Bucket header — tappable */}
+        <div
+          onClick={() => setCollapsed(prev => ({ ...prev, [cat]: !prev[cat] }))}
+          style={{ padding: "10px 14px 8px", cursor: "pointer", userSelect: "none" }}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
             <span style={{
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 13, letterSpacing: 2, color: "var(--text)",
               flex: 1,
             }}>
               {cat}
+            </span>
+            <span style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1 }}>
+              {isCollapsed ? "▸" : "▾"}
             </span>
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace",
@@ -157,15 +166,17 @@ export default function TagsScreen({ pile, wrecTags, autoTagged }) {
           {renderProgressBar(count, target)}
         </div>
 
-        {/* Card list */}
-        {cards.length > 0 ? (
-          <div style={{ paddingBottom: 4 }}>
-            {cards.map(card => renderCardRow(card, false))}
-          </div>
-        ) : (
-          <div style={{ padding: "8px 14px 10px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
-            No cards — double-tap any card to assign
-          </div>
+        {/* Card list — hidden when collapsed */}
+        {!isCollapsed && (
+          cards.length > 0 ? (
+            <div style={{ paddingBottom: 4 }}>
+              {cards.map(card => renderCardRow(card, false))}
+            </div>
+          ) : (
+            <div style={{ padding: "8px 14px 10px", fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+              No cards — double-tap any card to assign
+            </div>
+          )
         )}
       </div>
     );
