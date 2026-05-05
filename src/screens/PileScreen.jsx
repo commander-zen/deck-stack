@@ -600,24 +600,20 @@ export default function PileScreen({
                   {dc.name}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {dc.type_line && (
-                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{dc.type_line}</span>
-                  )}
+                  <span style={{ fontSize: 11, color: "var(--muted)" }}>{dc.type_line ?? ""}</span>
                   {mana && (
                     <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{mana}</span>
                   )}
                 </div>
-                {dc.oracle_text && (
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 8, lineHeight: 1.5 }}>
-                    {dc.oracle_text.split("\n").map((line, i, arr) => (
-                      <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-                    ))}
-                  </div>
-                )}
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 8, lineHeight: 1.5 }}>
+                  {(dc.oracle_text ?? "").split("\n").map((line, i, arr) => (
+                    <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                  ))}
+                </div>
               </div>
 
-              {/* Category buttons — 2-col grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: currentCat ? 8 : 0 }}>
+              {/* Category buttons — single-column full-text list */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: currentCat ? 8 : 0 }}>
                 {Object.entries(WREC_CHIP).map(([cat, chip]) => {
                   const isActive = cat === currentCat;
                   return (
@@ -625,7 +621,7 @@ export default function PileScreen({
                       key={cat}
                       onClick={() => isActive ? assignAndClose(null) : assignAndClose(cat)}
                       style={{
-                        padding: "10px 12px",
+                        width: "100%", padding: "11px 14px",
                         borderRadius: 10,
                         border: isActive ? `1px solid ${chip.border}` : "1px solid rgba(255,255,255,0.08)",
                         background: isActive ? chip.bg : "rgba(255,255,255,0.04)",
@@ -633,11 +629,12 @@ export default function PileScreen({
                         fontFamily: "'Bebas Neue', sans-serif",
                         fontSize: 13, letterSpacing: 2,
                         cursor: "pointer",
+                        textAlign: "left",
                         display: "flex", alignItems: "center", justifyContent: "space-between",
                       }}
                     >
-                      <span>{chip.label}</span>
-                      {isActive && <span style={{ fontSize: 11, color: chip.color }}>✓</span>}
+                      <span>{cat}</span>
+                      {isActive && <span style={{ fontSize: 12 }}>✓</span>}
                     </button>
                   );
                 })}
