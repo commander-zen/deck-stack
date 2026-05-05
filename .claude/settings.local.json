@@ -10,7 +10,9 @@
       "Bash(node -e ' *)",
       "Bash(node -e \"require\\('sharp'\\)\")",
       "Bash(node -e \"require\\('canvas'\\)\")",
-      "Bash(node -e \"require\\('./node_modules/@supabase/supabase-js/dist/main/index.js'\\)\")"
+      "Bash(node -e \"require\\('./node_modules/@supabase/supabase-js/dist/main/index.js'\\)\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\beine\\\\Desktop\" -Directory -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

@@ -128,6 +128,7 @@ export default function PileScreen({
   activeDeckId = null,
   onSave,
   onDoubleTag,
+  onAssignTag,
   wrecTags = {},
 }) {
   const [deckViewMode,   setDeckViewMode]   = useState("list"); // list view by default
@@ -139,6 +140,7 @@ export default function PileScreen({
   const [copied,         setCopied]         = useState(false);
   const [cmdModalOpen,   setCmdModalOpen]   = useState(false);
   const [cmdSearchOpen,  setCmdSearchOpen]  = useState(false);
+  const [detailCard,     setDetailCard]     = useState(null);
 
   // Drag-to-reorder (list view, deck tab only)
   const [drag, setDrag] = useState(null);
@@ -265,7 +267,7 @@ export default function PileScreen({
 
   function handleCardClick(oracleId, card) {
     if (lpFiredRef.current) { lpFiredRef.current = false; return; }
-    enterReviewAt(card, activeTab);
+    setDetailCard(card);
   }
 
   // ── Drag-to-reorder (operates on displayPile indices) ─────────────────────
@@ -561,6 +563,109 @@ export default function PileScreen({
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--bg)", color: "var(--text)", fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* ── Card detail sheet ── */}
+      {detailCard && (() => {
+        const dc         = detailCard;
+        const oracleId   = dc.oracle_id ?? dc.id;
+        const mana       = dc.mana_cost?.replace(/\{([^}]+)\}/g, "$1 ").trim() ?? "";
+        const currentCat = getWrecCategory(oracleId);
+
+        function assignAndClose(cat) {
+          onAssignTag?.(oracleId, cat);
+          setDetailCard(null);
+        }
+
+        return (
+          <>
+            <div
+              onClick={() => setDetailCard(null)}
+              style={{ position: "fixed", inset: 0, zIndex: 398, background: "rgba(0,0,0,0.55)" }}
+            />
+            <div style={{
+              position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400,
+              maxWidth: 600, margin: "0 auto",
+              background: "var(--panel)",
+              borderRadius: "16px 16px 0 0",
+              padding: "0 16px calc(max(20px, env(safe-area-inset-bottom)) + 6px)",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              {/* Drag handle */}
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)", margin: "14px auto 16px" }} />
+
+              {/* Card identity */}
+              <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 2 }}>
+                  {dc.name}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {dc.type_line && (
+                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{dc.type_line}</span>
+                  )}
+                  {mana && (
+                    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "'IBM Plex Mono', monospace" }}>{mana}</span>
+                  )}
+                </div>
+                {dc.oracle_text && (
+                  <div style={{
+                    fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 8,
+                    lineHeight: 1.5, maxHeight: 80, overflow: "hidden",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+                  }}>
+                    {dc.oracle_text}
+                  </div>
+                )}
+              </div>
+
+              {/* Category buttons — 2-col grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: currentCat ? 8 : 0 }}>
+                {Object.entries(WREC_CHIP).map(([cat, chip]) => {
+                  const isActive = cat === currentCat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => isActive ? assignAndClose(null) : assignAndClose(cat)}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: isActive ? `1px solid ${chip.border}` : "1px solid rgba(255,255,255,0.08)",
+                        background: isActive ? chip.bg : "rgba(255,255,255,0.04)",
+                        color: isActive ? chip.color : "var(--text)",
+                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontSize: 13, letterSpacing: 2,
+                        cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                      }}
+                    >
+                      <span>{chip.label}</span>
+                      {isActive && <span style={{ fontSize: 11, color: chip.color }}>✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Remove tag — only shown when tagged */}
+              {currentCat && (
+                <button
+                  onClick={() => assignAndClose(null)}
+                  style={{
+                    width: "100%", padding: "10px 14px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,80,80,0.2)",
+                    background: "transparent",
+                    color: "rgba(255,80,80,0.6)",
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: 12, letterSpacing: 2,
+                    cursor: "pointer",
+                  }}
+                >
+                  REMOVE TAG
+                </button>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {/* PileSwipeScreen overlay */}
       {reviewMode && (
