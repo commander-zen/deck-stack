@@ -589,6 +589,7 @@ export default function PileScreen({
               borderRadius: "16px 16px 0 0",
               padding: "0 16px calc(max(20px, env(safe-area-inset-bottom)) + 6px)",
               fontFamily: "'DM Sans', sans-serif",
+              maxHeight: "85dvh", overflowY: "auto",
             }}>
               {/* Drag handle */}
               <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)", margin: "14px auto 16px" }} />
@@ -607,12 +608,10 @@ export default function PileScreen({
                   )}
                 </div>
                 {dc.oracle_text && (
-                  <div style={{
-                    fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 8,
-                    lineHeight: 1.5, maxHeight: 80, overflow: "hidden",
-                    WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
-                  }}>
-                    {dc.oracle_text}
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 8, lineHeight: 1.5 }}>
+                    {dc.oracle_text.split("\n").map((line, i, arr) => (
+                      <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                    ))}
                   </div>
                 )}
               </div>
