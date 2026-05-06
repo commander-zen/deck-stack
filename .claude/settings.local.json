@@ -12,7 +12,13 @@
       "Bash(node -e \"require\\('canvas'\\)\")",
       "Bash(node -e \"require\\('./node_modules/@supabase/supabase-js/dist/main/index.js'\\)\")",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\beine\\\\Desktop\" -Directory -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\beine\\\\OneDrive\\\\Desktop\\\\old docs\\\\\" -Directory | Select-Object Name)",
+      "Bash(ls -la \"c:/Users/beine/OneDrive/Desktop/old docs/\" | grep -E \"^d\")",
+      "Read(//c/Users/beine/OneDrive/Desktop/old docs/**)",
+      "Bash(grep -E \"\\\\.\\(js|jsx\\)$\")",
+      "Bash(pkill -f \"vite --port 5174\")",
+      "Bash(pkill -f \"vite --port 5175\")"
     ]
   }
 }
