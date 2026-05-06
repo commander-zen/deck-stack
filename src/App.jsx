@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { initSession } from "./lib/supabase.js";
 import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
@@ -1008,6 +1010,10 @@ export default function App() {
         onClose={() => setAuthSheetOpen(false)}
         user={authUser}
       />
+
+      <div style={{ position: "absolute", width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }}>
+        <Turnstile siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} onSuccess={initSession} />
+      </div>
     </>
   );
 }
