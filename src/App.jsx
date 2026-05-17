@@ -3,7 +3,6 @@ import { initAuth } from "./lib/supabase.js";
 import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
-import TagsScreen    from "./screens/TagsScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
 import WrecTagPicker from "./components/WrecTagPicker.jsx";
 import { autoDetectCategory } from "./constants/wrec.js";
@@ -58,7 +57,7 @@ export default function App() {
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   const [swipeOrder,    setSwipeOrder]    = useState("name");
   const [swipeDir,      setSwipeDir]      = useState("desc");
-  // screen: "search" | "swipe" | "pile" | "maybe" | "tags" | "brews"
+  // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
@@ -928,14 +927,6 @@ export default function App() {
           onDoubleTag={handleDoubleTag}
           onAssignTag={handleAssignTag}
           wrecTags={wrecTags}
-        />
-      )}
-
-      {screen === "tags" && (
-        <TagsScreen
-          pile={pile}
-          wrecTags={wrecTags}
-          autoTagged={autoTagged}
         />
       )}
 

@@ -24,7 +24,11 @@
       "Bash(grep -n -E \"#[0-9a-fA-F]{6,8}\" src/components/BalanceVerdict.jsx src/components/PlayerCard.jsx src/lib/ui.jsx src/pages/HostPage.jsx src/pages/JoinPage.jsx src/pages/LandingPage.jsx)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git -C \"c:\\\\Users\\\\beine\\\\OneDrive\\\\Desktop\\\\old docs\\\\deck-swipe\" status)",
+      "Bash(git -C \"c:\\\\Users\\\\beine\\\\OneDrive\\\\Desktop\\\\old docs\\\\deck-swipe\" diff)",
+      "Bash(git -C \"c:\\\\Users\\\\beine\\\\OneDrive\\\\Desktop\\\\old docs\\\\deck-swipe\" log --oneline -5)",
+      "Bash(git commit *)"
     ]
   }
 }
