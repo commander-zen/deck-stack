@@ -62,8 +62,8 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100 }}>
       <div style={{
         maxWidth: 600, margin: "0 auto",
-        background: "rgba(13,13,15,0.97)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(0,0,0,0.97)",
+        borderTop: "0.5px solid rgba(255,255,255,0.08)",
         backdropFilter: "blur(12px)",
         display: "flex",
         paddingBottom: "env(safe-area-inset-bottom)",

@@ -1,15 +1,16 @@
 :root {
-  --bg:        #0d0d0f;
-  --panel:     #16161a;
-  --panel2:    #1e1e24;
-  --primary:   #5b8fff;
+  --bg:        #000000;
+  --panel:     #000000;
+  --panel2:    #0d0d0f;
+  --primary:   #C9A84C;
   --secondary: #a78bfa;
   --success:   #34d399;
   --danger:    #ff4d6d;
-  --muted:     #555566;
+  --muted:     #888899;
   --active:    #f59e0b;
-  --text:      #e8e8f0;
+  --text:      #ffffff;
   --gc-gold:   #C9A84C;
+  --border:    rgba(255,255,255,0.08);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -25,7 +26,7 @@ html, body, #root {
 }
 
 body {
-  background: var(--bg);
+  background: #000000;
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   -webkit-font-smoothing: antialiased;

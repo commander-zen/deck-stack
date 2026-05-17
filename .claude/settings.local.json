@@ -21,7 +21,10 @@
       "Bash(pkill -f \"vite --port 5175\")",
       "Bash(grep -rn --include=\"*.jsx\" --include=\"*.js\" --include=\"*.css\" -E \"\\(#[0-9a-fA-F]{3,8}|rgba?\\\\\\([^\\)]+\\\\\\)|hsl[a]?\\\\\\([^\\)]+\\\\\\)\\)\" src/)",
       "Bash(grep -n --include=\"*.jsx\" -E \"#[0-9a-fA-F]{3,8}\" src/components/BalanceVerdict.jsx src/components/PlayerCard.jsx src/lib/ui.jsx src/pages/HostPage.jsx src/pages/JoinPage.jsx src/pages/LandingPage.jsx)",
-      "Bash(grep -n -E \"#[0-9a-fA-F]{6,8}\" src/components/BalanceVerdict.jsx src/components/PlayerCard.jsx src/lib/ui.jsx src/pages/HostPage.jsx src/pages/JoinPage.jsx src/pages/LandingPage.jsx)"
+      "Bash(grep -n -E \"#[0-9a-fA-F]{6,8}\" src/components/BalanceVerdict.jsx src/components/PlayerCard.jsx src/lib/ui.jsx src/pages/HostPage.jsx src/pages/JoinPage.jsx src/pages/LandingPage.jsx)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

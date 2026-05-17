@@ -5,7 +5,7 @@ import CommanderModal from "../components/CommanderModal.jsx";
 import CommanderSearchSheet from "../components/CommanderSearchSheet.jsx";
 import WrecCategoryButtons from "../components/WrecCategoryButtons.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
-import { WREC_CHIP } from "../constants/wrec.js";
+import { WREC_CHIP, WREC_CATEGORIES, WREC_TARGETS } from "../constants/wrec.js";
 import { useGameChangers } from "../hooks/useGameChangers.js";
 
 // ── Card-type helpers ─────────────────────────────────────────────────────────
@@ -176,6 +176,21 @@ export default function PileScreen({
   const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${FAB_CLEARANCE}px + 40px)`;
   const fabBottom  = `calc(max(10px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 8px)`;
 
+  // WREC category counts for the score bar
+  const wrecBar = WREC_CATEGORIES.map(cat => {
+    let count;
+    if (cat === "Mana Base") {
+      const basicIds = new Set(
+        pile.filter(c => c.type_line?.toLowerCase().includes("basic")).map(c => c.oracle_id).filter(Boolean)
+      );
+      count = new Set([...(wrecTags["Mana Base"] ?? []), ...basicIds]).size;
+    } else {
+      count = (wrecTags[cat] ?? []).length;
+    }
+    const abbrevs = { Ramp: "R", "Card Advantage": "CA", Disruption: "D", "Mass Disruption": "MD", "Mana Base": "MB", Plan: "P" };
+    return { cat, abbrev: abbrevs[cat] ?? cat[0], count, target: WREC_TARGETS[cat] };
+  });
+
   // ── Review entry ───────────────────────────────────────────────────────────
 
   function enterReview(mode) {
@@ -308,7 +323,7 @@ export default function PileScreen({
 
   // ── Renders ────────────────────────────────────────────────────────────────
 
-  function renderListRow(card, isCommander, onRemove) {
+  function renderListRow(card, isCommander, onRemove, dimName = false) {
     const basic       = isBasicLand(card);
     const stackable   = isStackable(card);
     const mana        = !stackable
@@ -326,7 +341,7 @@ export default function PileScreen({
           padding: "8px 14px",
           paddingLeft: isGC ? 11 : 14,
           borderLeft: isGC ? "3px solid var(--gc-gold)" : "none",
-          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          borderBottom: "0.5px solid rgba(255,255,255,0.06)",
           background: isGC ? "rgba(201,168,76,0.05)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
           cursor: stackable ? "default" : "pointer",
         }}
@@ -342,7 +357,8 @@ export default function PileScreen({
           display: "flex", alignItems: "center", gap: 4,
         }}>
           <span style={{
-            fontSize: 14, color: isCommander ? "gold" : "var(--text)",
+            fontSize: 14,
+            color: isCommander ? "gold" : dimName ? "rgba(255,255,255,0.75)" : "var(--text)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             fontWeight: isCommander ? 500 : 400,
           }}>
@@ -445,7 +461,7 @@ export default function PileScreen({
   }
 
   function renderGridCard(card, isCommander, onRemove) {
-    const imgUrl = getCardImage(card, "normal");
+    const imgUrl = getCardImage(card, "art_crop");
     const isGC   = !isCommander && gameChangerIds.has(card.oracle_id ?? "");
     return (
       <div
@@ -455,9 +471,9 @@ export default function PileScreen({
         onPointerCancel={onCardPointerUp}
         onClick={() => handleCardClick(card.oracle_id ?? card.id, card)}
         style={{
-          position: "relative", aspectRatio: "63/88",
-          borderRadius: 10, overflow: "hidden", cursor: "pointer",
-          background: "var(--panel)",
+          position: "relative", aspectRatio: "4/3",
+          borderRadius: 12, overflow: "hidden", cursor: "pointer",
+          background: "#0d0d0f",
           outline: isCommander ? "2px solid gold" : isGC ? "2px solid var(--gc-gold)" : "none",
           outlineOffset: (isCommander || isGC) ? 2 : 0,
         }}
@@ -541,7 +557,7 @@ export default function PileScreen({
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--bg)", color: "var(--text)", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: "100dvh", background: "#000", color: "var(--text)", fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* ── Card detail sheet ── */}
       {detailCard && (() => {
@@ -612,9 +628,9 @@ export default function PileScreen({
       <div style={{
         position: "sticky", top: "env(safe-area-inset-top)", zIndex: 100,
         maxWidth: 600, margin: "0 auto", width: "100%",
-        background: "rgba(13,13,15,0.96)",
+        background: "rgba(0,0,0,0.97)",
         backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "0.5px solid rgba(255,255,255,0.06)",
       }}>
         <div style={{
           display: "flex", alignItems: "center",
@@ -732,6 +748,29 @@ export default function PileScreen({
           )}
         </div>
 
+        {/* WREC score bar — deck tab, cards present */}
+        {activeTab === "deck" && pile.length > 0 && (
+          <div style={{
+            display: "flex", justifyContent: "space-around",
+            padding: "8px 20px 10px",
+            borderTop: "0.5px solid rgba(255,255,255,0.06)",
+          }}>
+            {wrecBar.map(({ cat, abbrev, count, target }) => (
+              <div key={cat} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                <span style={{
+                  fontSize: 10, color: "rgba(255,255,255,0.3)",
+                  fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}>{abbrev}</span>
+                <span style={{
+                  fontSize: 13, color: "#C9A84C",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}>{count}<span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>/{target}</span></span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* SET COMMANDER banner — shown when pile has cards but no commander is assigned */}
         {!hasCommander && pile.length > 0 && activeTab === "deck" && onCommanderCardChange && (
           <button
@@ -778,7 +817,7 @@ export default function PileScreen({
           /* List view */
           activeTab === "deck"
             ? displayPile.map(card => renderListRow(card, commander === card.instanceId, handleRemove))
-            : displayMaybeboard.map(card => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e)))
+            : displayMaybeboard.map(card => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), true))
         ) : (
           /* Grid view */
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

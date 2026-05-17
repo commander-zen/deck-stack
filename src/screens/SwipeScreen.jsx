@@ -7,27 +7,49 @@ const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any n
 const isStackable  = c => isBasicLand(c) || isAnyNumber(c);
 
 const SWIPE_THRESHOLD = 60;
-const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
+const TIP_KEY = "deckstack_swipe_tip_seen";
+
 const SORT_OPTIONS = [
   { value: "name",   label: "NAME" },
   { value: "cmc",    label: "CMC" },
   { value: "edhrec", label: "EDHREC" },
 ];
-const TIP_KEY = "deckstack_swipe_tip_seen";
+
+// Mana pip appearance per symbol
+const PIP_MAP = {
+  W: { bg: "#F9FAF4", color: "#1a1a1a", border: null },
+  U: { bg: "#0E68AB", color: "#ffffff", border: null },
+  B: { bg: "#150B00", color: "#C9A84C", border: "#C9A84C" },
+  R: { bg: "#D3202A", color: "#ffffff", border: null },
+  G: { bg: "#00733E", color: "#ffffff", border: null },
+  C: { bg: "#85939A", color: "#ffffff", border: null },
+};
+
+function parseMana(cost) {
+  if (!cost) return [];
+  return [...cost.matchAll(/\{([^}]+)\}/g)].map(m => m[1]);
+}
+
+function ManaPip({ symbol }) {
+  const s = PIP_MAP[symbol];
+  return (
+    <div style={{
+      width: 18, height: 18, borderRadius: "50%",
+      background: s ? s.bg : "rgba(255,255,255,0.15)",
+      border: s?.border ? `1px solid ${s.border}` : "1px solid rgba(255,255,255,0.2)",
+      color: s ? s.color : "#ffffff",
+      fontSize: 9, fontWeight: 600,
+      fontFamily: "'IBM Plex Mono', monospace",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexShrink: 0, lineHeight: 1,
+    }}>
+      {symbol}
+    </div>
+  );
+}
 
 function haptic(pattern = 10) {
   if ("vibrate" in navigator) navigator.vibrate(pattern);
-}
-
-function ColorPip({ color }) {
-  return (
-    <div style={{
-      width: 13, height: 13, borderRadius: "50%",
-      background: COLOR_DOT[color] ?? "#888",
-      border: "1px solid rgba(255,255,255,0.25)",
-      flexShrink: 0,
-    }} />
-  );
 }
 
 export default function SwipeScreen({
@@ -40,8 +62,6 @@ export default function SwipeScreen({
   activeDeckId, onSavePile,
   onDoubleTag,
 }) {
-  // Deduplicate swipe queue: skip oracle_id already seen in the queue or kept in pile.
-  // Stackables (basic lands + any-number cards) are always allowed through.
   const effectiveCards = useMemo(() => {
     const pileIds = new Set(pile.filter(c => !isStackable(c) && c.oracle_id).map(c => c.oracle_id));
     const seen = new Set(pileIds);
@@ -61,13 +81,9 @@ export default function SwipeScreen({
   const [dragging,     setDragging]     = useState(false);
   const [badge,        setBadge]        = useState(null);
   const [animOut,      setAnimOut]      = useState(null);
-  const [faceIdx,      setFaceIdx]      = useState(0);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
-
-  // Onboarding tip
-  const [showTip,    setShowTip]    = useState(false);
-  const [tipDismiss, setTipDismiss] = useState(false);
-  const tipShownRef = useRef(false);
+  const [imgError,     setImgError]     = useState(false);
+  const [showTip,      setShowTip]      = useState(false);
 
   const didMountRef      = useRef(false);
   const dragStartRef     = useRef(null);
@@ -78,22 +94,18 @@ export default function SwipeScreen({
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
 
-  // Preload next 4 card images to eliminate lag between swipes
+  useEffect(() => { setImgError(false); }, [idx]);
+
+  // Preload next 4 art_crop images
   useEffect(() => {
     effectiveCards.slice(idx + 1, idx + 5).forEach(c => {
-      const url = getCardImage(c, "normal");
+      const url = getCardImage(c, "art_crop");
       if (url) { const img = new Image(); img.src = url; }
     });
   }, [idx, effectiveCards]);
 
-  // Reset face to front when card changes
-  useEffect(() => { setFaceIdx(0); }, [idx]);
-
   useEffect(() => {
-    if (!localStorage.getItem(TIP_KEY)) {
-      tipShownRef.current = true;
-      setShowTip(true);
-    }
+    if (!localStorage.getItem(TIP_KEY)) setShowTip(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -101,7 +113,6 @@ export default function SwipeScreen({
     onIndexChange?.(idx);
   }, [idx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = e => {
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
@@ -113,7 +124,6 @@ export default function SwipeScreen({
     return () => window.removeEventListener("keydown", handler);
   });
 
-  // Debounced pile save — only updates an existing brew record, never creates
   useEffect(() => {
     if (!activeDeckId) return;
     clearTimeout(saveTimerRef.current);
@@ -121,28 +131,39 @@ export default function SwipeScreen({
     return () => clearTimeout(saveTimerRef.current);
   }, [pile, activeDeckId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Swipe logic ────────────────────────────────────────────────────────────
+  // ── Actions ─────────────────────────────────────────────────────────────────
 
   function doResolve(keep) {
     if (!card || animOut || done) return;
     setAnimOut(keep ? "right" : "left");
     setBadge(keep ? "keep" : "pass");
-
     haptic(keep ? 12 : 6);
-
     setTimeout(() => {
       if (keep) {
         const alreadyInPile = !isStackable(card) && card.oracle_id &&
           pile.some(c => c.oracle_id === card.oracle_id);
         if (!alreadyInPile) {
           const cardEntry = { ...card, instanceId: crypto.randomUUID() };
-          setHistory(h => [...h, { card: cardEntry, kept: true }]);
+          setHistory(h => [...h, { card: cardEntry, kept: true, maybe: false }]);
           onPileChange(prev => [...prev, cardEntry]);
         }
       } else {
-        // Left swipe on Stack = discard entirely — not saved anywhere
-        setHistory(h => [...h, { card, kept: false }]);
+        setHistory(h => [...h, { card, kept: false, maybe: false }]);
       }
+      setIdx(i => i + 1);
+      setOffset(0); setBadge(null); setAnimOut(null);
+    }, 260);
+  }
+
+  function doMaybe() {
+    if (!card || animOut || done) return;
+    setAnimOut("maybe");
+    setBadge("maybe");
+    haptic(8);
+    setTimeout(() => {
+      const cardEntry = { ...card, instanceId: crypto.randomUUID() };
+      setHistory(h => [...h, { card: cardEntry, kept: false, maybe: true }]);
+      onMaybeboardChange(prev => [...prev, cardEntry]);
       setIdx(i => i + 1);
       setOffset(0); setBadge(null); setAnimOut(null);
     }, 260);
@@ -154,8 +175,9 @@ export default function SwipeScreen({
     setHistory(h => h.slice(0, -1));
     if (last.kept) {
       onPileChange(pile.filter(c => c.instanceId !== last.card.instanceId));
+    } else if (last.maybe) {
+      onMaybeboardChange(prev => prev.filter(c => c.instanceId !== last.card.instanceId));
     }
-    // kept === false: card was discarded, nothing to remove from state
     setIdx(i => Math.max(0, i - 1));
     haptic([4, 20, 4]);
   }
@@ -163,10 +185,9 @@ export default function SwipeScreen({
   function dismissTipForever() {
     localStorage.setItem(TIP_KEY, "1");
     setShowTip(false);
-    setTipDismiss(true);
   }
 
-  // ── Pointer events ─────────────────────────────────────────────────────────
+  // ── Pointer events ───────────────────────────────────────────────────────────
 
   function onPointerDown(e) {
     if (animOut || done) return;
@@ -196,420 +217,366 @@ export default function SwipeScreen({
     else { setOffset(0); setBadge(null); }
   }
 
-  const artUrl   = card ? getCardImage(card, "art_crop") : null;
-  const cmdArt   = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
-  const hasFaces = (card?.card_faces?.length ?? 0) >= 2;
-  const isBattle = (card?.type_line ?? "").toLowerCase().includes("battle");
-  const mainUrl  = card
-    ? (hasFaces
-        ? (card.card_faces[faceIdx]?.image_uris?.normal ?? getCardImage(card, "normal"))
-        : getCardImage(card, "normal"))
-    : null;
+  // ── Derived visuals ──────────────────────────────────────────────────────────
 
-  const rotation = animOut ? (animOut === "right" ? 14 : -14) : offset / 22;
-  const tx       = animOut ? (animOut === "right" ? 560 : -560) : offset;
+  const artUrl = card ? getCardImage(card, "art_crop") : null;
 
-  const counterStr = done
-    ? `${pile.length} KEPT`
-    : `${idx + 1} / ${effectiveCards.length} · ${pile.length} KEPT`;
+  const rotation = animOut === "right" ? 14 : animOut === "left" ? -14 : offset / 22;
+  const tx       = animOut === "right" ? 560 : animOut === "left" ? -560 : offset;
+
+  const artTransform = animOut === "maybe"
+    ? "translateY(-30px) scale(0.97)"
+    : `translateX(${tx}px) rotate(${rotation}deg)`;
+
+  const artOpacity   = animOut ? 0 : 1;
+  const artTransition = animOut
+    ? "transform 0.26s ease, opacity 0.26s ease"
+    : dragging ? "none" : "transform 0.18s ease";
+
+  const pips         = parseMana(card?.mana_cost);
+  const oracleText   = card?.oracle_text ?? "";
+  const oracleSnippet = oracleText.length > 80 ? oracleText.slice(0, 80) + "…" : oracleText;
+  const commanderName = commanderCard?.name ?? null;
+
+  const BTNS_BOTTOM = `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 20px)`;
+  const INFO_BOTTOM = `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 20px + 72px + 12px)`;
 
   return (
     <div style={{
-      height: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
-      maxHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
-      boxSizing: "border-box",
-      paddingTop: "env(safe-area-inset-top)",
-      background: "var(--bg)",
-      display: "flex", flexDirection: "column",
+      position: "fixed", inset: 0,
+      background: "#000",
       fontFamily: "'DM Sans', sans-serif",
       overflow: "hidden",
-      position: "relative",
-      maxWidth: 600, margin: "0 auto", width: "100%",
     }}>
-      {/* Blurred art background */}
-      {artUrl && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 0,
-          backgroundImage: `url(${artUrl})`,
-          backgroundSize: "cover", backgroundPosition: "center",
-          filter: "blur(28px) brightness(0.12)",
-          transform: "scale(1.1)", pointerEvents: "none",
-        }} />
-      )}
 
-      {/* ── Commander row — display only ── */}
-      <div style={{
-        position: "relative", zIndex: 20, flexShrink: 0,
-        background: "rgba(13,13,15,0.85)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        backdropFilter: "blur(10px)",
-      }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 7,
-          padding: "6px 8px",
-        }}>
-          {/* ← Back to Search */}
-          <button
-            onClick={() => onGoToSearch?.()}
-            style={{
-              background: "transparent", border: "none",
-              color: "rgba(255,255,255,0.5)", cursor: "pointer",
-              fontSize: 18, lineHeight: 1,
-              padding: "4px 4px", flexShrink: 0,
-            }}
-          >←</button>
-
-          {/* Commander thumbnail */}
-          {cmdArt ? (
+      {/* ── Art layer (the draggable) ── */}
+      {!done && (
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            transform: artTransform,
+            transition: artTransition,
+            opacity: artOpacity,
+            cursor: dragging ? "grabbing" : "grab",
+            touchAction: "none", userSelect: "none",
+            zIndex: 0,
+          }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onClick={() => {
+            if (lastPointerDxRef.current >= 10) return;
+            const now = Date.now();
+            const last = lastTapTime.current;
+            lastTapTime.current = now;
+            if (now - last < 350) {
+              lastTapTime.current = 0;
+              onDoubleTag?.(card?.oracle_id);
+            }
+          }}
+        >
+          {/* Art image */}
+          {artUrl && !imgError ? (
             <img
-              src={cmdArt}
-              alt={commanderCard.name}
+              src={artUrl}
+              alt={card?.name}
               draggable={false}
-              style={{ width: 52, height: 37, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+              onError={() => setImgError(true)}
+              style={{
+                position: "absolute", inset: 0,
+                width: "100%", height: "100%",
+                objectFit: "cover", objectPosition: "center top",
+                pointerEvents: "none",
+              }}
             />
           ) : (
             <div style={{
-              width: 52, height: 37, borderRadius: 4, flexShrink: 0,
-              background: "rgba(255,255,255,0.05)",
+              position: "absolute", inset: 0,
+              background: "#0d0d0f",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{ fontSize: 16, opacity: 0.4 }}>👑</span>
+              <span style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 28, color: "#ffffff", letterSpacing: 2,
+                textAlign: "center", padding: "0 32px",
+              }}>{card?.name}</span>
             </div>
           )}
 
-          {/* Commander name */}
-          <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-            {commanderCard ? (
-              <>
-                <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
-                  COMMANDER
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {commanderCard.name}
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>No commander</div>
-            )}
-          </div>
+          {/* Gradient overlay */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0.92) 100%)",
+            pointerEvents: "none",
+          }} />
 
-          {/* Color pips */}
-          <div style={{ display: "flex", gap: 3, flexShrink: 0 }}>
-            {commanderCard?.color_identity?.map(c => <ColorPip key={c} color={c} />)}
-          </div>
+          {/* Drag badges */}
+          {badge === "keep" && (
+            <div style={{
+              position: "absolute", top: 24, right: 20, zIndex: 5,
+              padding: "6px 14px",
+              border: "3px solid #6BFF9E", borderRadius: 8,
+              color: "#6BFF9E",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 26, letterSpacing: 4,
+              transform: "rotate(-15deg)",
+              background: "rgba(0,0,0,0.55)",
+            }}>PILE</div>
+          )}
+          {badge === "pass" && (
+            <div style={{
+              position: "absolute", top: 24, left: 20, zIndex: 5,
+              padding: "6px 14px",
+              border: "3px solid #FF6B6B", borderRadius: 8,
+              color: "#FF6B6B",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 26, letterSpacing: 4,
+              transform: "rotate(15deg)",
+              background: "rgba(0,0,0,0.55)",
+            }}>SKIP</div>
+          )}
+          {badge === "maybe" && (
+            <div style={{
+              position: "absolute", top: 24,
+              left: "50%", transform: "translateX(-50%)",
+              zIndex: 5,
+              padding: "6px 14px",
+              border: "3px solid rgba(255,255,255,0.6)", borderRadius: 8,
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 26, letterSpacing: 4,
+              background: "rgba(0,0,0,0.55)",
+            }}>MAYBE</div>
+          )}
+        </div>
+      )}
 
-          {/* Dir toggle — desc ↔ asc only, no neutral state */}
-          <button
-            onClick={e => {
-              e.stopPropagation();
-              const next = swipeDir === "asc" ? "desc" : "asc";
-              onSortChange?.(swipeOrder, next);
-            }}
-            style={{
-              flexShrink: 0,
-              width: 26, height: 26, borderRadius: 5,
-              border: "1px solid rgba(255,255,255,0.2)",
-              background: "transparent",
-              color: "var(--text)",
-              cursor: "pointer", fontSize: 13,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            {swipeDir === "asc" ? "↑" : "↓"}
-          </button>
-
-          {/* Sort menu button */}
+      {/* ── Stack info strip (top) ── */}
+      <div style={{
+        position: "absolute",
+        top: "env(safe-area-inset-top)",
+        left: 0, right: 0,
+        zIndex: 2,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "10px 20px",
+        pointerEvents: "none",
+      }}>
+        <div style={{
+          fontSize: 11, color: "rgba(255,255,255,0.3)",
+          letterSpacing: "0.1em", textTransform: "uppercase",
+        }}>
+          {done
+            ? `${pile.length} KEPT`
+            : `${effectiveCards.length - idx} IN STACK${commanderName ? ` · ${commanderName.toUpperCase()}` : ""}`}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
+          {history.length > 0 && !animOut && (
+            <button
+              onClick={doUndo}
+              style={{
+                background: "transparent", border: "none",
+                color: "rgba(255,255,255,0.4)",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 11, letterSpacing: 2, cursor: "pointer",
+                padding: "2px 6px",
+              }}
+            >UNDO</button>
+          )}
           <button
             onClick={e => { e.stopPropagation(); setSortMenuOpen(o => !o); }}
             style={{
-              flexShrink: 0,
-              padding: "3px 7px", borderRadius: 5,
-              border: sortMenuOpen ? "1px solid var(--primary)" : "1px solid rgba(255,255,255,0.1)",
-              background: sortMenuOpen ? "rgba(91,143,255,0.12)" : "transparent",
-              color: sortMenuOpen ? "var(--primary)" : "rgba(255,255,255,0.4)",
+              padding: "3px 8px", borderRadius: 4,
+              border: "1px solid rgba(255,255,255,0.15)",
+              background: "rgba(0,0,0,0.5)",
+              color: "rgba(255,255,255,0.4)",
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 10, letterSpacing: 1, cursor: "pointer", lineHeight: 1,
-              marginRight: 2,
             }}
           >
-            {SORT_OPTIONS.find(o => o.value === swipeOrder)?.label ?? "SORT"}
+            {SORT_OPTIONS.find(o => o.value === swipeOrder)?.label ?? "SORT"}{" "}
+            {swipeDir === "asc" ? "↑" : "↓"}
           </button>
         </div>
-
-        {/* Sort dropdown */}
-        {sortMenuOpen && (
-          <div style={{
-            position: "absolute", top: "100%", right: 8, zIndex: 30,
-            background: "var(--panel2)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 10, overflow: "hidden",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.7)",
-            minWidth: 110,
-          }}>
-            {SORT_OPTIONS.map(opt => {
-              const active = swipeOrder === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() => { onSortChange?.(opt.value, swipeDir); setSortMenuOpen(false); }}
-                  style={{
-                    display: "block", width: "100%",
-                    padding: "10px 14px",
-                    background: active ? "rgba(91,143,255,0.12)" : "transparent",
-                    border: "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                    color: active ? "var(--primary)" : "var(--text)",
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: 12, letterSpacing: 2,
-                    cursor: "pointer", textAlign: "left",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
-      {/* ── Card area ── */}
-      <div style={{
-        position: "relative", zIndex: 10,
-        flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center",
-        overflow: "hidden", paddingTop: 10, paddingBottom: 4,
-      }}>
+      {/* Sort dropdown */}
+      {sortMenuOpen && (
+        <div style={{
+          position: "absolute",
+          top: `calc(env(safe-area-inset-top) + 42px)`,
+          right: 20, zIndex: 10,
+          background: "#111",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 10, overflow: "hidden",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.9)",
+          minWidth: 120,
+        }}>
+          {SORT_OPTIONS.map(opt => {
+            const active = swipeOrder === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  onSortChange?.(opt.value, active ? (swipeDir === "asc" ? "desc" : "asc") : swipeDir);
+                  setSortMenuOpen(false);
+                }}
+                style={{
+                  display: "block", width: "100%",
+                  padding: "10px 14px",
+                  background: active ? "rgba(255,255,255,0.08)" : "transparent",
+                  border: "none",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  color: active ? "#ffffff" : "rgba(255,255,255,0.5)",
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 12, letterSpacing: 2,
+                  cursor: "pointer", textAlign: "left",
+                }}
+              >{opt.label}</button>
+            );
+          })}
+        </div>
+      )}
 
-        {done ? (
+      {/* ── Card info (bottom, above buttons) ── */}
+      {!done && card && (
+        <div style={{
+          position: "absolute",
+          bottom: INFO_BOTTOM,
+          left: 0, right: 0,
+          zIndex: 2,
+          padding: "0 20px 8px",
+          pointerEvents: "none",
+        }}>
+          {/* Name + mana pips */}
           <div style={{
-            flex: 1, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            gap: 14, textAlign: "center",
+            display: "flex", alignItems: "center",
+            gap: 8, marginBottom: 4, flexWrap: "wrap",
           }}>
+            <span style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 28, color: "#ffffff", letterSpacing: "0.05em", lineHeight: 1,
+            }}>{card.name}</span>
+            {pips.length > 0 && (
+              <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+                {pips.map((pip, i) => <ManaPip key={i} symbol={pip} />)}
+              </div>
+            )}
+          </div>
+          {/* Type line */}
+          {card.type_line && (
             <div style={{
-              width: "min(88vw, 300px)", aspectRatio: "63/88",
-              background: "var(--panel)", borderRadius: 14,
-              border: "1px dashed rgba(255,255,255,0.1)",
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 10,
-            }}>
-              <div style={{
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 28, letterSpacing: 3, color: "var(--success)",
-              }}>ALL CARDS SEEN</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
-                {pile.length} card{pile.length !== 1 ? "s" : ""} kept
-              </div>
-              <button
-                onClick={onGoToPile}
-                style={{
-                  padding: "10px 24px", borderRadius: 8,
-                  border: "1px solid var(--primary)",
-                  background: "rgba(91,143,255,0.1)",
-                  color: "var(--primary)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 15, letterSpacing: 3, cursor: "pointer",
-                }}
-              >
-                VIEW PILE
-              </button>
-              <button
-                onClick={onSearchMore}
-                style={{
-                  padding: "10px 24px", borderRadius: 8,
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  background: "transparent",
-                  color: "var(--muted)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 15, letterSpacing: 3, cursor: "pointer",
-                }}
-              >
-                SEARCH MORE
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Counter + Undo */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexShrink: 0 }}>
-              <div style={{
-                fontSize: 12, letterSpacing: 2,
-                color: "rgba(255,255,255,0.5)",
-                fontFamily: "'Bebas Neue', sans-serif",
-              }}>
-                {counterStr}
-              </div>
-              <button
-                onClick={doUndo}
-                disabled={history.length === 0 || !!animOut}
-                style={{
-                  background: "transparent", border: "none",
-                  color: history.length > 0 ? "var(--secondary)" : "rgba(255,255,255,0.15)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 11, letterSpacing: 2,
-                  cursor: history.length > 0 ? "pointer" : "default",
-                  padding: "2px 6px",
-                }}
-              >
-                UNDO
-              </button>
-            </div>
-
-            {/* Card */}
-            <div
-              style={{
-                marginTop: "auto",
-                transform: `translateX(${tx}px) rotate(${rotation}deg)`,
-                transition: animOut
-                  ? "transform 0.26s ease, opacity 0.26s ease"
-                  : dragging ? "none" : "transform 0.18s ease",
-                opacity: animOut ? 0 : 1,
-                cursor: dragging ? "grabbing" : "grab",
-                touchAction: "none", userSelect: "none",
-                position: "relative", flexShrink: 0,
-              }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onClick={() => {
-                if (lastPointerDxRef.current >= 10) return; // was a drag
-                const now = Date.now();
-                const last = lastTapTime.current;
-                lastTapTime.current = now;
-                if (now - last < 350) {
-                  lastTapTime.current = 0;
-                  onDoubleTag?.(card?.oracle_id);
-                }
-              }}
-            >
-              {badge === "keep" && (
-                <div style={{
-                  position: "absolute", top: 14, right: 14, zIndex: 20,
-                  padding: "6px 14px",
-                  border: "3px solid var(--success)", borderRadius: 8,
-                  color: "var(--success)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 26, letterSpacing: 4,
-                  transform: "rotate(-15deg)",
-                  background: "rgba(0,0,0,0.55)",
-                }}>PILE</div>
-              )}
-              {badge === "pass" && (
-                <div style={{
-                  position: "absolute", top: 14, left: 14, zIndex: 20,
-                  padding: "6px 14px",
-                  border: "3px solid var(--secondary)", borderRadius: 8,
-                  color: "var(--secondary)",
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 26, letterSpacing: 4,
-                  transform: "rotate(15deg)",
-                  background: "rgba(0,0,0,0.55)",
-                }}>SKIP</div>
-              )}
-
-              {mainUrl ? (
-                <>
-                  <img
-                    src={mainUrl}
-                    alt={card?.name}
-                    draggable={false}
-                    style={{
-                      maxHeight: isBattle
-                        ? undefined
-                        : `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom) - env(safe-area-inset-top) - 140px)`,
-                      width: "auto",
-                      maxWidth: isBattle ? "min(55vw, 220px)" : "min(88vw, 350px)",
-                      borderRadius: 14,
-                      boxShadow: "0 18px 56px rgba(0,0,0,0.8)",
-                      display: "block", pointerEvents: "none",
-                      transform: isBattle ? "rotate(90deg)" : undefined,
-                    }}
-                  />
-                  {hasFaces && (
-                    <button
-                      onPointerDown={e => { e.stopPropagation(); setFaceIdx(f => f === 0 ? 1 : 0); }}
-                      style={{
-                        position: "absolute", bottom: 10, right: 10,
-                        width: 34, height: 34, borderRadius: "50%",
-                        background: "rgba(0,0,0,0.75)",
-                        border: "1px solid rgba(255,255,255,0.3)",
-                        color: "white", cursor: "pointer", fontSize: 18,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        lineHeight: 1,
-                      }}
-                    >↻</button>
-                  )}
-                </>
-              ) : (
-                <div style={{
-                  width: 260, height: 362,
-                  background: "var(--panel)", borderRadius: 14,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: "rgba(255,255,255,0.5)", fontSize: 14,
-                  padding: 16, textAlign: "center",
-                }}>
-                  {card?.name}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
+              fontSize: 12, color: "rgba(255,255,255,0.5)",
+              textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4,
+            }}>{card.type_line}</div>
+          )}
+          {/* Oracle text snippet */}
+          {oracleSnippet && (
+            <div style={{
+              fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.5,
+            }}>{oracleSnippet}</div>
+          )}
+        </div>
+      )}
 
       {/* ── Action buttons ── */}
       {!done && (
         <div style={{
-          position: "relative", zIndex: 10, flexShrink: 0,
-          display: "flex", alignItems: "center",
-          justifyContent: "center", gap: 36,
-          paddingTop: 10, paddingBottom: 24,
+          position: "absolute",
+          bottom: BTNS_BOTTOM,
+          left: 0, right: 0,
+          zIndex: 3,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 28,
         }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-            <button
-              onClick={() => doResolve(false)}
-              disabled={!!animOut}
-              style={{
-                width: 54, height: 54, borderRadius: "50%",
-                border: "2px solid var(--secondary)",
-                background: "rgba(167,139,250,0.1)",
-                color: "var(--secondary)",
-                fontSize: 20, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >✕</button>
-            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
-              SKIP
-            </span>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-            <button
-              onClick={() => doResolve(true)}
-              disabled={!!animOut}
-              style={{
-                width: 54, height: 54, borderRadius: "50%",
-                border: "2px solid var(--success)",
-                background: "rgba(52,211,153,0.1)",
-                color: "var(--success)",
-                fontSize: 20, cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >♥</button>
-            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
-              PILE
-            </span>
-          </div>
+          <button
+            onClick={() => doResolve(false)}
+            disabled={!!animOut}
+            style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: "rgba(220,50,50,0.2)",
+              border: "1px solid rgba(220,50,50,0.4)",
+              color: "#FF6B6B", fontSize: 22,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(8px)",
+            }}
+          >✕</button>
+          <button
+            onClick={doMaybe}
+            disabled={!!animOut}
+            style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "rgba(255,255,255,0.7)", fontSize: 20,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(8px)",
+            }}
+          >🔖</button>
+          <button
+            onClick={() => doResolve(true)}
+            disabled={!!animOut}
+            style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: "rgba(50,200,100,0.2)",
+              border: "1px solid rgba(50,200,100,0.4)",
+              color: "#6BFF9E", fontSize: 22,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(8px)",
+            }}
+          >✓</button>
         </div>
       )}
 
-      {/* ── Onboarding tip overlay ── */}
+      {/* ── Done state ── */}
+      {done && (
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          gap: 16,
+        }}>
+          <div style={{
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 32, letterSpacing: 4, color: "#ffffff",
+          }}>ALL CARDS SEEN</div>
+          <div style={{ fontSize: 14, color: "rgba(255,255,255,0.45)" }}>
+            {pile.length} card{pile.length !== 1 ? "s" : ""} kept
+          </div>
+          <button
+            onClick={onGoToPile}
+            style={{
+              marginTop: 8, padding: "12px 28px", borderRadius: 10,
+              border: "1px solid rgba(91,143,255,0.5)",
+              background: "rgba(91,143,255,0.12)",
+              color: "var(--primary)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 16, letterSpacing: 3, cursor: "pointer",
+            }}
+          >VIEW PILE</button>
+          <button
+            onClick={onSearchMore}
+            style={{
+              padding: "12px 28px", borderRadius: 10,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "transparent",
+              color: "rgba(255,255,255,0.45)",
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 16, letterSpacing: 3, cursor: "pointer",
+            }}
+          >SEARCH MORE</button>
+        </div>
+      )}
+
+      {/* ── Onboarding tip ── */}
       {showTip && (
         <div
           onClick={dismissTipForever}
           style={{
             position: "absolute", inset: 0, zIndex: 300,
-            background: "rgba(0,0,0,0.72)",
+            background: "rgba(0,0,0,0.82)",
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
             gap: 20,
@@ -617,39 +584,28 @@ export default function SwipeScreen({
           }}
         >
           <style>{`@keyframes tipFadeIn { from { opacity:0; } to { opacity:1; } }`}</style>
-
           <div style={{ textAlign: "center", padding: "0 32px" }}>
             <div style={{
               fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 28, letterSpacing: 4, color: "var(--text)",
-              marginBottom: 24,
-            }}>
-              HOW TO SWIPE
-            </div>
-
+              fontSize: 28, letterSpacing: 4, color: "#ffffff", marginBottom: 24,
+            }}>HOW TO SWIPE</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                { dir: "← LEFT", label: "SKIP", color: "var(--secondary)" },
-                { dir: "RIGHT →", label: "ADD TO PILE", color: "var(--success)" },
+                { dir: "← LEFT",  label: "SKIP",        color: "#FF6B6B" },
+                { dir: "BUTTON",  label: "MAYBE",        color: "rgba(255,255,255,0.7)" },
+                { dir: "RIGHT →", label: "ADD TO PILE",  color: "#6BFF9E" },
               ].map(({ dir, label, color }) => (
                 <div key={dir} style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   background: "rgba(255,255,255,0.05)",
                   borderRadius: 12, padding: "14px 20px", gap: 16,
                 }}>
-                  <span style={{
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: 20, letterSpacing: 3, color,
-                  }}>{dir}</span>
-                  <span style={{
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: 14, letterSpacing: 2, color: "rgba(255,255,255,0.7)",
-                  }}>{label}</span>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 3, color }}>{dir}</span>
+                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 14, letterSpacing: 2, color: "rgba(255,255,255,0.7)" }}>{label}</span>
                 </div>
               ))}
             </div>
           </div>
-
           <button
             onClick={e => { e.stopPropagation(); dismissTipForever(); }}
             style={{
@@ -658,9 +614,7 @@ export default function SwipeScreen({
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 14, letterSpacing: 3, padding: "10px 28px",
             }}
-          >
-            GOT IT
-          </button>
+          >GOT IT</button>
         </div>
       )}
     </div>
