@@ -44,7 +44,7 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
       id: "discover",
       label: "DISCOVER",
       Icon: DiscoverIcon,
-      isActive: screen === "search" || screen === "swipe",
+      isActive: screen === "kanban" || screen === "search" || screen === "swipe",
       onClick: onGoToStack,
     },
     {

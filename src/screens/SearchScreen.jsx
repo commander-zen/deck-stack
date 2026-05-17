@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import SearchForm from "../components/SearchForm.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
+import { translateToScryfall } from "../lib/nlp.js";
 
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 
@@ -21,10 +21,16 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   const [cmdResults,   setCmdResults]   = useState([]);
   const [cmdOpen,      setCmdOpen]      = useState(false);
   const [cmdFocused,   setCmdFocused]   = useState(false);
-  const [currentQuery, setCurrentQuery] = useState("f:commander");
   const [cmdExpanded,  setCmdExpanded]  = useState(false);
-const abortRef    = useRef(null);
+
+  // NLP search state
+  const [nlpInput,       setNlpInput]       = useState("");
+  const [translatedQuery, setTranslatedQuery] = useState("");
+  const [isTranslated,    setIsTranslated]    = useState(false);
+
+  const abortRef    = useRef(null);
   const cmdInputRef = useRef(null);
+  const nlpInputRef = useRef(null);
 
   // Auto-focus commander input when panel opens
   useEffect(() => {
@@ -68,9 +74,23 @@ const abortRef    = useRef(null);
     }
   }
 
+  // Translate NLP input in real-time
+  useEffect(() => {
+    if (!nlpInput.trim()) {
+      setTranslatedQuery("");
+      setIsTranslated(false);
+      return;
+    }
+    const result = translateToScryfall(nlpInput);
+    setTranslatedQuery(result.query);
+    setIsTranslated(result.translated);
+  }, [nlpInput]);
+
   function handleSearch() {
     if (loading) return;
-    onSearch(currentQuery.trim());
+    const q = translatedQuery || nlpInput.trim();
+    if (!q) return;
+    onSearch(q);
   }
 
   const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
@@ -292,24 +312,69 @@ const abortRef    = useRef(null);
           </div>
         )}
 
-        {/* ── Scryfall search + Filters ── */}
-        <div style={{ marginBottom: 14 }}>
-          <SearchForm
-            onSearch={onSearch}
-            onQueryChange={setCurrentQuery}
-            loading={loading}
-            error={error}
-          />
+        {/* ── NLP search input ── */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{
+            background: "var(--panel)",
+            border: `1px solid ${nlpInput.trim() ? "rgba(0,229,204,0.35)" : "rgba(255,255,255,0.12)"}`,
+            borderRadius: 14,
+            transition: "border-color 0.15s",
+          }}>
+            <input
+              ref={nlpInputRef}
+              type="text"
+              value={nlpInput}
+              onChange={e => setNlpInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSearch()}
+              placeholder="Describe the card you're looking for"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
+                outline: "none",
+                padding: "14px 16px",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 15,
+                color: "var(--text)",
+                caretColor: "var(--primary)",
+                boxSizing: "border-box",
+              }}
+            />
+            {/* Translated query display */}
+            {translatedQuery && (
+              <div style={{
+                padding: "0 16px 10px",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 10,
+                color: isTranslated ? "var(--primary)" : "var(--muted)",
+                opacity: 0.8,
+                wordBreak: "break-all",
+              }}>
+                {isTranslated ? "→ " : ""}{translatedQuery}
+              </div>
+            )}
+          </div>
+          {/* Hint */}
+          <div style={{
+            marginTop: 5, paddingLeft: 2,
+            fontSize: 10, color: "var(--muted)",
+            fontFamily: "'DM Sans', sans-serif",
+          }}>
+            Plain English or Scryfall syntax · e.g. "cheap green ramp" · "t:instant cmc&lt;=2"
+          </div>
         </div>
 
         {/* ── SEARCH CTA ── */}
         <div style={{ marginBottom: 10 }}>
           <button
             onClick={handleSearch}
-            disabled={loading}
+            disabled={loading || (!nlpInput.trim() && !translatedQuery)}
             style={{
               width: "100%",
-              background: loading ? "transparent" : "rgba(91,143,255,0.12)",
+              background: loading ? "transparent" : "rgba(0,229,204,0.10)",
               border: loading ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
               borderRadius: 16,
               padding: "18px 24px",
@@ -317,7 +382,7 @@ const abortRef    = useRef(null);
               alignItems: "center",
               justifyContent: "center",
               gap: 10,
-              cursor: loading ? "default" : "pointer",
+              cursor: (loading || (!nlpInput.trim() && !translatedQuery)) ? "default" : "pointer",
               transition: "background 0.15s",
             }}
           >

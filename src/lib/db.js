@@ -49,9 +49,10 @@ export async function saveDeck(sessionId, deck, userId) {
     query: deck.query ?? null,
     last_opened_at: new Date().toISOString(),
   };
-  // Only include tags when explicitly provided so unrelated saves don't overwrite them
+  // Only include optional fields when explicitly provided to avoid overwriting unrelated saves
   if (deck.tags !== undefined)        payload.tags        = deck.tags;
   if (deck.custom_tags !== undefined) payload.custom_tags = deck.custom_tags;
+  if (deck.status !== undefined)      payload.status      = deck.status;
   const { error } = await supabase.from("decks").upsert(payload, { onConflict: "id" });
   if (error) throw error;
 }
@@ -59,6 +60,18 @@ export async function saveDeck(sessionId, deck, userId) {
 export async function deleteDeck(sessionId, deckId, userId) {
   if (!supabase) return;
   let query = supabase.from("decks").delete().eq("id", deckId);
+  if (userId) {
+    query = query.eq("user_id", userId);
+  } else {
+    query = query.eq("session_id", sessionId);
+  }
+  const { error } = await query;
+  if (error) throw error;
+}
+
+export async function updateDeckStatus(deckId, status, sessionId, userId) {
+  if (!supabase) return;
+  let query = supabase.from("decks").update({ status }).eq("id", deckId);
   if (userId) {
     query = query.eq("user_id", userId);
   } else {

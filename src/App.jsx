@@ -4,12 +4,13 @@ import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
+import KanbanScreen  from "./screens/KanbanScreen.jsx";
 import WrecTagPicker from "./components/WrecTagPicker.jsx";
 import { autoDetectCategory } from "./constants/wrec.js";
 import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav, { NAV_HEIGHT } from "./components/BottomNav.jsx";
 import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js";
-import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
+import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks, updateDeckStatus } from "./lib/db.js";
 import { onAuthChange } from "./lib/auth.js";
 
 function readLocalDecks() {
@@ -57,7 +58,7 @@ export default function App() {
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   const [swipeOrder,    setSwipeOrder]    = useState("name");
   const [swipeDir,      setSwipeDir]      = useState("desc");
-  // screen: "search" | "swipe" | "pile" | "maybe" | "brews"
+  // screen: "kanban" | "search" | "swipe" | "pile" | "maybe" | "brews"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
@@ -164,7 +165,8 @@ export default function App() {
       setSwipeMounted(false);
       setScreen("pile");
     } else {
-      setScreen("search");
+      setSwipeMounted(false);
+      setScreen("kanban");
     }
   }
 
@@ -838,10 +840,18 @@ export default function App() {
     setAutoTagged(prev => { const n = new Set(prev); n.delete(oracleId); return n; });
   }
 
+  // ── Deck status update (Kanban) ───────────────────────────────────────────
+  function handleUpdateDeckStatus(deckId, newStatus) {
+    setDecks(ds => ds.map(d => d.id === deckId ? { ...d, status: newStatus } : d));
+    const s = stateRef.current;
+    updateDeckStatus(deckId, newStatus, s.sessionId, s.authUser?.id ?? null)
+      .catch(err => console.error("Failed to update deck status:", err));
+  }
+
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function goToStack() {
     if (swipeMounted) setScreen("swipe");
-    else setScreen("search");
+    else setScreen("kanban");
   }
 
   function goToSearch() { setScreen("search"); }
@@ -871,6 +881,18 @@ export default function App() {
   return (
     <>
       {/* ── Screens ── */}
+
+      {screen === "kanban" && (
+        <KanbanScreen
+          decks={decks}
+          activeDeckId={activeDeckId}
+          onOpenDeck={id => { handleSwitchDeck(id); }}
+          onNewBrew={() => { handleNewDeck(); }}
+          onUpdateStatus={handleUpdateDeckStatus}
+          authUser={authUser}
+          onOpenAuth={() => setAuthSheetOpen(true)}
+        />
+      )}
 
       {screen === "search" && (
         <SearchScreen
