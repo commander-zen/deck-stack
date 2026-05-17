@@ -847,11 +847,7 @@ export default function App() {
 
   function goToSearch() { setScreen("search"); }
 
-  function goToPile() { setScreen("pile"); }
-
-  function goToMaybe() { setScreen("maybe"); }
-
-  function goToTags() { setScreen("tags"); }
+  function goToPile() { if (screen !== "pile") setScreen("pile"); }
 
   function goToProfile() { setScreen("brews"); }
 
@@ -998,8 +994,6 @@ export default function App() {
           screen={screen}
           onGoToStack={goToStack}
           onGoToPile={goToPile}
-          onGoToMaybe={goToMaybe}
-          onGoToTags={goToTags}
           onGoToProfile={goToProfile}
         />
       )}

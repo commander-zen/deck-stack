@@ -670,7 +670,7 @@ export default function PileScreen({
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 18, letterSpacing: 4, color: "var(--primary)",
             }}>
-              {activeTab === "deck" ? "PILE" : "MAYBE"}
+              {activeTab === "deck" ? "DECK" : "CONSIDERING"}
             </span>
           )}
 

@@ -188,7 +188,7 @@ const abortRef    = useRef(null);
           <div style={{ marginBottom: 16, position: "relative" }}>
             <div style={{
               background: "var(--panel)",
-              border: "1px solid rgba(167,139,250,0.35)",
+              border: "1px solid rgba(201,168,76,0.25)",
               borderRadius: 14,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
@@ -234,7 +234,7 @@ const abortRef    = useRef(null);
                 <div style={{
                   position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
                   background: "var(--panel2)", borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(201,168,76,0.2)",
                   overflow: "hidden", zIndex: 50,
                   boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
                 }}>
@@ -279,7 +279,7 @@ const abortRef    = useRef(null);
 
               <div style={{
                 fontSize: 11.5,
-                color: cmdQuery.trim() ? "var(--secondary)" : "var(--muted)",
+                color: cmdQuery.trim() ? "#C9A84C" : "var(--muted)",
                 padding: "0 14px 10px",
                 transition: "color 0.15s",
               }}>
