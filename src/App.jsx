@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
-import { initSession } from "./lib/supabase.js";
+import { initAuth } from "./lib/supabase.js";
 import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
@@ -12,7 +11,7 @@ import AuthSheet     from "./components/AuthSheet.jsx";
 import BottomNav, { NAV_HEIGHT } from "./components/BottomNav.jsx";
 import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js";
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
-import { getSession, onAuthChange } from "./lib/auth.js";
+import { onAuthChange } from "./lib/auth.js";
 
 function readLocalDecks() {
   try { return JSON.parse(localStorage.getItem("deckstack_decks") ?? "[]"); }
@@ -118,7 +117,7 @@ export default function App() {
       try {
         const sid = await getOrCreateSession();
         setSessionId(sid);
-        const session = await getSession();
+        const session = await initAuth();
         const user = session?.user ?? null;
         setAuthUser(user);
         const dbDecks = await loadDecks(sid, user?.id ?? null);
@@ -172,7 +171,7 @@ export default function App() {
 
   // ── Auth subscription ─────────────────────────────────────────────────────
   useEffect(() => {
-    const unsubscribe = onAuthChange(async (event, session) => {
+    const subscription = onAuthChange(async (event, session) => {
       const user = session?.user ?? null;
       const s = stateRef.current;
 
@@ -214,7 +213,7 @@ export default function App() {
         setAuthUser(user);
       }
     });
-    return unsubscribe;
+    return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Reactive auto-tag — runs after every pile change ─────────────────────
@@ -1011,9 +1010,6 @@ export default function App() {
         user={authUser}
       />
 
-      <div style={{ position: "absolute", width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }}>
-        <Turnstile siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY} onSuccess={initSession} />
-      </div>
     </>
   );
 }

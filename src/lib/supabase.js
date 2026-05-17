@@ -5,14 +5,23 @@ export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 )
 
-export const initSession = async (captchaToken) => {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    await supabase.auth.signInAnonymously({ options: { captchaToken } })
+export async function initAuth() {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) {
+      console.error('[initAuth] getSession error:', sessionError.message)
+      return null
+    }
+    if (session) return session
+
+    const { data, error: anonError } = await supabase.auth.signInAnonymously()
+    if (anonError) {
+      console.error('[initAuth] signInAnonymously error:', anonError.message)
+      return null
+    }
+    return data.session
+  } catch (err) {
+    console.error('[initAuth] unexpected error:', err)
+    return null
   }
 }
-
-export const sendMagicLink = (email) =>
-  supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
-
-export const signOut = () => supabase.auth.signOut()
