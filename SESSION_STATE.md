@@ -7,6 +7,14 @@ Next: Add `VITE_ANTHROPIC_API_KEY` to `.env.local` with a real Anthropic API key
 
 ## Completed ✅
 
+- ✅ **NNG Mobile UX Redesign** (2026-05-18)
+  - Swipe gesture labels: opacity-driven KEEP/PASS labels (onset at 20px offset), correctly positioned left=KEEP/right=PASS, fade on release
+  - Touch targets: PileScreen row remove (44×44), grid card remove (wrapper pattern, visual unchanged), list/grid toggle + COPY (minHeight 44)
+  - Pipeline indicator: `PipelineIndicator.jsx` (shared component), rendered in App.jsx fixed below header for swipe/pile/maybe screens
+  - Card content hierarchy: SwipeScreen primary = name+mana only; single-tap expands type, oracle text, P/T; double-tap still triggers WREC tag
+  - Header audit: PileScreen header already 52px, no changes needed
+  - First-run swipe hint: full "HOW TO SWIPE" modal replaced with subtle animated `← →` arrow; new flag `ds_swipe_hint_shown`; dismissed on first completed swipe
+
 - ✅ **Natural language brew prompt** (2026-05-17)
   - Created `src/services/brewPrompt.js` — calls Claude Haiku via Anthropic API, returns Scryfall query string
   - Created `src/services/validateBrewQuery.js` — validates query against Scryfall, shuffles/returns 22 cards or null
