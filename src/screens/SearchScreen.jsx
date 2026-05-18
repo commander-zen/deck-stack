@@ -1,7 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
-import { translateToScryfall } from "../lib/nlp.js";
+import { getBrewQuery } from "../services/brewPrompt.js";
+import { executeBrewQuery } from "../services/validateBrewQuery.js";
+
+const PLACEHOLDERS = [
+  "What idea are we brewing today?",
+  "What concept are we brewing today?",
+  "What legend are we brewing today?",
+  "What mechanic are we brewing today?",
+  "What vibe are we brewing today?",
+  "What archetype are we brewing today?",
+];
+
+function randomPlaceholder() {
+  return PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)];
+}
 
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 
@@ -23,14 +37,14 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   const [cmdFocused,   setCmdFocused]   = useState(false);
   const [cmdExpanded,  setCmdExpanded]  = useState(false);
 
-  // NLP search state
-  const [nlpInput,       setNlpInput]       = useState("");
-  const [translatedQuery, setTranslatedQuery] = useState("");
-  const [isTranslated,    setIsTranslated]    = useState(false);
+  // Brew prompt state
+  const [brewInput,       setBrewInput]       = useState("");
+  const [brewLocked,      setBrewLocked]      = useState(false);
+  const [brewPlaceholder, setBrewPlaceholder] = useState(() => randomPlaceholder());
 
   const abortRef    = useRef(null);
   const cmdInputRef = useRef(null);
-  const nlpInputRef = useRef(null);
+  const brewInputRef = useRef(null);
 
   // Auto-focus commander input when panel opens
   useEffect(() => {
@@ -74,23 +88,33 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     }
   }
 
-  // Translate NLP input in real-time
-  useEffect(() => {
-    if (!nlpInput.trim()) {
-      setTranslatedQuery("");
-      setIsTranslated(false);
-      return;
-    }
-    const result = translateToScryfall(nlpInput);
-    setTranslatedQuery(result.query);
-    setIsTranslated(result.translated);
-  }, [nlpInput]);
+  async function handleSearch() {
+    const prompt = brewInput.trim();
+    if (!prompt || brewLocked) return;
 
-  function handleSearch() {
-    if (loading) return;
-    const q = translatedQuery || nlpInput.trim();
-    if (!q) return;
-    onSearch(q);
+    setBrewLocked(true);
+    setBrewPlaceholder("finding your cards...");
+
+    try {
+      const scryfallQuery = await getBrewQuery(prompt);
+      const cards = await executeBrewQuery(scryfallQuery);
+
+      if (!cards) {
+        setBrewLocked(false);
+        setBrewPlaceholder("couldn't find those cards — try describing it differently");
+        setTimeout(() => setBrewPlaceholder(randomPlaceholder()), 3000);
+        return;
+      }
+
+      setBrewInput("");
+      setBrewLocked(false);
+      setBrewPlaceholder(randomPlaceholder());
+      onSearch(scryfallQuery);
+    } catch {
+      setBrewLocked(false);
+      setBrewPlaceholder("couldn't find those cards — try describing it differently");
+      setTimeout(() => setBrewPlaceholder(randomPlaceholder()), 3000);
+    }
   }
 
   const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
@@ -312,24 +336,25 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           </div>
         )}
 
-        {/* ── NLP search input ── */}
+        {/* ── Brew prompt input ── */}
         <div style={{ marginBottom: 10 }}>
           <div style={{
             background: "var(--panel)",
-            border: `1px solid ${nlpInput.trim() ? "rgba(0,229,204,0.35)" : "rgba(255,255,255,0.12)"}`,
+            border: `1px solid ${brewInput.trim() ? "rgba(0,229,204,0.35)" : "rgba(255,255,255,0.12)"}`,
             borderRadius: 14,
             transition: "border-color 0.15s",
           }}>
             <input
-              ref={nlpInputRef}
+              ref={brewInputRef}
               type="text"
-              value={nlpInput}
-              onChange={e => setNlpInput(e.target.value)}
+              value={brewInput}
+              onChange={e => { if (!brewLocked) setBrewInput(e.target.value); }}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
-              placeholder="Describe the card you're looking for"
+              placeholder={brewPlaceholder}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
+              readOnly={brewLocked}
               style={{
                 width: "100%",
                 background: "none",
@@ -338,32 +363,11 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 padding: "14px 16px",
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: 15,
-                color: "var(--text)",
+                color: brewLocked ? "var(--muted)" : "var(--text)",
                 caretColor: "var(--primary)",
                 boxSizing: "border-box",
               }}
             />
-            {/* Translated query display */}
-            {translatedQuery && (
-              <div style={{
-                padding: "0 16px 10px",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 10,
-                color: isTranslated ? "var(--primary)" : "var(--muted)",
-                opacity: 0.8,
-                wordBreak: "break-all",
-              }}>
-                {isTranslated ? "→ " : ""}{translatedQuery}
-              </div>
-            )}
-          </div>
-          {/* Hint */}
-          <div style={{
-            marginTop: 5, paddingLeft: 2,
-            fontSize: 10, color: "var(--muted)",
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            Plain English or Scryfall syntax · e.g. "cheap green ramp" · "t:instant cmc&lt;=2"
           </div>
         </div>
 
@@ -371,27 +375,27 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
         <div style={{ marginBottom: 10 }}>
           <button
             onClick={handleSearch}
-            disabled={loading || (!nlpInput.trim() && !translatedQuery)}
+            disabled={brewLocked || !brewInput.trim()}
             style={{
               width: "100%",
-              background: loading ? "transparent" : "rgba(0,229,204,0.10)",
-              border: loading ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
+              background: brewLocked ? "transparent" : "rgba(0,229,204,0.10)",
+              border: brewLocked ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
               borderRadius: 16,
               padding: "18px 24px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 10,
-              cursor: (loading || (!nlpInput.trim() && !translatedQuery)) ? "default" : "pointer",
+              cursor: (brewLocked || !brewInput.trim()) ? "default" : "pointer",
               transition: "background 0.15s",
             }}
           >
             <span style={{
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 22, letterSpacing: "0.12em",
-              color: loading ? "rgba(255,255,255,0.2)" : "var(--primary)",
+              color: brewLocked ? "rgba(255,255,255,0.2)" : "var(--primary)",
             }}>
-              {loading ? "LOADING…" : "SEARCH"}
+              {brewLocked ? "LOADING…" : "SEARCH"}
             </span>
           </button>
         </div>
