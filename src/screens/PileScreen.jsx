@@ -451,7 +451,9 @@ export default function PileScreen({
           style={{
             background: "transparent", border: "none",
             color: "rgba(255,255,255,0.25)", cursor: "pointer",
-            fontSize: 12, padding: "4px 6px", flexShrink: 0, lineHeight: 1,
+            fontSize: 12, flexShrink: 0, lineHeight: 1,
+            minWidth: 44, minHeight: 44,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
           onMouseOver={e => e.currentTarget.style.color = "var(--danger)"}
           onMouseOut={e => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
@@ -545,13 +547,20 @@ export default function PileScreen({
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
-            position: "absolute", top: 5, right: 5,
-            width: 22, height: 22, borderRadius: "50%",
-            background: "rgba(0,0,0,0.7)", border: "none",
-            color: "rgba(255,255,255,0.7)", fontSize: 10, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1,
+            position: "absolute", top: -6, right: -6,
+            padding: 11, background: "transparent", border: "none",
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
-        >✕</button>
+        >
+          <span style={{
+            width: 22, height: 22, borderRadius: "50%",
+            background: "rgba(0,0,0,0.7)",
+            color: "rgba(255,255,255,0.7)", fontSize: 10,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            lineHeight: 1, flexShrink: 0,
+          }}>✕</span>
+        </button>
       </div>
     );
   }
@@ -723,6 +732,7 @@ export default function PileScreen({
               background: "transparent", border: "none",
               color: "rgba(255,255,255,0.45)", cursor: "pointer",
               padding: "8px", display: "flex", alignItems: "center", borderRadius: 6,
+              minWidth: 44, minHeight: 44, justifyContent: "center",
             }}
             title={viewMode === "list" ? "Switch to grid" : "Switch to list"}
           >
@@ -741,6 +751,8 @@ export default function PileScreen({
                 fontSize: 11, letterSpacing: 1.5, borderRadius: 6,
                 transition: "color 0.2s",
                 flexShrink: 0,
+                minWidth: 44, minHeight: 44,
+                display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
               {copied ? "✓" : "COPY"}

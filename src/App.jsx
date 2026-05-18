@@ -12,6 +12,7 @@ import BottomNav, { NAV_HEIGHT } from "./components/BottomNav.jsx";
 import { fetchFirstPageForSwipe, fetchContinuationPage } from "./lib/scryfall.js";
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks, updateDeckStatus } from "./lib/db.js";
 import { onAuthChange } from "./lib/auth.js";
+import PipelineIndicator from "./components/PipelineIndicator.jsx";
 
 function readLocalDecks() {
   try { return JSON.parse(localStorage.getItem("deckstack_decks") ?? "[]"); }
@@ -964,6 +965,22 @@ export default function App() {
           onImport={handleImport}
           onSetCommanderForDeck={handleSetCommanderForDeck}
         />
+      )}
+
+      {/* ── Pipeline position indicator ── */}
+      {["swipe", "pile", "maybe"].includes(screen) && (
+        <div style={{
+          position: "fixed",
+          top: "calc(env(safe-area-inset-top) + 52px)",
+          left: 0, right: 0,
+          zIndex: 50,
+          pointerEvents: "none",
+        }}>
+          <PipelineIndicator stage={
+            screen === "swipe" ? "stack" :
+            screen === "pile"  ? "pile"  : "maybe"
+          } />
+        </div>
       )}
 
       {/* ── Toast ── */}

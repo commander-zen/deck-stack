@@ -7,7 +7,7 @@ const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any n
 const isStackable  = c => isBasicLand(c) || isAnyNumber(c);
 
 const SWIPE_THRESHOLD = 60;
-const TIP_KEY = "deckstack_swipe_tip_seen";
+const TIP_KEY = "ds_swipe_hint_shown";
 
 const SORT_OPTIONS = [
   { value: "name",   label: "NAME" },
@@ -79,22 +79,27 @@ export default function SwipeScreen({
   const [history,      setHistory]      = useState([]);
   const [offset,       setOffset]       = useState(0);
   const [dragging,     setDragging]     = useState(false);
-  const [badge,        setBadge]        = useState(null);
   const [animOut,      setAnimOut]      = useState(null);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [imgError,     setImgError]     = useState(false);
   const [showTip,      setShowTip]      = useState(false);
+  const [cardExpanded, setCardExpanded] = useState(false);
 
   const didMountRef      = useRef(false);
   const dragStartRef     = useRef(null);
   const saveTimerRef     = useRef(null);
   const lastTapTime      = useRef(0);
   const lastPointerDxRef = useRef(0);
+  const tapTimerRef      = useRef(null);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
 
-  useEffect(() => { setImgError(false); }, [idx]);
+  useEffect(() => {
+    setImgError(false);
+    setCardExpanded(false);
+    clearTimeout(tapTimerRef.current);
+  }, [idx]);
 
   // Preload next 4 art_crop images
   useEffect(() => {
@@ -135,8 +140,8 @@ export default function SwipeScreen({
 
   function doResolve(keep) {
     if (!card || animOut || done) return;
+    dismissTipForever();
     setAnimOut(keep ? "right" : "left");
-    setBadge(keep ? "keep" : "pass");
     haptic(keep ? 12 : 6);
     setTimeout(() => {
       if (keep) {
@@ -151,21 +156,21 @@ export default function SwipeScreen({
         setHistory(h => [...h, { card, kept: false, maybe: false }]);
       }
       setIdx(i => i + 1);
-      setOffset(0); setBadge(null); setAnimOut(null);
+      setOffset(0); setAnimOut(null);
     }, 260);
   }
 
   function doMaybe() {
     if (!card || animOut || done) return;
+    dismissTipForever();
     setAnimOut("maybe");
-    setBadge("maybe");
     haptic(8);
     setTimeout(() => {
       const cardEntry = { ...card, instanceId: crypto.randomUUID() };
       setHistory(h => [...h, { card: cardEntry, kept: false, maybe: true }]);
       onMaybeboardChange(prev => [...prev, cardEntry]);
       setIdx(i => i + 1);
-      setOffset(0); setBadge(null); setAnimOut(null);
+      setOffset(0); setAnimOut(null);
     }, 260);
   }
 
@@ -201,9 +206,6 @@ export default function SwipeScreen({
     if (!dragging || dragStartRef.current === null) return;
     const dx = e.clientX - dragStartRef.current;
     setOffset(dx);
-    if (dx > SWIPE_THRESHOLD)       setBadge("keep");
-    else if (dx < -SWIPE_THRESHOLD) setBadge("pass");
-    else                            setBadge(null);
   }
 
   function onPointerUp(e) {
@@ -214,7 +216,7 @@ export default function SwipeScreen({
     dragStartRef.current = null;
     if (dx > SWIPE_THRESHOLD)       doResolve(true);
     else if (dx < -SWIPE_THRESHOLD) doResolve(false);
-    else { setOffset(0); setBadge(null); }
+    else { setOffset(0); }
   }
 
   // ── Derived visuals ──────────────────────────────────────────────────────────
@@ -234,8 +236,6 @@ export default function SwipeScreen({
     : dragging ? "none" : "transform 0.18s ease";
 
   const pips         = parseMana(card?.mana_cost);
-  const oracleText   = card?.oracle_text ?? "";
-  const oracleSnippet = oracleText.length > 80 ? oracleText.slice(0, 80) + "…" : oracleText;
   const commanderName = commanderCard?.name ?? null;
 
   const BTNS_BOTTOM = `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 20px)`;
@@ -270,9 +270,14 @@ export default function SwipeScreen({
             const now = Date.now();
             const last = lastTapTime.current;
             lastTapTime.current = now;
+            clearTimeout(tapTimerRef.current);
             if (now - last < 350) {
               lastTapTime.current = 0;
               onDoubleTag?.(card?.oracle_id);
+            } else {
+              tapTimerRef.current = setTimeout(() => {
+                setCardExpanded(e => !e);
+              }, 360);
             }
           }}
         >
@@ -311,44 +316,35 @@ export default function SwipeScreen({
             pointerEvents: "none",
           }} />
 
-          {/* Drag badges */}
-          {badge === "keep" && (
-            <div style={{
-              position: "absolute", top: 24, right: 20, zIndex: 5,
-              padding: "6px 14px",
-              border: "3px solid #6BFF9E", borderRadius: 8,
-              color: "#6BFF9E",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 26, letterSpacing: 4,
-              transform: "rotate(-15deg)",
-              background: "rgba(0,0,0,0.55)",
-            }}>PILE</div>
-          )}
-          {badge === "pass" && (
-            <div style={{
-              position: "absolute", top: 24, left: 20, zIndex: 5,
-              padding: "6px 14px",
-              border: "3px solid #FF6B6B", borderRadius: 8,
-              color: "#FF6B6B",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 26, letterSpacing: 4,
-              transform: "rotate(15deg)",
-              background: "rgba(0,0,0,0.55)",
-            }}>SKIP</div>
-          )}
-          {badge === "maybe" && (
-            <div style={{
-              position: "absolute", top: 24,
-              left: "50%", transform: "translateX(-50%)",
-              zIndex: 5,
-              padding: "6px 14px",
-              border: "3px solid rgba(255,255,255,0.6)", borderRadius: 8,
-              color: "rgba(255,255,255,0.8)",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 26, letterSpacing: 4,
-              background: "rgba(0,0,0,0.55)",
-            }}>MAYBE</div>
-          )}
+          {/* Drag intent labels — opacity driven by offset/animOut */}
+          <div style={{
+            position: "absolute", top: 28, left: 20, zIndex: 5,
+            opacity: animOut === "right" ? 0.9 : animOut ? 0 :
+                     Math.min(0.85, Math.max(0, (offset - 20) / 60)),
+            padding: "5px 12px",
+            border: "2.5px solid #6BFF9E", borderRadius: 8,
+            color: "#6BFF9E",
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 24, letterSpacing: 3,
+            transform: "rotate(-12deg)",
+            background: "rgba(0,0,0,0.5)",
+            pointerEvents: "none",
+            transition: dragging ? "none" : "opacity 0.15s ease",
+          }}>KEEP</div>
+          <div style={{
+            position: "absolute", top: 28, right: 20, zIndex: 5,
+            opacity: animOut === "left" ? 0.9 : animOut ? 0 :
+                     Math.min(0.85, Math.max(0, (-offset - 20) / 60)),
+            padding: "5px 12px",
+            border: "2.5px solid #FF6B6B", borderRadius: 8,
+            color: "#FF6B6B",
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 24, letterSpacing: 3,
+            transform: "rotate(12deg)",
+            background: "rgba(0,0,0,0.5)",
+            pointerEvents: "none",
+            transition: dragging ? "none" : "opacity 0.15s ease",
+          }}>PASS</div>
         </div>
       )}
 
@@ -447,11 +443,37 @@ export default function SwipeScreen({
           zIndex: 2,
           padding: "0 20px 8px",
           pointerEvents: "none",
+          background: cardExpanded ? "rgba(0,0,0,0.82)" : "transparent",
+          backdropFilter: cardExpanded ? "blur(6px)" : "none",
+          transition: "background 0.2s ease",
         }}>
-          {/* Name + mana pips */}
+          {/* Secondary (expanded): type, oracle text, P/T */}
+          {cardExpanded && (
+            <div style={{ marginBottom: 8 }}>
+              {card.type_line && (
+                <div style={{
+                  fontSize: 11, color: "rgba(255,255,255,0.5)",
+                  textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6,
+                }}>{card.type_line}</div>
+              )}
+              {card.oracle_text && (
+                <div style={{
+                  fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5,
+                  marginBottom: (card.power !== undefined) ? 6 : 0,
+                }}>{card.oracle_text}</div>
+              )}
+              {card.power !== undefined && card.toughness !== undefined && (
+                <div style={{
+                  fontSize: 12, color: "rgba(255,255,255,0.4)",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}>{card.power}/{card.toughness}</div>
+              )}
+            </div>
+          )}
+          {/* Primary: name + mana pips */}
           <div style={{
             display: "flex", alignItems: "center",
-            gap: 8, marginBottom: 4, flexWrap: "wrap",
+            gap: 8, flexWrap: "wrap",
           }}>
             <span style={{
               fontFamily: "'Bebas Neue', sans-serif",
@@ -463,19 +485,6 @@ export default function SwipeScreen({
               </div>
             )}
           </div>
-          {/* Type line */}
-          {card.type_line && (
-            <div style={{
-              fontSize: 12, color: "rgba(255,255,255,0.5)",
-              textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4,
-            }}>{card.type_line}</div>
-          )}
-          {/* Oracle text snippet */}
-          {oracleSnippet && (
-            <div style={{
-              fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.5,
-            }}>{oracleSnippet}</div>
-          )}
         </div>
       )}
 
@@ -570,51 +579,28 @@ export default function SwipeScreen({
         </div>
       )}
 
-      {/* ── Onboarding tip ── */}
-      {showTip && (
-        <div
-          onClick={dismissTipForever}
-          style={{
-            position: "absolute", inset: 0, zIndex: 300,
-            background: "rgba(0,0,0,0.82)",
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            gap: 20,
-            animation: "tipFadeIn 0.2s ease both",
-          }}
-        >
-          <style>{`@keyframes tipFadeIn { from { opacity:0; } to { opacity:1; } }`}</style>
-          <div style={{ textAlign: "center", padding: "0 32px" }}>
-            <div style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 28, letterSpacing: 4, color: "#ffffff", marginBottom: 24,
-            }}>HOW TO SWIPE</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {[
-                { dir: "← LEFT",  label: "SKIP",        color: "#FF6B6B" },
-                { dir: "BUTTON",  label: "MAYBE",        color: "rgba(255,255,255,0.7)" },
-                { dir: "RIGHT →", label: "ADD TO PILE",  color: "#6BFF9E" },
-              ].map(({ dir, label, color }) => (
-                <div key={dir} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  background: "rgba(255,255,255,0.05)",
-                  borderRadius: 12, padding: "14px 20px", gap: 16,
-                }}>
-                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 3, color }}>{dir}</span>
-                  <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 14, letterSpacing: 2, color: "rgba(255,255,255,0.7)" }}>{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <button
-            onClick={e => { e.stopPropagation(); dismissTipForever(); }}
-            style={{
-              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 8, color: "rgba(255,255,255,0.7)", cursor: "pointer",
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 14, letterSpacing: 3, padding: "10px 28px",
-            }}
-          >GOT IT</button>
+      {/* ── First-run swipe hint (subtle arrow) ── */}
+      {showTip && !done && idx === 0 && !dragging && !animOut && (
+        <div style={{
+          position: "absolute",
+          bottom: `calc(${BTNS_BOTTOM} + 90px)`,
+          left: 0, right: 0, zIndex: 4,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <style>{`
+            @keyframes swipeHint {
+              0%   { transform: translateX(-18px); opacity: 0.35; }
+              50%  { transform: translateX(18px);  opacity: 0.75; }
+              100% { transform: translateX(-18px); opacity: 0.35; }
+            }
+          `}</style>
+          <div style={{
+            animation: "swipeHint 1.8s ease-in-out infinite",
+            fontSize: 26, color: "rgba(255,255,255,0.65)",
+            fontFamily: "'Bebas Neue', sans-serif",
+            letterSpacing: 4,
+          }}>← →</div>
         </div>
       )}
     </div>
