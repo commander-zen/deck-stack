@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getCardImage } from "../lib/scryfall.js";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
+import { getSettings } from "../lib/settings.js";
 
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
 const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any number of cards named"));
 const isStackable  = c => isBasicLand(c) || isAnyNumber(c);
 
-const SWIPE_THRESHOLD = 60;
+const SWIPE_THRESHOLD = 80;
 const TIP_KEY = "ds_swipe_hint_shown";
 
 const SORT_OPTIONS = [
@@ -15,10 +16,9 @@ const SORT_OPTIONS = [
   { value: "edhrec", label: "EDHREC" },
 ];
 
-
-
 function haptic(pattern = 10) {
-  if ("vibrate" in navigator) navigator.vibrate(pattern);
+  if (!getSettings().haptics) return;
+  try { navigator.vibrate(pattern); } catch {}
 }
 
 export default function SwipeScreen({
@@ -63,6 +63,21 @@ export default function SwipeScreen({
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
 
+  // Inject game-changer glow keyframe once into document head
+  useEffect(() => {
+    if (!document.getElementById("gc-style")) {
+      const style = document.createElement("style");
+      style.id = "gc-style";
+      style.textContent = `
+        @keyframes gc-glow {
+          0%, 100% { box-shadow: 0 0 22px 6px #00cfff, 0 0 48px 16px rgba(0,207,255,0.25); }
+          50%       { box-shadow: 0 0 22px 6px #7b2fff, 0 0 48px 16px rgba(123,47,255,0.25); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   useEffect(() => {
     setImgError(false);
     setCardExpanded(false);
@@ -70,7 +85,7 @@ export default function SwipeScreen({
     clearTimeout(longPressTimerRef.current);
   }, [idx]);
 
-  // Preload next 4 art_crop images
+  // Preload next 4 large images
   useEffect(() => {
     effectiveCards.slice(idx + 1, idx + 5).forEach(c => {
       const url = getCardImage(c, "large");
@@ -126,7 +141,7 @@ export default function SwipeScreen({
       }
       setIdx(i => i + 1);
       setOffset(0); setAnimOut(null);
-    }, 260);
+    }, 285);
   }
 
   function doMaybe() {
@@ -201,21 +216,39 @@ export default function SwipeScreen({
 
   // ── Derived visuals ──────────────────────────────────────────────────────────
 
-  const artUrl = card ? (flipped ? getCardImage({ ...card, image_uris: card.card_faces?.[1]?.image_uris }, "large") : getCardImage(card, "large") ?? getCardImage(card, "normal")) : null;
+  const artUrl = card ? (flipped
+    ? getCardImage({ ...card, image_uris: card.card_faces?.[1]?.image_uris }, "large")
+    : getCardImage(card, "large") ?? getCardImage(card, "normal")
+  ) : null;
 
-  const rotation = animOut === "right" ? 14 : animOut === "left" ? -14 : offset / 22;
-  const tx       = animOut === "right" ? 560 : animOut === "left" ? -560 : offset;
+  // Rotation: capped at ±15deg during drag; ±30deg on fly-out
+  const rotation = animOut === "right" ? 30
+    : animOut === "left" ? -30
+    : Math.max(-15, Math.min(15, offset * 0.08));
 
   const artTransform = animOut === "maybe"
     ? "translateY(-30px) scale(0.97)"
-    : `translateX(${tx}px) rotate(${rotation}deg)`;
+    : animOut === "right" ? `translateX(110vw) rotate(30deg)`
+    : animOut === "left"  ? `translateX(-110vw) rotate(-30deg)`
+    : `translateX(${offset}px) rotate(${rotation}deg)`;
 
-  const artOpacity   = animOut ? 0 : 1;
+  const artOpacity = animOut ? 0 : 1;
+
   const artTransition = animOut
-    ? "transform 0.26s ease, opacity 0.26s ease"
-    : dragging ? "none" : "transform 0.18s ease";
+    ? (animOut === "maybe"
+        ? "transform 0.26s ease, opacity 0.26s ease"
+        : "transform 280ms ease-in, opacity 280ms ease-in")
+    : dragging
+      ? "none"
+      : "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)";
 
-  const commanderName = commanderCard?.name ?? null;
+  // Colored tint overlay: 0 until |offset|>20, maxes at 0.35 at threshold (80px)
+  const tintOpacity = Math.min(1, Math.max(0, (Math.abs(offset) - 20) / 60)) * 0.35;
+  const tintColor = offset >= 0 ? "#6BFF9E" : "#FF6B6B";
+
+  const isCommanderLegal = card?.legalities?.commander === "legal";
+  const isGameChanger    = card?.game_changer === true;
+  const commanderName    = commanderCard?.name ?? null;
 
   return (
     <div style={{
@@ -277,6 +310,36 @@ export default function SwipeScreen({
             pointerEvents: "none",
           }} />
 
+          {/* Drag intent color tint */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: tintColor,
+            opacity: tintOpacity,
+            pointerEvents: "none",
+            transition: dragging ? "none" : "opacity 0.15s ease",
+          }} />
+
+          {/* Commander-legal gold border */}
+          {isCommanderLegal && (
+            <div style={{
+              position: "absolute", inset: 0,
+              border: "2px solid #FFD700",
+              boxShadow: "0 0 8px rgba(255,215,0,0.5)",
+              pointerEvents: "none",
+              zIndex: 2,
+            }} />
+          )}
+
+          {/* Game Changer electric glow */}
+          {isGameChanger && (
+            <div style={{
+              position: "absolute", inset: 0,
+              animation: "gc-glow 1.5s ease-in-out infinite",
+              pointerEvents: "none",
+              zIndex: 3,
+            }} />
+          )}
+
           {/* Drag intent labels — opacity driven by offset/animOut */}
           <div style={{
             position: "absolute", top: 28, left: 20, zIndex: 5,
@@ -306,6 +369,21 @@ export default function SwipeScreen({
             pointerEvents: "none",
             transition: dragging ? "none" : "opacity 0.15s ease",
           }}>PASS</div>
+
+          {/* Game Changer lightning badge */}
+          {isGameChanger && (
+            <div style={{
+              position: "absolute",
+              top: "calc(env(safe-area-inset-top) + 52px)",
+              left: 14,
+              zIndex: 6,
+              pointerEvents: "none",
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#00cfff">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+          )}
 
           {/* Flip button — double-faced cards only */}
           {card?.card_faces?.length > 1 && (
@@ -412,8 +490,6 @@ export default function SwipeScreen({
           })}
         </div>
       )}
-
-
 
       {/* ── Done state ── */}
       {done && (

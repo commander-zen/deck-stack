@@ -1,11 +1,18 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Set a real Anthropic API key — replace `your-key-here` in `.env.local` (ANTHROPIC_API_KEY) and add the same key to the Vercel project's environment variables (server-side, not VITE_ prefixed).
+Next: Test swipe physics on device — verify spring-back feel (cubic-bezier bounce), gold border on commander-legal cards, and game_changer glow. Confirm ANTHROPIC_API_KEY is set in Vercel project env vars.
 
 ---
 
 ## Completed ✅
+
+- ✅ **SwipeScreen tactile physics, haptics, card indicators** (2026-05-19)
+  - Swipe physics: card follows finger via `translateX(offset) rotate(offset*0.08, ±15deg cap)`; threshold raised 60→80px; fly-out animates to `±110vw rotate(±30deg)` over 280ms ease-in; spring-back on release below threshold via `cubic-bezier(0.34, 1.56, 0.64, 1) 300ms`
+  - Drag tint overlay: green (#6BFF9E) on right drag, red (#FF6B6B) on left; opacity 0→0.35 from 20px to 80px offset
+  - Haptics: `getSettings().haptics` gating + try/catch wrapping all `navigator.vibrate` calls (iOS Safari safe)
+  - Commander-legal gold border: `card.legalities.commander === "legal"` → inset overlay with `border: 2px solid #FFD700` + `box-shadow: 0 0 8px rgba(255,215,0,0.5)`
+  - Game Changer: `card.game_changer === true` → pulsing `gc-glow` keyframe injected once into `document.head` + glow overlay + lightning bolt SVG badge (#00cfff) at top-left
 
 - ✅ **Claude API Edge Function proxy** (2026-05-19)
   - `api/translate.js` — Vercel Edge Function; accepts `POST { input, commanderName }`; reads `ANTHROPIC_API_KEY` from `process.env` (server-side only); returns `{ query }` or `{ query: input }` fallback; CORS header added for local dev
