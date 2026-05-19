@@ -53,6 +53,7 @@ export default async function handler(req) {
     input         = (body.input ?? "").trim();
     commanderName = body.commanderName ?? null;
     colorIdentity = Array.isArray(body.colorIdentity) ? body.colorIdentity : null;
+    console.log("[translate] request body:", { input, commanderName, colorIdentity });
   } catch {
     return new Response(JSON.stringify({ query: "" }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   }
@@ -80,6 +81,8 @@ export default async function handler(req) {
     if (!response.ok) throw new Error(`Anthropic ${response.status}`);
     const data = await response.json();
     const query = data.content[0].text.trim();
+    console.log("[translate] anthropic response:", JSON.stringify(data));
+    console.log("[translate] returning query:", query);
     return new Response(JSON.stringify({ query }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   } catch (err) {
     console.error("translate edge fn error:", err);

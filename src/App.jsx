@@ -4,7 +4,6 @@ import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
-import KanbanScreen  from "./screens/KanbanScreen.jsx";
 import SettingsScreen from "./screens/SettingsScreen.jsx";
 import WrecTagPicker from "./components/WrecTagPicker.jsx";
 import { autoDetectCategory } from "./constants/wrec.js";
@@ -59,7 +58,7 @@ export default function App() {
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   const [swipeOrder,    setSwipeOrder]    = useState("name");
   const [swipeDir,      setSwipeDir]      = useState("desc");
-  // screen: "kanban" | "search" | "swipe" | "pile" | "maybe" | "brews" | "settings"
+  // screen: "search" | "swipe" | "pile" | "maybe" | "brews" | "settings"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
@@ -843,7 +842,7 @@ export default function App() {
   // ── Nav helpers ───────────────────────────────────────────────────────────
   function goToStack() {
     if (swipeMounted) setScreen("swipe");
-    else setScreen("kanban");
+    else setScreen("search");
   }
 
   function goToSearch() { setScreen("search"); }
@@ -873,18 +872,6 @@ export default function App() {
   return (
     <>
       {/* ── Screens ── */}
-
-      {screen === "kanban" && (
-        <KanbanScreen
-          decks={decks}
-          activeDeckId={activeDeckId}
-          onOpenDeck={id => { handleSwitchDeck(id); }}
-          onNewBrew={() => { handleNewDeck(); }}
-          onUpdateStatus={handleUpdateDeckStatus}
-          authUser={authUser}
-          onOpenAuth={() => setAuthSheetOpen(true)}
-        />
-      )}
 
       {screen === "search" && (
         <SearchScreen
