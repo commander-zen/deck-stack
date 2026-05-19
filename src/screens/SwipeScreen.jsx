@@ -282,7 +282,12 @@ export default function SwipeScreen({
               display: "flex", alignItems: "center", justifyContent: "center",
               pointerEvents: "none",
             }}>
-              <div style={{ position: "relative", lineHeight: 0 }}>
+              <div style={{
+                position: "relative", lineHeight: 0,
+                width: "88vw",
+                height: "calc(88vw * 1.4)",
+                maxHeight: "62vh",
+              }}>
                 <img
                   src={artUrl}
                   alt={card?.name}
@@ -290,10 +295,9 @@ export default function SwipeScreen({
                   onError={() => setImgError(true)}
                   style={{
                     display: "block",
-                    maxWidth: "100vw",
-                    maxHeight: "100dvh",
-                    width: "auto",
-                    height: "auto",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "contain",
                     pointerEvents: "none",
                     // Gold border directly on the img element, tight to card art
                     ...(isCommanderLegal && {
