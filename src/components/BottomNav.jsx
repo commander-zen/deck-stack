@@ -113,7 +113,7 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
               <Icon color={color} />
               {!isGhost && (
                 <span style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 10,
                   letterSpacing: "0.15em",
                   color,

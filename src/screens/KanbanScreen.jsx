@@ -70,7 +70,7 @@ function DeckCard({ deck, isActive, onOpen, onAdvance, isDragging, onPointerDown
         {/* Name + commander */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 14, letterSpacing: 0.8,
             color: isActive ? 'var(--primary)' : 'var(--text)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -115,7 +115,7 @@ function DeckCard({ deck, isActive, onOpen, onAdvance, isDragging, onPointerDown
               borderRadius: 4,
               color: col.accent,
               fontSize: 10,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               letterSpacing: 0.5,
               padding: '1px 7px',
               cursor: 'pointer',
@@ -209,7 +209,7 @@ export default function KanbanScreen({ decks, activeDeckId, onOpenDeck, onNewBre
         minHeight: '100dvh',
         background: 'var(--bg)',
         color: 'var(--text)',
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Space Grotesk', sans-serif",
         touchAction: dragging ? 'none' : 'auto',
         cursor: dragging ? 'grabbing' : 'auto',
       }}
@@ -231,13 +231,13 @@ export default function KanbanScreen({ decks, activeDeckId, onOpenDeck, onNewBre
         }}>
           <span style={{
             flex: 1,
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 22, letterSpacing: 4,
             color: 'var(--primary)',
           }}>
             DECK STACK
           </span>
-          <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: "'DM Sans', sans-serif" }}>
+          <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: "'Space Grotesk', sans-serif" }}>
             {localDecks.length} brew{localDecks.length !== 1 ? 's' : ''}
           </span>
           <button
@@ -246,7 +246,7 @@ export default function KanbanScreen({ decks, activeDeckId, onOpenDeck, onNewBre
               background: 'transparent', border: 'none',
               color: authUser ? 'var(--primary)' : 'var(--muted)',
               fontSize: 11, cursor: 'pointer', padding: '4px 0',
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
             }}
           >
             {authUser ? '●' : '○'} {authUser ? 'synced' : 'sign in'}
@@ -263,7 +263,7 @@ export default function KanbanScreen({ decks, activeDeckId, onOpenDeck, onNewBre
             border: '1.5px solid rgba(0,229,204,0.3)',
             borderRadius: 12, background: 'transparent',
             color: 'var(--primary)',
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 15, letterSpacing: 3, cursor: 'pointer',
           }}
         >
@@ -308,7 +308,7 @@ export default function KanbanScreen({ decks, activeDeckId, onOpenDeck, onNewBre
                 marginBottom: 10,
               }}>
                 <span style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 13, letterSpacing: 2,
                   color: col.accent,
                 }}>
@@ -365,7 +365,7 @@ export default function KanbanScreen({ decks, activeDeckId, onOpenDeck, onNewBre
             border: '1px solid var(--primary)',
             borderRadius: 8,
             padding: '6px 12px',
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 13, letterSpacing: 1,
             color: 'var(--primary)',
             pointerEvents: 'none',

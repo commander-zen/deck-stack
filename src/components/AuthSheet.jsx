@@ -71,7 +71,7 @@ export default function AuthSheet({ open, onClose, user }) {
           }}>
             <span style={{
               flex: 1,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 18, letterSpacing: 4,
               color: "var(--primary)",
             }}>
@@ -109,7 +109,7 @@ export default function AuthSheet({ open, onClose, user }) {
                     border: "1px solid rgba(255,80,80,0.3)",
                     background: "rgba(255,80,80,0.07)",
                     color: "var(--danger)",
-                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: 15, letterSpacing: 3,
                     cursor: "pointer",
                   }}
@@ -131,7 +131,7 @@ export default function AuthSheet({ open, onClose, user }) {
                     border: "1.5px solid rgba(255,255,255,0.15)",
                     background: "rgba(255,255,255,0.05)",
                     color: "var(--text)",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: 15, fontWeight: 500,
                     cursor: status === "loading" ? "default" : "pointer",
                     opacity: status === "loading" ? 0.5 : 1,

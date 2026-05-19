@@ -159,7 +159,7 @@ export default function DeckReviewPill({ pile, onRemove }) {
           borderRadius: 20,
           padding: "8px 16px",
           color: "#fff",
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 14,
           letterSpacing: 2,
           cursor: "pointer",
@@ -205,7 +205,7 @@ export default function DeckReviewPill({ pile, onRemove }) {
               flexShrink: 0,
             }}>
               <span style={{
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 16,
                 letterSpacing: 3,
                 flex: 1,
@@ -229,7 +229,7 @@ export default function DeckReviewPill({ pile, onRemove }) {
                       fontSize: 10,
                       letterSpacing: 1,
                       cursor: "pointer",
-                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontFamily: "'Space Grotesk', sans-serif",
                     }}
                   >
                     {v.toUpperCase()}

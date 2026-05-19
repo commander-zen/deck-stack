@@ -28,7 +28,7 @@ html, body, #root {
 body {
   background: #12082a;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }

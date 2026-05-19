@@ -95,7 +95,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
       position: "fixed", inset: 0, zIndex: 200,
       background: "var(--bg)",
       display: "flex", flexDirection: "column",
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Space Grotesk', sans-serif",
       overflow: "hidden",
     }}>
 
@@ -121,7 +121,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
       }}>
         <span style={{
           flex: 1,
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 18, letterSpacing: 4,
           color: mode === "deck" ? "var(--primary)" : "var(--secondary)",
         }}>
@@ -134,7 +134,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
             border: "1px solid rgba(255,255,255,0.15)",
             background: "transparent",
             color: "rgba(255,255,255,0.6)",
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 13, letterSpacing: 2, cursor: "pointer",
           }}
         >DONE</button>
@@ -167,7 +167,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Space Grotesk', sans-serif" }}>
               COMMANDER
             </div>
             <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -191,7 +191,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
         <div style={{
           fontSize: 12, letterSpacing: 2, marginBottom: 8, flexShrink: 0,
           color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
         }}>
           {done ? "REVIEW COMPLETE" : `${idx + 1} / ${snapshot.length}`}
         </div>
@@ -210,7 +210,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               alignItems: "center", justifyContent: "center", gap: 14,
             }}>
               <div style={{
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 24, letterSpacing: 3, color: "var(--success)",
               }}>
                 ALL CARDS REVIEWED
@@ -222,7 +222,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                   border: "1px solid var(--primary)",
                   background: "rgba(91,143,255,0.1)",
                   color: "var(--primary)",
-                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 15, letterSpacing: 3, cursor: "pointer",
                 }}
               >BACK TO PILE</button>
@@ -252,7 +252,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 padding: "6px 14px",
                 border: "3px solid var(--success)", borderRadius: 8,
                 color: "var(--success)",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 26, letterSpacing: 4,
                 transform: "rotate(-15deg)",
                 background: "rgba(0,0,0,0.55)",
@@ -264,7 +264,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 padding: "6px 14px",
                 border: `3px solid ${passColor}`, borderRadius: 8,
                 color: passColor,
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 26, letterSpacing: 4,
                 transform: "rotate(15deg)",
                 background: "rgba(0,0,0,0.55)",
@@ -339,7 +339,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >✕</button>
-            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Space Grotesk', sans-serif" }}>
               {passLabel}
             </span>
           </div>
@@ -357,7 +357,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >♥</button>
-            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Bebas Neue', sans-serif" }}>
+            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Space Grotesk', sans-serif" }}>
               {keepLabel}
             </span>
           </div>

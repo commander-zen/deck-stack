@@ -50,7 +50,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
       minHeight: "100dvh",
       background: "var(--bg)",
       color: "var(--text)",
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Space Grotesk', sans-serif",
     }}>
 
       {/* Header */}
@@ -67,7 +67,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
         }}>
           <span style={{
             flex: 1,
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 22, letterSpacing: 4,
             color: "var(--primary)",
           }}>
@@ -75,7 +75,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
           </span>
           <span style={{
             fontSize: 11, color: "var(--muted)",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
           }}>
             {decks.length} saved
           </span>
@@ -99,7 +99,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
               borderRadius: 12,
               background: "transparent",
               color: "var(--primary)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 16, letterSpacing: 3,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -116,7 +116,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
               borderRadius: 12,
               background: "transparent",
               color: "var(--secondary)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 16, letterSpacing: 3,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -134,7 +134,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
             background: "transparent", border: "none",
             color: authUser ? "rgba(255,255,255,0.35)" : "rgba(91,143,255,0.6)",
             fontSize: 12,
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             cursor: "pointer",
             padding: "6px 18px",
             textAlign: "center",
@@ -235,7 +235,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                     {isActive && (
                       <span style={{
                         marginLeft: 8, fontSize: 10, letterSpacing: 1,
-                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontFamily: "'Space Grotesk', sans-serif",
                         color: "var(--primary)", opacity: 0.7,
                       }}>ACTIVE</span>
                     )}
@@ -256,7 +256,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                         padding: "5px 10px", borderRadius: 6,
                         border: "1px solid rgba(255,255,255,0.15)",
                         background: "transparent", color: "var(--muted)",
-                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontFamily: "'Space Grotesk', sans-serif",
                         fontSize: 11, letterSpacing: 1, cursor: "pointer",
                       }}
                     >CANCEL</button>
@@ -267,7 +267,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                         border: "1px solid rgba(255,80,80,0.4)",
                         background: "rgba(255,80,80,0.1)",
                         color: "var(--danger)",
-                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontFamily: "'Space Grotesk', sans-serif",
                         fontSize: 11, letterSpacing: 1, cursor: "pointer",
                       }}
                     >DELETE</button>

@@ -870,7 +870,7 @@ export default function App() {
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <span style={{
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 18, letterSpacing: 4, color: "var(--muted)",
         }}>
           LOADING…
@@ -996,7 +996,7 @@ export default function App() {
           padding: "10px 18px",
           color: "var(--text)",
           fontSize: 13,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
           maxWidth: "min(90vw, 360px)",
           width: "max-content",
           textAlign: "center",

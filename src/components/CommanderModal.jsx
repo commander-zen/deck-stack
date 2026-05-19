@@ -98,7 +98,7 @@ export default function CommanderModal({ card, onClose }) {
         {/* Commander name */}
         <div style={{
           padding: "14px 16px",
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "'Space Grotesk', sans-serif",
           fontSize: 24, letterSpacing: 3,
           color: "#ffffff",
         }}>

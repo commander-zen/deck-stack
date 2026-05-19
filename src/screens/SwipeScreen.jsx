@@ -221,7 +221,7 @@ export default function SwipeScreen({
     <div style={{
       position: "fixed", inset: 0,
       background: "#000",
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Space Grotesk', sans-serif",
       overflow: "hidden",
     }}>
 
@@ -263,7 +263,7 @@ export default function SwipeScreen({
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <span style={{
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 28, color: "#ffffff", letterSpacing: 2,
                 textAlign: "center", padding: "0 32px",
               }}>{card?.name}</span>
@@ -285,7 +285,7 @@ export default function SwipeScreen({
             padding: "5px 12px",
             border: "2.5px solid #6BFF9E", borderRadius: 8,
             color: "#6BFF9E",
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 24, letterSpacing: 3,
             transform: "rotate(-12deg)",
             background: "rgba(0,0,0,0.5)",
@@ -299,7 +299,7 @@ export default function SwipeScreen({
             padding: "5px 12px",
             border: "2.5px solid #FF6B6B", borderRadius: 8,
             color: "#FF6B6B",
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 24, letterSpacing: 3,
             transform: "rotate(12deg)",
             background: "rgba(0,0,0,0.5)",
@@ -317,7 +317,7 @@ export default function SwipeScreen({
                 border: "1px solid rgba(255,255,255,0.2)",
                 borderRadius: 20,
                 padding: "6px 14px",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 13, letterSpacing: 2,
                 color: "rgba(255,255,255,0.7)",
                 cursor: "pointer",
@@ -352,7 +352,7 @@ export default function SwipeScreen({
               style={{
                 background: "transparent", border: "none",
                 color: "rgba(255,255,255,0.4)",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 11, letterSpacing: 2, cursor: "pointer",
                 padding: "2px 6px",
               }}
@@ -365,7 +365,7 @@ export default function SwipeScreen({
               border: "1px solid rgba(255,255,255,0.15)",
               background: "rgba(0,0,0,0.5)",
               color: "rgba(255,255,255,0.4)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 10, letterSpacing: 1, cursor: "pointer", lineHeight: 1,
             }}
           >
@@ -403,7 +403,7 @@ export default function SwipeScreen({
                   border: "none",
                   borderBottom: "1px solid rgba(255,255,255,0.05)",
                   color: active ? "#ffffff" : "rgba(255,255,255,0.5)",
-                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 12, letterSpacing: 2,
                   cursor: "pointer", textAlign: "left",
                 }}
@@ -424,7 +424,7 @@ export default function SwipeScreen({
           gap: 16,
         }}>
           <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 32, letterSpacing: 4, color: "#ffffff",
           }}>ALL CARDS SEEN</div>
           <div style={{ fontSize: 14, color: "rgba(255,255,255,0.45)" }}>
@@ -437,7 +437,7 @@ export default function SwipeScreen({
               border: "1px solid rgba(91,143,255,0.5)",
               background: "rgba(91,143,255,0.12)",
               color: "var(--primary)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 16, letterSpacing: 3, cursor: "pointer",
             }}
           >VIEW PILE</button>
@@ -448,7 +448,7 @@ export default function SwipeScreen({
               border: "1px solid rgba(255,255,255,0.12)",
               background: "transparent",
               color: "rgba(255,255,255,0.45)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 16, letterSpacing: 3, cursor: "pointer",
             }}
           >SEARCH MORE</button>
@@ -474,7 +474,7 @@ export default function SwipeScreen({
           <div style={{
             animation: "swipeHint 1.8s ease-in-out infinite",
             fontSize: 26, color: "rgba(255,255,255,0.65)",
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             letterSpacing: 4,
           }}>← →</div>
         </div>

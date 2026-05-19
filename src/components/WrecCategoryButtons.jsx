@@ -15,7 +15,7 @@ export default function WrecCategoryButtons({ currentTags = [], onToggle }) {
               border: isActive ? `1px solid ${chip.border}` : "1px solid rgba(255,255,255,0.08)",
               background: isActive ? chip.bg : "rgba(255,255,255,0.04)",
               color: isActive ? chip.color : "var(--text)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 13, letterSpacing: 2,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "space-between",

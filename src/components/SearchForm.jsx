@@ -33,7 +33,7 @@ const inputStyle = {
   borderRadius: 10,
   color: "var(--text)",
   fontSize: 16,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Space Grotesk', sans-serif",
   padding: "11px 13px",
   outline: "none",
   caretColor: "var(--primary)",
@@ -46,7 +46,7 @@ function chip(active, color = "var(--primary)") {
     border: active ? `1px solid ${color}` : "1px solid rgba(255,255,255,0.15)",
     background: active ? `${color}22` : "transparent",
     color: active ? color : "rgba(255,255,255,0.6)",
-    fontFamily: "'Bebas Neue', sans-serif",
+    fontFamily: "'Space Grotesk', sans-serif",
     fontSize: 14, letterSpacing: 1.5,
     cursor: "pointer", flexShrink: 0,
     transition: "all 0.12s",
@@ -72,7 +72,7 @@ function FilterSectionLabel({ children }) {
   return (
     <div style={{
       fontSize: 11, fontWeight: 600,
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Space Grotesk', sans-serif",
       letterSpacing: "0.1em",
       textTransform: "uppercase",
       color: "var(--muted)",
@@ -115,7 +115,7 @@ function AddInputRow({ value, onChange, onAdd, placeholder, mono = false }) {
         autoComplete="off"
         style={{
           ...inputStyle, flex: 1,
-          fontFamily: mono ? "'IBM Plex Mono', monospace" : "'DM Sans', sans-serif",
+          fontFamily: mono ? "'IBM Plex Mono', monospace" : "'Space Grotesk', sans-serif",
         }}
       />
       <button type="button" onClick={onAdd} style={{
@@ -123,7 +123,7 @@ function AddInputRow({ value, onChange, onAdd, placeholder, mono = false }) {
         border: "1px solid rgba(255,255,255,0.15)",
         background: "rgba(255,255,255,0.05)",
         color: "rgba(255,255,255,0.7)",
-        fontFamily: "'Bebas Neue', sans-serif",
+        fontFamily: "'Space Grotesk', sans-serif",
         fontSize: 14, letterSpacing: 2, cursor: "pointer",
         flexShrink: 0, minHeight: 44,
       }}>
@@ -282,7 +282,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
             spellCheck={false}
             style={{
               flex: 1, background: "none", border: "none", outline: "none",
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 16, color: "var(--text)",
               caretColor: "var(--primary)",
               minWidth: 0,
@@ -318,7 +318,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
               borderRadius: 10,
               padding: "1px 6px",
               fontSize: 11, fontWeight: 600,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               lineHeight: 1.4,
             }}>
               {activeFilterCount}
@@ -353,7 +353,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
                     border: active ? `2px solid ${col}` : "1px solid rgba(255,255,255,0.15)",
                     background: active ? `${col}22` : "rgba(255,255,255,0.03)",
                     color: active ? col : "rgba(255,255,255,0.55)",
-                    fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, cursor: "pointer",
+                    fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     transition: "all 0.12s", flexShrink: 0,
                   }}>
@@ -430,7 +430,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
                 border: "1px solid rgba(255,255,255,0.15)",
                 background: "rgba(255,255,255,0.05)",
                 color: "rgba(255,255,255,0.7)",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 14, letterSpacing: 2, cursor: "pointer",
                 flexShrink: 0, minHeight: 44,
               }}>

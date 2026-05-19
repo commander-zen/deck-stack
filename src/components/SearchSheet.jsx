@@ -54,7 +54,7 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
           }}>
             <span style={{
               flex: 1,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 18, letterSpacing: 4,
               color: "var(--primary)",
             }}>
@@ -65,7 +65,7 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
               background: "rgba(91,143,255,0.15)",
               border: "1px solid rgba(91,143,255,0.35)",
               color: "var(--primary)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 11, letterSpacing: 2,
               marginRight: 14,
             }}>

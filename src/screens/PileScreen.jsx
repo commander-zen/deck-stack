@@ -566,7 +566,7 @@ export default function PileScreen({
   }
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#000", color: "var(--text)", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ minHeight: "100dvh", background: "#000", color: "var(--text)", fontFamily: "'Space Grotesk', sans-serif" }}>
 
       {/* ── Card detail sheet ── */}
       {detailCard && (() => {
@@ -587,7 +587,7 @@ export default function PileScreen({
               background: "var(--panel)",
               borderRadius: "16px 16px 0 0",
               padding: "0 16px calc(max(20px, env(safe-area-inset-bottom)) + 6px)",
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               maxHeight: "85dvh", overflowY: "auto",
             }}>
               {/* Drag handle */}
@@ -664,7 +664,7 @@ export default function PileScreen({
                 onClick={() => setCmdModalOpen(true)}
                 style={{
                   flex: 1,
-                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 18, letterSpacing: 3, color: "var(--text)",
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   cursor: "pointer",
@@ -676,7 +676,7 @@ export default function PileScreen({
           ) : (
             <span style={{
               flex: 1,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 18, letterSpacing: 4, color: "var(--primary)",
             }}>
               {activeTab === "deck" ? "DECK" : "CONSIDERING"}
@@ -713,7 +713,7 @@ export default function PileScreen({
                 </span>
                 <span style={{
                   fontSize: 8, color: "var(--muted)",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   whiteSpace: "nowrap",
                 }}>
                   Estimated · excl. combos
@@ -747,7 +747,7 @@ export default function PileScreen({
                 background: "transparent", border: "none",
                 color: copied ? "var(--success)" : "rgba(255,255,255,0.45)",
                 cursor: "pointer", padding: "8px",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 11, letterSpacing: 1.5, borderRadius: 6,
                 transition: "color 0.2s",
                 flexShrink: 0,
@@ -794,7 +794,7 @@ export default function PileScreen({
               border: "none",
               borderTop: "1px solid rgba(91,143,255,0.2)",
               cursor: "pointer",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 13, letterSpacing: 3,
               color: "var(--primary)",
             }}
@@ -851,7 +851,7 @@ export default function PileScreen({
                 border: "1px solid rgba(167,139,250,0.25)",
                 borderRadius: 10, cursor: "pointer",
                 color: "var(--secondary)",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 13, letterSpacing: 2,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               }}
@@ -872,7 +872,7 @@ export default function PileScreen({
                 border: "1px solid rgba(255,80,80,0.2)",
                 borderRadius: 10, cursor: "pointer",
                 color: "rgba(255,80,80,0.55)",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 13, letterSpacing: 2,
               }}
             >
@@ -902,7 +902,7 @@ export default function PileScreen({
               border: `1px solid ${activeTab === "deck" ? "rgba(91,143,255,0.45)" : "rgba(167,139,250,0.45)"}`,
               background: activeTab === "deck" ? "rgba(91,143,255,0.12)" : "rgba(167,139,250,0.12)",
               color: activeTab === "deck" ? "var(--primary)" : "var(--secondary)",
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 17, letterSpacing: 3,
               cursor: "pointer",
               backdropFilter: "blur(10px)",

@@ -76,7 +76,7 @@ function FieldLabel({ children }) {
       fontSize: 10, fontWeight: 600,
       letterSpacing: "0.12em", textTransform: "uppercase",
       color: "var(--muted)", marginBottom: 6,
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Space Grotesk', sans-serif",
     }}>
       {children}
     </div>
@@ -323,7 +323,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
           }}>
             <span style={{
               flex: 1,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 18, letterSpacing: 4,
               color: "var(--secondary)",
             }}>
@@ -365,7 +365,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
                   background: "var(--panel)",
                   border: "1px solid rgba(255,255,255,0.07)",
                   borderRadius: 10, padding: "12px 14px",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: 14, color: "var(--text)",
                   outline: "none", caretColor: "var(--secondary)",
                 }}
@@ -448,7 +448,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
               }}
             >
               <span style={{
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 20, letterSpacing: "0.12em",
                 color: isSuccess
                   ? "var(--success)"

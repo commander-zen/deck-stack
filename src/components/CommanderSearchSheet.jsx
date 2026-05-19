@@ -115,7 +115,7 @@ export default function CommanderSearchSheet({
           }}>
             <span style={{
               flex: 1,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 18, letterSpacing: 4,
               color: "var(--primary)",
             }}>
@@ -147,7 +147,7 @@ export default function CommanderSearchSheet({
                 background: "var(--panel)",
                 border: "1px solid rgba(255,255,255,0.07)",
                 borderRadius: 10, padding: "12px 14px",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 16, color: "var(--text)",
                 outline: "none", caretColor: "var(--primary)",
               }}

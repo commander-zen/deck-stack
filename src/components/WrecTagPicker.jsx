@@ -21,7 +21,7 @@ export default function WrecTagPicker({ card, wrecTags, onAssign, onClose }) {
         background: "var(--panel)",
         borderRadius: "16px 16px 0 0",
         padding: "0 16px calc(max(20px, env(safe-area-inset-bottom)) + 6px)",
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Space Grotesk', sans-serif",
       }}>
         {/* Drag handle */}
         <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)", margin: "14px auto 16px" }} />

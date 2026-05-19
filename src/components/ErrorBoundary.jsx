@@ -114,7 +114,7 @@ export default class ErrorBoundary extends Component {
                 background: "rgba(255,80,80,0.1)",
                 border: "1.5px solid rgba(255,80,80,0.4)",
                 borderRadius: 12, padding: "15px 20px",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 16, letterSpacing: "0.1em",
                 color: "var(--danger)", cursor: "pointer",
               }}
@@ -129,7 +129,7 @@ export default class ErrorBoundary extends Component {
                 background: "rgba(91,143,255,0.08)",
                 border: "1.5px solid rgba(91,143,255,0.3)",
                 borderRadius: 12, padding: "15px 20px",
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 16, letterSpacing: "0.1em",
                 color: "var(--primary)", cursor: "pointer",
               }}

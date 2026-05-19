@@ -106,7 +106,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
       minHeight: "100dvh",
       background: "var(--bg)",
       color: "var(--text)",
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Space Grotesk', sans-serif",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -124,7 +124,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
         {/* ── Title ── */}
         <div style={{ padding: "48px 0 20px" }}>
           <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "'Space Grotesk', sans-serif",
             fontSize: 48, lineHeight: 1,
             letterSpacing: "0.04em",
             color: "var(--text)",
@@ -195,7 +195,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           >
             <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>👑</span>
             <span style={{
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 13,
               color: commanderCard ? "var(--secondary)" : "var(--muted)",
               overflow: "hidden",
@@ -240,7 +240,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                   style={{
                     flex: 1,
                     background: "none", border: "none", outline: "none",
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: 16, color: "var(--text)",
                     caretColor: "var(--secondary)",
                   }}
@@ -343,7 +343,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 border: "none",
                 outline: "none",
                 padding: "14px 16px",
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Space Grotesk', sans-serif",
                 fontSize: 15,
                 color: loading ? "var(--muted)" : "var(--text)",
                 caretColor: "var(--primary)",
@@ -391,7 +391,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
             }}
           >
             <span style={{
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "'Space Grotesk', sans-serif",
               fontSize: 22, letterSpacing: "0.12em",
               color: loading ? "rgba(255,255,255,0.2)" : "var(--primary)",
             }}>
