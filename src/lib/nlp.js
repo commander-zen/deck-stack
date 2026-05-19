@@ -1,4 +1,4 @@
-export async function translateToScryfall(input) {
+export async function translateToScryfall(input, commanderCard = null) {
   const raw = input.trim();
   if (!raw) return "";
 
@@ -6,7 +6,11 @@ export async function translateToScryfall(input) {
     const res = await fetch("/api/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input: raw, commanderName: null }),
+      body: JSON.stringify({
+        input: raw,
+        commanderName:  commanderCard?.name ?? null,
+        colorIdentity:  commanderCard?.color_identity ?? null,
+      }),
     });
 
     if (!res.ok) throw new Error(`translate ${res.status}`);

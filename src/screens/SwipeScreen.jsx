@@ -275,20 +275,43 @@ export default function SwipeScreen({
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
         >
-          {/* Art image */}
+          {/* Art image — centered, naturally sized so overlays are tight to card bounds */}
           {artUrl && !imgError ? (
-            <img
-              src={artUrl}
-              alt={card?.name}
-              draggable={false}
-              onError={() => setImgError(true)}
-              style={{
-                position: "absolute", inset: 0,
-                width: "100%", height: "100%",
-                objectFit: "contain", objectPosition: "center center",
-                pointerEvents: "none",
-              }}
-            />
+            <div style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              pointerEvents: "none",
+            }}>
+              <div style={{ position: "relative", lineHeight: 0 }}>
+                <img
+                  src={artUrl}
+                  alt={card?.name}
+                  draggable={false}
+                  onError={() => setImgError(true)}
+                  style={{
+                    display: "block",
+                    maxWidth: "100vw",
+                    maxHeight: "100dvh",
+                    width: "auto",
+                    height: "auto",
+                    pointerEvents: "none",
+                    // Gold border directly on the img element, tight to card art
+                    ...(isCommanderLegal && {
+                      border: "2px solid #FFD700",
+                      boxShadow: "0 0 8px rgba(255,215,0,0.5)",
+                    }),
+                  }}
+                />
+                {/* Drag intent tint — scoped to card image only */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: tintColor,
+                  opacity: tintOpacity,
+                  pointerEvents: "none",
+                  transition: dragging ? "none" : "opacity 0.15s ease",
+                }} />
+              </div>
+            </div>
           ) : (
             <div style={{
               position: "absolute", inset: 0,
@@ -309,26 +332,6 @@ export default function SwipeScreen({
             background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0.92) 100%)",
             pointerEvents: "none",
           }} />
-
-          {/* Drag intent color tint */}
-          <div style={{
-            position: "absolute", inset: 0,
-            background: tintColor,
-            opacity: tintOpacity,
-            pointerEvents: "none",
-            transition: dragging ? "none" : "opacity 0.15s ease",
-          }} />
-
-          {/* Commander-legal gold border */}
-          {isCommanderLegal && (
-            <div style={{
-              position: "absolute", inset: 0,
-              border: "2px solid #FFD700",
-              boxShadow: "0 0 8px rgba(255,215,0,0.5)",
-              pointerEvents: "none",
-              zIndex: 2,
-            }} />
-          )}
 
           {/* Game Changer electric glow */}
           {isGameChanger && (

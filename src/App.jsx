@@ -158,7 +158,7 @@ export default function App() {
     setWrecTags(deck.tags ?? {});
     setAutoTagged(new Set()); // loaded tags are user-confirmed; start fresh
 
-    setSwipeMounted(sc.length > 0);
+    setSwipeMounted(false);
     setScreen("search");
   }
 

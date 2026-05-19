@@ -105,6 +105,18 @@ function LoadingOverlay({ phase }) {
   );
 }
 
+// JEEVES_BLURB — rotating tip copy. Replace this array to update all tips.
+const TIPS = [
+  "Swipe right to keep a card, left to pass. Arrow keys work too.",
+  "Try searching 'aggressive ramp package' or 'cheap board wipes under 3 mana'.",
+  "Set a commander first and searches will automatically filter by color identity.",
+  "WREC score tracks deck balance: ramp, draw, interaction, mana base, and win conditions.",
+  "Unsure about a card? Swipe up to send it to the Maybeboard instead.",
+  "Tap any card in the Pile to inspect it. Long-press to crown it as commander.",
+  "Import a Moxfield URL or paste a decklist using the Import button on the search screen.",
+  "In green or black decks, searching "counters" finds +1/+1 synergies, not counterspells.",
+];
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange }) {
@@ -119,6 +131,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   const [rawMode,      setRawMode]      = useState(() => getSettings().rawQueryMode);
   // localLoading: false | "translating" | "animating-full" | "animating-short"
   const [localLoading, setLocalLoading] = useState(false);
+  const [tipIndex,     setTipIndex]     = useState(0); // JEEVES_BLURB
 
   const abortRef    = useRef(null);
   const cmdInputRef = useRef(null);
@@ -169,6 +182,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     const input = brewInput.trim();
     if (!input || isDisabled) return;
 
+    setTipIndex(i => (i + 1) % TIPS.length); // JEEVES_BLURB
     saveToHistory(input);
     setHistoryIndex(-1);
     setDraftInput("");
@@ -180,7 +194,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     } else {
       setLocalLoading("translating");
       try {
-        query = await translateToScryfall(input);
+        query = await translateToScryfall(input, commanderCard);
       } catch {
         query = input;
       }
@@ -440,6 +454,17 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               color: "var(--muted)", marginBottom: 8,
             }}>
               SEARCH YOUR STACK
+            </div>
+
+            {/* JEEVES_BLURB — rotating tip */}
+            <div style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 12,
+              color: "var(--muted)",
+              marginBottom: 10,
+              lineHeight: 1.4,
+            }}>
+              {TIPS[tipIndex]}
             </div>
 
             {/* Input */}
