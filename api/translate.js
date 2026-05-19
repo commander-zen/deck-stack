@@ -63,8 +63,12 @@ export default async function handler(req) {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
+      signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_API_KEY,
@@ -77,6 +81,7 @@ export default async function handler(req) {
         messages: [{ role: "user", content: input }],
       }),
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errBody = await response.text();
