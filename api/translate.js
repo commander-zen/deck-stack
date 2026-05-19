@@ -80,6 +80,7 @@ export default async function handler(req) {
 
     if (!response.ok) throw new Error(`Anthropic ${response.status}`);
     const data = await response.json();
+    console.log("[translate] raw haiku response:", JSON.stringify(data.content));
     const query = data.content[0].text.trim();
     console.log("[translate] anthropic response:", JSON.stringify(data));
     console.log("[translate] returning query:", query);
