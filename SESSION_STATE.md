@@ -1,11 +1,17 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Add `VITE_ANTHROPIC_API_KEY` to `.env.local` with a real Anthropic API key, then test the brew prompt flow end-to-end.
+Next: Wire settings values into SwipeScreen (haptics, swipeAnimations) and SearchScreen (rawQueryMode, fullLoadingAnimation) — the toggles exist but nothing reads them yet.
 
 ---
 
 ## Completed ✅
+
+- ✅ **Settings screen** (2026-05-19)
+  - `src/lib/settings.js` — `getSettings()`, `updateSetting(key, val)`, `DEFAULT_SETTINGS`; persists to `cardstock_settings` in localStorage
+  - `src/screens/SettingsScreen.jsx` — four toggles in two sections (SWIPE EXPERIENCE: haptics, swipeAnimations; SEARCH: fullLoadingAnimation, rawQueryMode); inline pill toggles, no save button, back → brews
+  - `App.jsx` — imports SettingsScreen, renders on `screen === "settings"`, passes `onOpenSettings` to BrewsScreen
+  - `BrewsScreen.jsx` — added `onOpenSettings` prop + gear icon button (44×44 touch target) in header top-right
 
 - ✅ **NNG Mobile UX Redesign** (2026-05-18)
   - Swipe gesture labels: opacity-driven KEEP/PASS labels (onset at 20px offset), correctly positioned left=KEEP/right=PASS, fade on release
@@ -15,21 +21,21 @@ Next: Add `VITE_ANTHROPIC_API_KEY` to `.env.local` with a real Anthropic API key
   - Header audit: PileScreen header already 52px, no changes needed
   - First-run swipe hint: full "HOW TO SWIPE" modal replaced with subtle animated `← →` arrow; new flag `ds_swipe_hint_shown`; dismissed on first completed swipe
 
+- ✅ **NLP translator + Anthropic removal** (2026-05-18)
+  - Replaced Anthropic API brew pipeline with synchronous `translateToScryfall()` from `src/lib/nlp.js`
+  - Added archetype vocabulary (blink, aggro, turbo, stax, voltron, aristocrats, tokens, reanimate, wheels) + safety fallback (query < 4 chars → `name:${raw}`)
+  - Fixed `oracletag:` → `otag:` (6 occurrences in nlp.js)
+  - Added terminal-style search history (ArrowUp/Down, max 10, deduped, `ds_search_history` key)
+  - Live translated query preview shown as mono subtitle
+
 - ✅ **Natural language brew prompt** (2026-05-17)
-  - Created `src/services/brewPrompt.js` — calls Claude Haiku via Anthropic API, returns Scryfall query string
-  - Created `src/services/validateBrewQuery.js` — validates query against Scryfall, shuffles/returns 22 cards or null
-  - Replaced NLP search input in `SearchScreen.jsx` with brew prompt input
-  - Rotating placeholder array on mount and on clear
-  - Loading state: placeholder = "finding your cards...", input locked, no spinner
-  - Error state: placeholder resets after 3s on Scryfall failure
-  - Removed `lib/nlp.js` usage from SearchScreen (file still exists, no longer imported)
-  - Requires `VITE_ANTHROPIC_API_KEY` in `.env.local` — placeholder key added, needs real value
+  - `src/services/brewPrompt.js` and `validateBrewQuery.js` exist as dead code (no longer imported)
 
 ---
 
 ## Known Issues
 
-- `VITE_ANTHROPIC_API_KEY` in `.env.local` is empty — brew prompt will fail until populated
-- `src/lib/nlp.js` is now dead code — not imported anywhere, candidate for deletion
+- Settings values not yet consumed — `haptics`, `swipeAnimations`, `fullLoadingAnimation`, `rawQueryMode` are stored but nothing reads them from `getSettings()` at runtime
 - `_deckCategory` never set on swiped or imported cards → WREC end-to-end broken (pre-existing)
 - `DeckReviewPill.jsx` existence — verify whether rendered in current App.jsx (pre-existing)
+- `src/services/brewPrompt.js` and `src/services/validateBrewQuery.js` — dead code, candidate for deletion

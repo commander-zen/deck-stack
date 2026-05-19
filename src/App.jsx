@@ -5,6 +5,7 @@ import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
 import KanbanScreen  from "./screens/KanbanScreen.jsx";
+import SettingsScreen from "./screens/SettingsScreen.jsx";
 import WrecTagPicker from "./components/WrecTagPicker.jsx";
 import { autoDetectCategory } from "./constants/wrec.js";
 import AuthSheet     from "./components/AuthSheet.jsx";
@@ -59,7 +60,7 @@ export default function App() {
   const [swipeDisplayLimit, setSwipeDisplayLimit] = useState(20);
   const [swipeOrder,    setSwipeOrder]    = useState("name");
   const [swipeDir,      setSwipeDir]      = useState("desc");
-  // screen: "kanban" | "search" | "swipe" | "pile" | "maybe" | "brews"
+  // screen: "kanban" | "search" | "swipe" | "pile" | "maybe" | "brews" | "settings"
   const [screen,        setScreen]        = useState("search");
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
@@ -955,7 +956,12 @@ export default function App() {
           onOpenAuth={() => setAuthSheetOpen(true)}
           onImport={handleImport}
           onSetCommanderForDeck={handleSetCommanderForDeck}
+          onOpenSettings={() => setScreen("settings")}
         />
+      )}
+
+      {screen === "settings" && (
+        <SettingsScreen onBack={() => setScreen("brews")} />
       )}
 
       {/* ── Pipeline position indicator ── */}
