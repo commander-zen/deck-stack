@@ -1,11 +1,21 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test swipe physics on device — verify spring-back feel (cubic-bezier bounce), gold border on commander-legal cards, and game_changer glow. Confirm ANTHROPIC_API_KEY is set in Vercel project env vars.
+Next: Test PileScreen swipe gestures on device — verify CUT/CONSIDER/REMOVE/MOVE TO DECK actions, spring-back on sub-threshold release, and haptic feedback. Also test WREC score reactivity as cards are added/removed.
 
 ---
 
 ## Completed ✅
+
+- ✅ **PileScreen list swipe-to-action + WREC score rebuild** (2026-05-19)
+  - `SwipeableRow` component: horizontal drag disambiguation (detects horizontal vs vertical before capturing pointer); spring-back `cubic-bezier(0.34,1.56,0.64,1) 200ms`; fly-off `200ms ease-in`; `onClickCapture` suppresses tap-to-detail on drag release; haptics via `getSettings().haptics` + try/catch
+  - DECK tab: swipe left → CUT (red, removes from pile); swipe right → CONSIDER (gold, moves to maybeboard)
+  - CONSIDERING tab: swipe left → REMOVE (red); swipe right → MOVE TO DECK (green)
+  - `handleMoveToMaybe(card)` and `handleMoveToPile(card)` added
+  - WREC section rebuilt in sticky header: `computeWrecScore()` batting-average formula (symmetric over/under penalty); 28px score number colored green/yellow/red; 6 colored segment chips with count/target; "WREC SCORE" underline button opens info bottom sheet
+  - WREC info sheet: methodology explanation + per-category rows with targets and descriptions
+  - All WREC values derived fresh from `pile` + `wrecTags` props on every render (no stale state)
+  - Grid view unchanged
 
 - ✅ **SwipeScreen tactile physics, haptics, card indicators** (2026-05-19)
   - Swipe physics: card follows finger via `translateX(offset) rotate(offset*0.08, ±15deg cap)`; threshold raised 60→80px; fly-out animates to `±110vw rotate(±30deg)` over 280ms ease-in; spring-back on release below threshold via `cubic-bezier(0.34, 1.56, 0.64, 1) 300ms`

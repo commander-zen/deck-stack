@@ -7,6 +7,7 @@ import WrecCategoryButtons from "../components/WrecCategoryButtons.jsx";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { WREC_CHIP, WREC_CATEGORIES, WREC_TARGETS } from "../constants/wrec.js";
 import { useGameChangers } from "../hooks/useGameChangers.js";
+import { getSettings } from "../lib/settings.js";
 
 // ── Card-type helpers ─────────────────────────────────────────────────────────
 const isBasicLand = c => Boolean(c?.type_line?.includes("Basic Land"));
@@ -14,7 +15,6 @@ const isAnyNumber = c => Boolean(c?.oracle_text?.includes("A deck can have any n
 const isStackable = c => isBasicLand(c) || isAnyNumber(c);
 
 // ── Export ────────────────────────────────────────────────────────────────────
-// Accepts the display pile (already collapsed) so stackable quantities print correctly.
 function buildExportText(displayPile, commander, rawPile) {
   const cmdCard = commander ? rawPile.find(c => c.instanceId === commander) : null;
   const rows = cmdCard
@@ -25,16 +25,11 @@ function buildExportText(displayPile, commander, rawPile) {
 }
 
 // ── Display pile ──────────────────────────────────────────────────────────────
-// - Stackable cards collapsed by name into a single row with qty (summed across any
-//   residual multi-entry groups from legacy data or undo edge-cases).
-// - Non-stackable cards deduplicated by Scryfall id (fallback: name).
-// - Commander card always gets priority in its position.
 function buildDisplayPile(pile, commanderInstanceId) {
-  const seenStackable    = new Map(); // name → index in result
-  const seenNonStackable = new Set(); // id/name key
+  const seenStackable    = new Map();
+  const seenNonStackable = new Set();
   const result           = [];
 
-  // Commander first (commanders are never stackable in practice)
   if (commanderInstanceId) {
     const cmd = pile.find(c => c.instanceId === commanderInstanceId);
     if (cmd && !isStackable(cmd)) {
@@ -45,7 +40,6 @@ function buildDisplayPile(pile, commanderInstanceId) {
 
   for (const card of pile) {
     if (commanderInstanceId && card.instanceId === commanderInstanceId) continue;
-
     if (isStackable(card)) {
       if (seenStackable.has(card.name)) {
         const i = seenStackable.get(card.name);
@@ -62,35 +56,38 @@ function buildDisplayPile(pile, commanderInstanceId) {
       }
     }
   }
-
   return result;
 }
 
-// Total logical card count (stackables contribute their qty, non-stackables contribute 1)
 function totalCount(pile) {
   return pile.reduce((sum, c) => sum + (c.qty ?? 1), 0);
 }
 
-// ── Deduplicate by oracle_id for pile review ──────────────────────────────────
 function dedupeByOracleId(cards) {
   const seen = new Set();
   const duplicates = [];
   const result = [];
   for (const card of cards) {
     const key = card.oracle_id ?? card.id ?? card.name;
-    if (seen.has(key)) {
-      duplicates.push(card.name);
-    } else {
-      seen.add(key);
-      result.push(card);
-    }
+    if (seen.has(key)) { duplicates.push(card.name); }
+    else { seen.add(key); result.push(card); }
   }
-  if (duplicates.length > 0) {
-    console.warn("Duplicate oracle_ids removed from pile review:", duplicates);
-  }
+  if (duplicates.length > 0) console.warn("Duplicate oracle_ids removed from pile review:", duplicates);
   return result;
 }
 
+// ── WREC score ────────────────────────────────────────────────────────────────
+function computeWrecScore(wrecBar) {
+  if (wrecBar.length === 0) return 0;
+  const scores = wrecBar.map(({ count, target }) => {
+    if (target <= 0) return 1;
+    const ratio = count / target;
+    return ratio <= 1 ? ratio : Math.max(0, 2 - ratio);
+  });
+  return scores.reduce((a, b) => a + b, 0) / scores.length;
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
 function ImageIcon({ color }) {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -109,10 +106,196 @@ function ListIcon({ color }) {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </svg>
+  );
+}
+
+function ConsiderIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  );
+}
+
+function MoveToDeckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+  );
+}
+
+// ── SwipeableRow ──────────────────────────────────────────────────────────────
+// Wraps a list row with horizontal swipe-to-action gesture handling.
+// leftAction / rightAction: { bg, label, icon }
+// onSwipeLeft / onSwipeRight: callback fired after fly-off animation
+function SwipeableRow({ onSwipeLeft, onSwipeRight, leftAction, rightAction, children }) {
+  const [offset,   setOffset]   = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [flying,   setFlying]   = useState(null); // "left" | "right" | null
+
+  const startRef        = useRef(null); // { x, y }
+  const capturingRef    = useRef(false);
+  const dragOccurredRef = useRef(false);
+
+  function onPD(e) {
+    if (e.target.closest("button")) return;
+    startRef.current     = { x: e.clientX, y: e.clientY };
+    capturingRef.current = false;
+  }
+
+  function onPM(e) {
+    if (!startRef.current) return;
+    const dx = e.clientX - startRef.current.x;
+    const dy = e.clientY - startRef.current.y;
+
+    if (!capturingRef.current) {
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) {
+        // Clearly vertical — abandon
+        startRef.current = null;
+        return;
+      }
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        capturingRef.current    = true;
+        dragOccurredRef.current = true;
+        setDragging(true);
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+      }
+      return;
+    }
+
+    setOffset(dx);
+  }
+
+  function onPU(e) {
+    if (!startRef.current) return;
+    const finalDx = capturingRef.current ? (e.clientX - startRef.current.x) : 0;
+    startRef.current     = null;
+    capturingRef.current = false;
+    setDragging(false);
+
+    if (finalDx > 60 && onSwipeRight) {
+      try { if (getSettings().haptics) navigator.vibrate(25); } catch {}
+      setFlying("right");
+      setTimeout(() => onSwipeRight(), 200);
+    } else if (finalDx < -60 && onSwipeLeft) {
+      try { if (getSettings().haptics) navigator.vibrate(25); } catch {}
+      setFlying("left");
+      setTimeout(() => onSwipeLeft(), 200);
+    } else {
+      setOffset(0);
+    }
+  }
+
+  function onPCancel() {
+    startRef.current     = null;
+    capturingRef.current = false;
+    setDragging(false);
+    setOffset(0);
+  }
+
+  const transform = flying === "right" ? "translateX(110%)"
+    : flying === "left" ? "translateX(-110%)"
+    : `translateX(${offset}px)`;
+
+  const transition = flying   ? "transform 200ms ease-in"
+    : dragging ? "none"
+    : "transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+
+  const showLeftDrawer  = (offset < -20 || flying === "left")  && leftAction;
+  const showRightDrawer = (offset > 20  || flying === "right") && rightAction;
+
+  return (
+    <div
+      style={{ position: "relative", overflow: "hidden" }}
+      onClickCapture={e => {
+        if (dragOccurredRef.current) {
+          dragOccurredRef.current = false;
+          e.stopPropagation();
+        }
+      }}
+    >
+      {/* Action revealed by left swipe (card slides left, drawer on right) */}
+      {showLeftDrawer && (
+        <div style={{
+          position: "absolute", right: 0, top: 0, bottom: 0,
+          display: "flex", alignItems: "center", gap: 6,
+          padding: "0 20px",
+          background: leftAction.bg,
+          minWidth: 90,
+          color: "#fff",
+        }}>
+          {leftAction.icon}
+          <span style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 11, letterSpacing: 2, fontWeight: 600,
+          }}>{leftAction.label}</span>
+        </div>
+      )}
+
+      {/* Action revealed by right swipe (card slides right, drawer on left) */}
+      {showRightDrawer && (
+        <div style={{
+          position: "absolute", left: 0, top: 0, bottom: 0,
+          display: "flex", alignItems: "center", gap: 6,
+          padding: "0 20px",
+          background: rightAction.bg,
+          minWidth: 90,
+          color: "#fff",
+        }}>
+          {rightAction.icon}
+          <span style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 11, letterSpacing: 2, fontWeight: 600,
+          }}>{rightAction.label}</span>
+        </div>
+      )}
+
+      {/* Sliding card content */}
+      <div
+        onPointerDown={onPD}
+        onPointerMove={onPM}
+        onPointerUp={onPU}
+        onPointerCancel={onPCancel}
+        style={{
+          transform,
+          transition,
+          position: "relative",
+          zIndex: 1,
+          background: "#000",
+          touchAction: "pan-y",
+          userSelect: "none",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 // NAV_HEIGHT (60) + STACK & SWIPE button (~52px) + gap (18px)
 const FAB_CLEARANCE = NAV_HEIGHT + 52 + 18;
 
+const WREC_INFO = [
+  { cat: "Ramp",            target: 10, desc: "Cards that increase your mana production" },
+  { cat: "Card Advantage",  target: 12, desc: "Cards that draw or generate extra cards" },
+  { cat: "Disruption",      target: 12, desc: "Single-target interaction and removal" },
+  { cat: "Mass Disruption", target: 6,  desc: "Board wipes and mass removal" },
+  { cat: "Mana Base",       target: 38, desc: "Lands and mana sources" },
+  { cat: "Plan",            target: 30, desc: "Cards that execute your commander's strategy" },
+];
 
+// ── PileScreen ────────────────────────────────────────────────────────────────
 export default function PileScreen({
   pile, onPileChange, onClearPile,
   commander, onCommanderChange,
@@ -126,8 +309,8 @@ export default function PileScreen({
   onAssignTag,
   wrecTags = {},
 }) {
-  const [deckViewMode,   setDeckViewMode]   = useState("list"); // list view by default
-  const [maybeViewMode,  setMaybeViewMode]  = useState("list"); // text view by default
+  const [deckViewMode,   setDeckViewMode]   = useState("list");
+  const [maybeViewMode,  setMaybeViewMode]  = useState("list");
   const [activeTab,      setActiveTab]      = useState(initialTab ?? "deck");
   const [reviewMode,     setReviewMode]     = useState(null);
   const [reviewCards,    setReviewCards]    = useState([]);
@@ -136,11 +319,11 @@ export default function PileScreen({
   const [cmdModalOpen,   setCmdModalOpen]   = useState(false);
   const [cmdSearchOpen,  setCmdSearchOpen]  = useState(false);
   const [detailCard,     setDetailCard]     = useState(null);
-
+  const [wrecSheetOpen,  setWrecSheetOpen]  = useState(false);
 
   const { gameChangerIds } = useGameChangers();
-  const gcCount  = pile.filter(c => gameChangerIds.has(c.oracle_id ?? "")).length;
-  const bracket  = gcCount === 0 ? 2 : gcCount <= 3 ? 3 : 4;
+  const gcCount = pile.filter(c => gameChangerIds.has(c.oracle_id ?? "")).length;
+  const bracket = gcCount === 0 ? 2 : gcCount <= 3 ? 3 : 4;
 
   const scrollPos = useRef({ deck: 0, maybe: 0 });
   useEffect(() => {
@@ -162,27 +345,24 @@ export default function PileScreen({
   const commanderName = reviewCommanderCard?.name ?? null;
   const hasCommander  = Boolean(reviewCommanderCard);
 
-  // ── Display piles (render-time only — do not write these back to Supabase) ──
+  // ── Display piles ──────────────────────────────────────────────────────────
   const displayPile       = buildDisplayPile(pile, commander);
   const displayMaybeboard = buildDisplayPile(maybeboard, null);
 
   const activeCards       = activeTab === "deck" ? displayPile       : displayMaybeboard;
   const activeCardsRawLen = activeTab === "deck" ? totalCount(pile)  : totalCount(maybeboard);
+  const viewMode          = activeTab === "deck" ? deckViewMode : maybeViewMode;
 
-  // Derived view mode for the active tab
-  const viewMode = activeTab === "deck" ? deckViewMode : maybeViewMode;
-
-  // Bottom padding clears the fixed STACK & SWIPE button + nav bar
   const bottomPad = `calc(max(18px, env(safe-area-inset-bottom)) + ${FAB_CLEARANCE}px + 40px)`;
   const fabBottom  = `calc(max(10px, env(safe-area-inset-bottom)) + ${NAV_HEIGHT}px + 8px)`;
 
-  // WREC category counts for the score bar
+  // ── WREC — derived fresh every render ─────────────────────────────────────
+  const basicIds = new Set(
+    pile.filter(c => c.type_line?.toLowerCase().includes("basic")).map(c => c.oracle_id).filter(Boolean)
+  );
   const wrecBar = WREC_CATEGORIES.map(cat => {
     let count;
     if (cat === "Mana Base") {
-      const basicIds = new Set(
-        pile.filter(c => c.type_line?.toLowerCase().includes("basic")).map(c => c.oracle_id).filter(Boolean)
-      );
       count = new Set([...(wrecTags["Mana Base"] ?? []), ...basicIds]).size;
     } else {
       count = (wrecTags[cat] ?? []).length;
@@ -191,8 +371,11 @@ export default function PileScreen({
     return { cat, abbrev: abbrevs[cat] ?? cat[0], count, target: WREC_TARGETS[cat] };
   });
 
-  // ── Review entry ───────────────────────────────────────────────────────────
+  const wrecScore      = computeWrecScore(wrecBar);
+  const wrecScoreStr   = wrecScore.toFixed(3);
+  const wrecScoreColor = wrecScore >= 0.9 ? "var(--success)" : wrecScore >= 0.7 ? "var(--active)" : "var(--danger)";
 
+  // ── Review entry ───────────────────────────────────────────────────────────
   function enterReview(mode) {
     const raw     = mode === "deck" ? pile : maybeboard;
     const deduped = dedupeByOracleId(raw);
@@ -201,17 +384,7 @@ export default function PileScreen({
     setReviewMode(mode);
   }
 
-  function enterReviewAt(card, mode) {
-    const raw     = mode === "deck" ? pile : maybeboard;
-    const deduped = dedupeByOracleId(raw);
-    const startIdx = deduped.findIndex(c => c.instanceId === card.instanceId);
-    setReviewCards(deduped);
-    setReviewStartIdx(Math.max(0, startIdx));
-    setReviewMode(mode);
-  }
-
   // ── Card interactions ──────────────────────────────────────────────────────
-
   function handleRemove(instanceId, e) {
     e?.stopPropagation();
     const newPile = pile.filter(c => c.instanceId !== instanceId);
@@ -227,13 +400,26 @@ export default function PileScreen({
     onSave?.(pile, newMaybe);
   }
 
-  // Qty +/– for stackable cards.
-  // For a single entry with explicit qty (import/swipe-new): increment/decrement qty field.
-  // For multiple individual entries (legacy data): add/remove individual copies.
+  function handleMoveToMaybe(card) {
+    const newPile  = pile.filter(c => c.instanceId !== card.instanceId);
+    const newMaybe = [...maybeboard, card];
+    onPileChange(newPile);
+    onMaybeboardChange(newMaybe);
+    onSave?.(newPile, newMaybe);
+    if (commander === card.instanceId) onCommanderChange(null);
+  }
+
+  function handleMoveToPile(card) {
+    const newMaybe = maybeboard.filter(c => c.instanceId !== card.instanceId);
+    const newPile  = [...pile, card];
+    onMaybeboardChange(newMaybe);
+    onPileChange(newPile);
+    onSave?.(newPile, newMaybe);
+  }
+
   function handleStackableQtyChange(displayCard, delta) {
     const entries = pile.filter(c => c.name === displayCard.name);
     if (entries.length === 0) return;
-
     let newPile;
     if (entries.length === 1) {
       const entry   = entries[0];
@@ -245,7 +431,6 @@ export default function PileScreen({
         newPile = pile.map(c => c.name === displayCard.name ? { ...c, qty: next } : c);
       }
     } else {
-      // Legacy multi-entry path
       if (delta > 0) {
         const template = entries[0];
         const clone    = { ...template, instanceId: crypto.randomUUID(), qty: undefined };
@@ -282,7 +467,6 @@ export default function PileScreen({
   }
 
   // ── Review handlers ────────────────────────────────────────────────────────
-
   function handleReviewKeep(card) {
     if (reviewMode !== "deck") {
       const newMaybe = maybeboard.filter(c => c.instanceId !== card.instanceId);
@@ -308,7 +492,6 @@ export default function PileScreen({
   }
 
   // ── Export ─────────────────────────────────────────────────────────────────
-
   function handleCopy() {
     const text = buildExportText(displayPile, commander, pile);
     navigator.clipboard?.writeText(text).then(() => {
@@ -351,11 +534,7 @@ export default function PileScreen({
           <span style={{ fontSize: 12, marginRight: 6, flexShrink: 0 }}>👑</span>
         )}
 
-        {/* Name + GC icon */}
-        <div style={{
-          flex: 1, minWidth: 0,
-          display: "flex", alignItems: "center", gap: 4,
-        }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{
             fontSize: 14,
             color: isCommander ? "gold" : dimName ? "rgba(255,255,255,0.75)" : "var(--text)",
@@ -397,7 +576,6 @@ export default function PileScreen({
           )}
         </div>
 
-        {/* Qty controls — basic lands only */}
         {basic && (
           <div
             style={{ display: "flex", alignItems: "center", flexShrink: 0, marginLeft: 8, marginRight: 4 }}
@@ -435,7 +613,6 @@ export default function PileScreen({
           </div>
         )}
 
-        {/* Mana cost — non-stackable only */}
         {!stackable && mana && (
           <span style={{
             fontSize: 11, color: "rgba(255,255,255,0.4)",
@@ -494,7 +671,6 @@ export default function PileScreen({
           <div style={{ position: "absolute", top: 4, left: 5, fontSize: 14, lineHeight: 1, pointerEvents: "none",
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))" }}>👑</div>
         )}
-        {/* Qty badge for stackable cards in grid view */}
         {isStackable(card) && (card.qty ?? 1) > 1 && (
           <div style={{
             position: "absolute", bottom: 5, left: 5,
@@ -565,8 +741,104 @@ export default function PileScreen({
     );
   }
 
+  // ── List row with swipe wrapper ────────────────────────────────────────────
+  function renderSwipeableListRow(card, isCommander, tab) {
+    const row = renderListRow(
+      card,
+      isCommander,
+      tab === "deck" ? handleRemove : (id, e) => handleRemoveMaybe(id, e),
+      tab === "maybe",
+    );
+
+    const deckActions = {
+      leftAction:  { bg: "rgba(239,68,68,0.92)",    label: "CUT",          icon: <TrashIcon /> },
+      rightAction: { bg: "rgba(180,140,60,0.92)",   label: "CONSIDER",     icon: <ConsiderIcon /> },
+      onSwipeLeft:  () => handleRemove(card.instanceId),
+      onSwipeRight: () => handleMoveToMaybe(card),
+    };
+
+    const maybeActions = {
+      leftAction:  { bg: "rgba(239,68,68,0.92)",    label: "REMOVE",       icon: <TrashIcon /> },
+      rightAction: { bg: "rgba(52,211,153,0.92)",   label: "MOVE TO DECK", icon: <MoveToDeckIcon /> },
+      onSwipeLeft:  () => handleRemoveMaybe(card.instanceId),
+      onSwipeRight: () => handleMoveToPile(card),
+    };
+
+    const actions = tab === "deck" ? deckActions : maybeActions;
+
+    return (
+      <SwipeableRow
+        key={card.instanceId}
+        leftAction={actions.leftAction}
+        rightAction={actions.rightAction}
+        onSwipeLeft={actions.onSwipeLeft}
+        onSwipeRight={actions.onSwipeRight}
+      >
+        {row}
+      </SwipeableRow>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100dvh", background: "#000", color: "var(--text)", fontFamily: "'Space Grotesk', sans-serif" }}>
+
+      {/* ── WREC info bottom sheet ── */}
+      {wrecSheetOpen && (
+        <>
+          <div
+            onClick={() => setWrecSheetOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 399, background: "rgba(0,0,0,0.6)" }}
+          />
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 401,
+            maxWidth: 600, margin: "0 auto",
+            background: "var(--panel)",
+            borderRadius: "16px 16px 0 0",
+            padding: "0 20px",
+            paddingBottom: "calc(max(20px, env(safe-area-inset-bottom)) + 20px)",
+            maxHeight: "85dvh", overflowY: "auto",
+            fontFamily: "'Space Grotesk', sans-serif",
+          }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)", margin: "14px auto 20px" }} />
+            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: 2, color: "var(--text)", marginBottom: 10 }}>
+              WHAT IS WREC?
+            </div>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.6, margin: "0 0 20px" }}>
+              WREC is a Commander deckbuilding framework by Rachel Weeks that scores your deck like a batting average — 1.000 is perfect, deviation in either direction is bad.
+            </p>
+            {WREC_INFO.map(({ cat, target, desc }) => (
+              <div key={cat} style={{
+                padding: "10px 0",
+                borderBottom: "0.5px solid rgba(255,255,255,0.07)",
+                display: "flex", gap: 12, alignItems: "flex-start",
+              }}>
+                <div style={{ flexShrink: 0, width: 32 }}>
+                  <span style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 13, color: "var(--primary)", fontWeight: 600,
+                  }}>{target}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, color: "var(--text)", fontWeight: 500, marginBottom: 2 }}>{cat}</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => setWrecSheetOpen(false)}
+              style={{
+                marginTop: 24, width: "100%", padding: "14px",
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12, cursor: "pointer",
+                color: "var(--muted)",
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: 13, letterSpacing: 2,
+              }}
+            >CLOSE</button>
+          </div>
+        </>
+      )}
 
       {/* ── Card detail sheet ── */}
       {detailCard && (() => {
@@ -590,10 +862,7 @@ export default function PileScreen({
               fontFamily: "'Space Grotesk', sans-serif",
               maxHeight: "85dvh", overflowY: "auto",
             }}>
-              {/* Drag handle */}
               <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.18)", margin: "14px auto 16px" }} />
-
-              {/* Card identity */}
               <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <div style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 2 }}>
                   {dc.name}
@@ -610,7 +879,6 @@ export default function PileScreen({
                   ))}
                 </div>
               </div>
-
               <WrecCategoryButtons
                 currentTags={currentTags}
                 onToggle={cat => onAssignTag?.(oracleId, cat)}
@@ -641,11 +909,11 @@ export default function PileScreen({
         backdropFilter: "blur(12px)",
         borderBottom: "0.5px solid rgba(255,255,255,0.06)",
       }}>
+        {/* Top row */}
         <div style={{
           display: "flex", alignItems: "center",
           padding: "0 10px 0 16px", height: 52, gap: 8,
         }}>
-          {/* Commander art + name */}
           {reviewCommanderCard ? (
             <>
               {getCardImage(reviewCommanderCard, "art_crop") && (
@@ -683,7 +951,6 @@ export default function PileScreen({
             </span>
           )}
 
-          {/* Card count — total logical cards (stackable qty summed) */}
           <span style={{
             fontSize: 12, color: "var(--muted)",
             fontFamily: "'IBM Plex Mono', monospace",
@@ -692,7 +959,6 @@ export default function PileScreen({
             {activeCardsRawLen}
           </span>
 
-          {/* Bracket badge — deck tab only */}
           {activeTab === "deck" && pile.length > 0 && (() => {
             const bracketColor =
               bracket === 4 ? { color: "#ef4444", border: "rgba(239,68,68,0.45)",  bg: "rgba(239,68,68,0.10)"  } :
@@ -722,7 +988,6 @@ export default function PileScreen({
             );
           })()}
 
-          {/* List/Grid toggle */}
           <button
             onClick={() => {
               if (activeTab === "deck") setDeckViewMode(v => v === "list" ? "grid" : "list");
@@ -739,7 +1004,6 @@ export default function PileScreen({
             {viewMode === "list" ? <ImageIcon color="rgba(255,255,255,0.45)" /> : <ListIcon color="rgba(255,255,255,0.45)" />}
           </button>
 
-          {/* Export button */}
           {activeTab === "deck" && pile.length > 0 && (
             <button
               onClick={handleCopy}
@@ -760,30 +1024,80 @@ export default function PileScreen({
           )}
         </div>
 
-        {/* WREC score bar — deck tab, cards present */}
+        {/* ── Rebuilt WREC section — deck tab with cards ── */}
         {activeTab === "deck" && pile.length > 0 && (
           <div style={{
-            display: "flex", justifyContent: "space-around",
-            padding: "8px 20px 10px",
             borderTop: "0.5px solid rgba(255,255,255,0.06)",
+            padding: "10px 14px 12px",
           }}>
-            {wrecBar.map(({ cat, abbrev, count, target }) => (
-              <div key={cat} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                <span style={{
-                  fontSize: 10, color: "rgba(255,255,255,0.3)",
-                  fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                }}>{abbrev}</span>
-                <span style={{
-                  fontSize: 13, color: "#C9A84C",
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>{count}<span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)" }}>/{target}</span></span>
+            {/* Batting average */}
+            <div style={{ textAlign: "center", marginBottom: 8 }}>
+              <div style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontSize: 28, lineHeight: 1,
+                letterSpacing: "0.05em",
+                color: wrecScoreColor,
+                fontWeight: 700,
+              }}>
+                {wrecScoreStr}
               </div>
-            ))}
+              <button
+                onClick={() => setWrecSheetOpen(true)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 9, letterSpacing: "0.15em",
+                  color: "var(--muted)",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  padding: "3px 0 0",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 2,
+                }}
+              >
+                WREC SCORE
+              </button>
+            </div>
+
+            {/* Segment bar */}
+            <div style={{ display: "flex", gap: 3 }}>
+              {wrecBar.map(({ cat, abbrev, count, target }) => {
+                const segColor = count >= target ? "var(--success)"
+                  : count >= target - 2 ? "var(--active)"
+                  : "var(--danger)";
+                return (
+                  <div key={cat} style={{
+                    flex: 1,
+                    background: count >= target ? "rgba(52,211,153,0.12)"
+                      : count >= target - 2 ? "rgba(245,158,11,0.12)"
+                      : "rgba(255,77,109,0.12)",
+                    borderRadius: 6,
+                    padding: "5px 3px",
+                    textAlign: "center",
+                    border: `1px solid ${
+                      count >= target ? "rgba(52,211,153,0.25)"
+                      : count >= target - 2 ? "rgba(245,158,11,0.25)"
+                      : "rgba(255,77,109,0.25)"
+                    }`,
+                  }}>
+                    <div style={{
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontSize: 9, letterSpacing: 1,
+                      color: segColor, marginBottom: 2, fontWeight: 600,
+                    }}>{abbrev}</div>
+                    <div style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: 10, color: segColor,
+                      lineHeight: 1,
+                    }}>
+                      {count}<span style={{ fontSize: 8, opacity: 0.5 }}>/{target}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
-        {/* SET COMMANDER banner — shown when pile has cards but no commander is assigned */}
+        {/* SET COMMANDER banner */}
         {!hasCommander && pile.length > 0 && activeTab === "deck" && onCommanderCardChange && (
           <button
             onClick={() => setCmdSearchOpen(true)}
@@ -826,12 +1140,10 @@ export default function PileScreen({
             </span>
           </div>
         ) : viewMode === "list" ? (
-          /* List view */
           activeTab === "deck"
-            ? displayPile.map(card => renderListRow(card, commander === card.instanceId, handleRemove))
-            : displayMaybeboard.map(card => renderListRow(card, false, (id, e) => handleRemoveMaybe(id, e), true))
+            ? displayPile.map(card => renderSwipeableListRow(card, commander === card.instanceId, "deck"))
+            : displayMaybeboard.map(card => renderSwipeableListRow(card, false, "maybe"))
         ) : (
-          /* Grid view */
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {activeTab === "deck"
               ? displayPile.map(card => renderGridCard(card, commander === card.instanceId, handleRemove))
@@ -840,7 +1152,6 @@ export default function PileScreen({
           </div>
         )}
 
-        {/* Moxfield export row (deck tab only) */}
         {activeTab === "deck" && pile.length > 0 && (
           <div style={{ padding: "14px 16px 0" }}>
             <button
@@ -861,7 +1172,6 @@ export default function PileScreen({
           </div>
         )}
 
-        {/* Clear pile (deck tab only, at bottom) */}
         {activeTab === "deck" && pile.length > 0 && (
           <div style={{ padding: "8px 16px 0" }}>
             <button
@@ -882,7 +1192,7 @@ export default function PileScreen({
         )}
       </div>
 
-      {/* ── STACK & SWIPE — fixed above BottomNav, never inside scroll flow ── */}
+      {/* ── STACK & SWIPE FAB ── */}
       {activeCards.length > 0 && (
         <div style={{
           position: "fixed",
