@@ -114,7 +114,7 @@ const TIPS = [
   "Unsure about a card? Swipe up to send it to the Maybeboard instead.",
   "Tap any card in the Pile to inspect it. Long-press to crown it as commander.",
   "Import a Moxfield URL or paste a decklist using the Import button on the search screen.",
-  "In green or black decks, searching "counters" finds +1/+1 synergies, not counterspells.",
+  "In green or black decks, searching 'counters' finds +1/+1 synergies, not counterspells.",
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
