@@ -158,17 +158,8 @@ export default function App() {
     setWrecTags(deck.tags ?? {});
     setAutoTagged(new Set()); // loaded tags are user-confirmed; start fresh
 
-    if (sc.length > 0) {
-      setSwipeMounted(true);
-      setSwipeKey(k => k + 1);
-      setScreen("swipe");
-    } else if (p.length > 0) {
-      setSwipeMounted(false);
-      setScreen("pile");
-    } else {
-      setSwipeMounted(false);
-      setScreen("kanban");
-    }
+    setSwipeMounted(sc.length > 0);
+    setScreen("search");
   }
 
   // ── Auth subscription ─────────────────────────────────────────────────────
