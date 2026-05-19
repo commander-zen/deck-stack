@@ -1,11 +1,17 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Wire settings values into SwipeScreen (haptics, swipeAnimations) and SearchScreen (rawQueryMode, fullLoadingAnimation) — the toggles exist but nothing reads them yet.
+Next: Add `VITE_ANTHROPIC_API_KEY` to `.env.local` with a real Anthropic API key — the NLP brew pipeline now calls Claude API and will fall back to raw input without a key.
 
 ---
 
 ## Completed ✅
+
+- ✅ **NLP → Claude API + SearchScreen rebuild** (2026-05-19)
+  - `src/lib/nlp.js` replaced with async `translateToScryfall(input)` — calls `claude-sonnet-4-20250514` via `api.anthropic.com/v1/messages`, falls back to raw input on error; reads `VITE_ANTHROPIC_API_KEY`
+  - `src/screens/SearchScreen.jsx` rebuilt: single "SEARCH YOUR STACK" input, NLP/raw query toggle link (reads/writes `cardstock_settings.rawQueryMode`), SEARCH pill button, "THINKING…" spinner during Claude API call, full/short card fan animation overlay (reads `cardstock_settings.fullLoadingAnimation`), history navigation preserved
+  - `hasSearchedThisSession` module-level flag gates full (2s) vs short (400ms) animation
+  - Removed live translated query preview (incompatible with async API)
 
 - ✅ **Settings screen** (2026-05-19)
   - `src/lib/settings.js` — `getSettings()`, `updateSetting(key, val)`, `DEFAULT_SETTINGS`; persists to `cardstock_settings` in localStorage
