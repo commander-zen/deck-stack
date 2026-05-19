@@ -16,6 +16,19 @@ function randomPlaceholder() {
   return PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)];
 }
 
+const HISTORY_KEY = "ds_search_history";
+
+function readHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); }
+  catch { return []; }
+}
+
+function saveToHistory(query) {
+  const prev = readHistory();
+  const next = [query, ...prev.filter(q => q !== query)].slice(0, 10);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+}
+
 const COLOR_DOT = { W: "#e8d5a0", U: "#2060c0", B: "#555", R: "#cc2200", G: "#1a7035" };
 
 function ColorPip({ color }) {
@@ -39,6 +52,8 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   // Brew prompt state
   const [brewInput,       setBrewInput]       = useState("");
   const [brewPlaceholder, setBrewPlaceholder] = useState(() => randomPlaceholder());
+  const [historyIndex,    setHistoryIndex]    = useState(-1);
+  const [draftInput,      setDraftInput]      = useState("");
 
   const abortRef    = useRef(null);
   const cmdInputRef = useRef(null);
@@ -90,9 +105,45 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     const input = brewInput.trim();
     if (!input || loading) return;
     const { query } = translateToScryfall(input);
+    saveToHistory(input);
     setBrewInput("");
     setBrewPlaceholder(randomPlaceholder());
+    setHistoryIndex(-1);
+    setDraftInput("");
     onSearch(query);
+  }
+
+  function handleBrewKeyDown(e) {
+    if (e.key === "Enter") {
+      handleSearch();
+      return;
+    }
+    const history = readHistory();
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (history.length === 0) return;
+      if (historyIndex === -1) {
+        setDraftInput(brewInput);
+        setHistoryIndex(0);
+        setBrewInput(history[0]);
+      } else {
+        const nextIndex = Math.min(historyIndex + 1, history.length - 1);
+        setHistoryIndex(nextIndex);
+        setBrewInput(history[nextIndex]);
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex <= 0) {
+        setHistoryIndex(-1);
+        setBrewInput(draftInput);
+      } else {
+        const nextIndex = historyIndex - 1;
+        setHistoryIndex(nextIndex);
+        setBrewInput(history[nextIndex]);
+      }
+    } else {
+      if (historyIndex !== -1) setHistoryIndex(-1);
+    }
   }
 
   const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
@@ -331,7 +382,8 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               type="text"
               value={brewInput}
               onChange={e => { if (!loading) setBrewInput(e.target.value); }}
-              onKeyDown={e => e.key === "Enter" && handleSearch()}
+              onKeyDown={handleBrewKeyDown}
+              onFocus={() => { setHistoryIndex(-1); setDraftInput(""); }}
               placeholder={brewPlaceholder}
               autoComplete="off"
               autoCorrect="off"
