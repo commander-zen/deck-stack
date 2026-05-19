@@ -57,18 +57,18 @@ export function translateToScryfall(input) {
 
   // ── Functions ──────────────────────────────────────────────────────────────
   if (/\bramp\b|\bmana\s+acceler/.test(t))
-    parts.push('oracletag:ramp');
+    parts.push('otag:ramp');
 
   if (/\bcard[\s-]draw\b|\bdraw(?:ing)?\s+cards?\b|\bcard\s+advantage\b/.test(t))
-    parts.push('oracletag:card-draw');
+    parts.push('otag:card-draw');
 
   if (/\btargeted?\s+removal\b|\bspot\s+removal\b/.test(t))
-    parts.push('oracletag:removal');
+    parts.push('otag:removal');
   else if (/\bremoval\b|\bkill(?:ing)?\b|\bdestroy(?:ing)?\b|\bexile(?:s|ing)?\b/.test(t) && !/\bself/.test(t))
-    parts.push('oracletag:removal');
+    parts.push('otag:removal');
 
   if (/\bwipe\b|\bboard[\s-]?wipe\b|\bsweeper\b|\bmass\s+removal\b|\bwrath\b/.test(t))
-    parts.push('oracletag:wrath');
+    parts.push('otag:wrath');
 
   if (/\bcounterspell\b|\bcounter[\s-]spell\b/.test(t)) {
     parts.push('t:instant', 'o:counter');
@@ -77,7 +77,7 @@ export function translateToScryfall(input) {
   }
 
   if (/\btutor\b|\bsearch\s+(?:your|the)\s+library\b/.test(t))
-    parts.push('oracletag:tutor');
+    parts.push('otag:tutor');
 
   // ── Keywords ───────────────────────────────────────────────────────────────
   // Each entry: [posRe, clause, negRe | null]
