@@ -114,6 +114,45 @@ export function translateToScryfall(input) {
   }
   if (/\bmulticolou?r(?:ed)?\b/.test(t)) parts.push('c>=2');
 
+  // ── Archetypes / strategies ───────────────────────────────────────────────
+  // "turbo" alone is too vague; as an intensifier it lowers the CMC floor already
+  // set by another archetype term. Track whether a CMC clause was added above.
+  const hasCmcClause = parts.some(p => p.startsWith('cmc'));
+
+  if (/\bturbo\b/.test(t) && !hasCmcClause) {
+    // Intensifier with no other CMC constraint → push a low-CMC floor
+    parts.push('cmc<=2');
+  }
+
+  if (/\bblink\b|\bflicker\b/.test(t))
+    parts.push('o:exile', 'o:return');
+
+  if (/\baggro\b/.test(t) && !hasCmcClause)
+    parts.push('cmc<=3', 't:creature');
+
+  // "combo" has no reliable Scryfall mapping — skip, let fallback name-match
+
+  if (/\bcontrol\b/.test(t))
+    parts.push('o:counter', 'o:destroy');
+
+  if (/\bstax\b/.test(t))
+    parts.push('o:"can\'t untap"', 'o:"opponents can\'t"');
+
+  if (/\bvoltron\b/.test(t))
+    parts.push('o:equip', 'o:attach');
+
+  if (/\baristocrats?\b/.test(t))
+    parts.push('o:sacrifice', 'o:"whenever a creature dies"');
+
+  if (/\btokens?\s+(?:strategy|deck|theme|focus)?\b/.test(t) && !parts.includes('o:token'))
+    parts.push('o:"create a"', 'o:token');
+
+  if (/\breanimat(?:e|or|ing|ion)\b/.test(t))
+    parts.push('o:"return target creature card from your graveyard"');
+
+  if (/\bwheels?\b|\bwheel\s+effects?\b/.test(t))
+    parts.push('o:"each player discards"');
+
   // ── Fallback: treat as card name search ────────────────────────────────────
   if (parts.length === 0) {
     const q = `name:${raw}`;
@@ -121,5 +160,13 @@ export function translateToScryfall(input) {
   }
 
   const query = [...new Set(parts)].join(' ');
+
+  // Safety net: if the assembled query is suspiciously short or empty, fall back
+  // to a name search so the user gets results instead of a blank swipe screen.
+  if (query.length < 4) {
+    const q = `name:${raw}`;
+    return { query: q, translated: true, displayQuery: q };
+  }
+
   return { query, translated: true, displayQuery: query };
 }
