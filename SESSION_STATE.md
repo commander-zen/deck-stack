@@ -1,11 +1,16 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Add `VITE_ANTHROPIC_API_KEY` to `.env.local` with a real Anthropic API key — the NLP brew pipeline now calls Claude API and will fall back to raw input without a key.
+Next: Set a real Anthropic API key — replace `your-key-here` in `.env.local` (ANTHROPIC_API_KEY) and add the same key to the Vercel project's environment variables (server-side, not VITE_ prefixed).
 
 ---
 
 ## Completed ✅
+
+- ✅ **Claude API Edge Function proxy** (2026-05-19)
+  - `api/translate.js` — Vercel Edge Function; accepts `POST { input, commanderName }`; reads `ANTHROPIC_API_KEY` from `process.env` (server-side only); returns `{ query }` or `{ query: input }` fallback; CORS header added for local dev
+  - `src/lib/nlp.js` — replaced direct Anthropic fetch with `POST /api/translate`; `VITE_ANTHROPIC_API_KEY` removed from all live src/ code
+  - `.env.local` — replaced `VITE_ANTHROPIC_API_KEY=` with `ANTHROPIC_API_KEY=your-key-here` (server-side); also needs to be set in Vercel project env vars
 
 - ✅ **NLP → Claude API + SearchScreen rebuild** (2026-05-19)
   - `src/lib/nlp.js` replaced with async `translateToScryfall(input)` — calls `claude-sonnet-4-20250514` via `api.anthropic.com/v1/messages`, falls back to raw input on error; reads `VITE_ANTHROPIC_API_KEY`
