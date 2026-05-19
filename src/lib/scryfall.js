@@ -102,11 +102,7 @@ export async function fetchFirstPage(query, options = {}) {
 // ── First-page swipe fetch — returns immediately so SwipeScreen can start ─────
 export async function fetchFirstPageForSwipe(query, commanderCard = null, options = {}) {
   const { signal, order = "name", dir = "auto" } = options;
-  let baseQuery = query;
-  if (commanderCard?.color_identity?.length > 0) {
-    baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
-  }
-  baseQuery += " -type:sticker -type:attraction";
+  const baseQuery = query + " -type:sticker -type:attraction";
   let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=${order}&unique=cards`;
   if (dir !== "auto") url += `&dir=${dir}`;
   let res;
@@ -146,11 +142,7 @@ export async function fetchForSwipe(query, commanderCard = null, options = {}) {
   const { signal } = options;
   const CAP = 175;
   const results = [];
-  let baseQuery = query;
-  if (commanderCard?.color_identity?.length > 0) {
-    baseQuery = `${query} id<=${commanderCard.color_identity.join("")}`;
-  }
-  baseQuery += " -type:sticker -type:attraction";
+  const baseQuery = query + " -type:sticker -type:attraction";
   let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(baseQuery)}&order=random&unique=cards`;
 
   while (url && results.length < CAP) {
