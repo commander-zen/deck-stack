@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { searchCommanders, getCardImage } from "../lib/scryfall.js";
-import { getBrewQuery } from "../services/brewPrompt.js";
-import { executeBrewQuery } from "../services/validateBrewQuery.js";
+import { translateToScryfall } from "../lib/nlp.js";
 
 const PLACEHOLDERS = [
   "What idea are we brewing today?",
@@ -39,7 +38,6 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
 
   // Brew prompt state
   const [brewInput,       setBrewInput]       = useState("");
-  const [brewLocked,      setBrewLocked]      = useState(false);
   const [brewPlaceholder, setBrewPlaceholder] = useState(() => randomPlaceholder());
 
   const abortRef    = useRef(null);
@@ -88,36 +86,20 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     }
   }
 
-  async function handleSearch() {
-    const prompt = brewInput.trim();
-    if (!prompt || brewLocked) return;
-
-    setBrewLocked(true);
-    setBrewPlaceholder("finding your cards...");
-
-    try {
-      const scryfallQuery = await getBrewQuery(prompt);
-      const cards = await executeBrewQuery(scryfallQuery);
-
-      if (!cards) {
-        setBrewLocked(false);
-        setBrewPlaceholder("couldn't find those cards — try describing it differently");
-        setTimeout(() => setBrewPlaceholder(randomPlaceholder()), 3000);
-        return;
-      }
-
-      setBrewInput("");
-      setBrewLocked(false);
-      setBrewPlaceholder(randomPlaceholder());
-      onSearch(scryfallQuery);
-    } catch {
-      setBrewLocked(false);
-      setBrewPlaceholder("couldn't find those cards — try describing it differently");
-      setTimeout(() => setBrewPlaceholder(randomPlaceholder()), 3000);
-    }
+  function handleSearch() {
+    const input = brewInput.trim();
+    if (!input || loading) return;
+    const { query } = translateToScryfall(input);
+    setBrewInput("");
+    setBrewPlaceholder(randomPlaceholder());
+    onSearch(query);
   }
 
   const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
+
+  const translatedPreview = brewInput.trim()
+    ? translateToScryfall(brewInput.trim()).displayQuery
+    : null;
 
   return (
     <div style={{
@@ -348,13 +330,13 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               ref={brewInputRef}
               type="text"
               value={brewInput}
-              onChange={e => { if (!brewLocked) setBrewInput(e.target.value); }}
+              onChange={e => { if (!loading) setBrewInput(e.target.value); }}
               onKeyDown={e => e.key === "Enter" && handleSearch()}
               placeholder={brewPlaceholder}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              readOnly={brewLocked}
+              readOnly={loading}
               style={{
                 width: "100%",
                 background: "none",
@@ -363,7 +345,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 padding: "14px 16px",
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: 15,
-                color: brewLocked ? "var(--muted)" : "var(--text)",
+                color: loading ? "var(--muted)" : "var(--text)",
                 caretColor: "var(--primary)",
                 boxSizing: "border-box",
               }}
@@ -371,31 +353,49 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
           </div>
         </div>
 
+        {/* ── Translated query preview ── */}
+        {translatedPreview && !loading && (
+          <div style={{
+            marginBottom: 8,
+            padding: "6px 12px",
+            background: "rgba(255,255,255,0.04)",
+            borderRadius: 8,
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 11,
+            color: "var(--muted)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
+            {translatedPreview}
+          </div>
+        )}
+
         {/* ── SEARCH CTA ── */}
         <div style={{ marginBottom: 10 }}>
           <button
             onClick={handleSearch}
-            disabled={brewLocked || !brewInput.trim()}
+            disabled={loading || !brewInput.trim()}
             style={{
               width: "100%",
-              background: brewLocked ? "transparent" : "rgba(0,229,204,0.10)",
-              border: brewLocked ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
+              background: loading ? "transparent" : "rgba(0,229,204,0.10)",
+              border: loading ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid var(--primary)",
               borderRadius: 16,
               padding: "18px 24px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 10,
-              cursor: (brewLocked || !brewInput.trim()) ? "default" : "pointer",
+              cursor: (loading || !brewInput.trim()) ? "default" : "pointer",
               transition: "background 0.15s",
             }}
           >
             <span style={{
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 22, letterSpacing: "0.12em",
-              color: brewLocked ? "rgba(255,255,255,0.2)" : "var(--primary)",
+              color: loading ? "rgba(255,255,255,0.2)" : "var(--primary)",
             }}>
-              {brewLocked ? "LOADING…" : "SEARCH"}
+              {loading ? "LOADING…" : "SEARCH"}
             </span>
           </button>
         </div>
