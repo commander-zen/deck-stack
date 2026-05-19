@@ -15,38 +15,7 @@ const SORT_OPTIONS = [
   { value: "edhrec", label: "EDHREC" },
 ];
 
-// Mana pip appearance per symbol
-const PIP_MAP = {
-  W: { bg: "#F9FAF4", color: "#1a1a1a", border: null },
-  U: { bg: "#0E68AB", color: "#ffffff", border: null },
-  B: { bg: "#150B00", color: "#C9A84C", border: "#C9A84C" },
-  R: { bg: "#D3202A", color: "#ffffff", border: null },
-  G: { bg: "#00733E", color: "#ffffff", border: null },
-  C: { bg: "#85939A", color: "#ffffff", border: null },
-};
 
-function parseMana(cost) {
-  if (!cost) return [];
-  return [...cost.matchAll(/\{([^}]+)\}/g)].map(m => m[1]);
-}
-
-function ManaPip({ symbol }) {
-  const s = PIP_MAP[symbol];
-  return (
-    <div style={{
-      width: 18, height: 18, borderRadius: "50%",
-      background: s ? s.bg : "rgba(255,255,255,0.15)",
-      border: s?.border ? `1px solid ${s.border}` : "1px solid rgba(255,255,255,0.2)",
-      color: s ? s.color : "#ffffff",
-      fontSize: 9, fontWeight: 600,
-      fontFamily: "'IBM Plex Mono', monospace",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      flexShrink: 0, lineHeight: 1,
-    }}>
-      {symbol}
-    </div>
-  );
-}
 
 function haptic(pattern = 10) {
   if ("vibrate" in navigator) navigator.vibrate(pattern);
@@ -84,6 +53,7 @@ export default function SwipeScreen({
   const [imgError,     setImgError]     = useState(false);
   const [showTip,      setShowTip]      = useState(false);
   const [cardExpanded, setCardExpanded] = useState(false);
+  const [flipped,      setFlipped]      = useState(false);
 
   const didMountRef       = useRef(false);
   const dragStartRef      = useRef(null);
@@ -96,13 +66,14 @@ export default function SwipeScreen({
   useEffect(() => {
     setImgError(false);
     setCardExpanded(false);
+    setFlipped(false);
     clearTimeout(longPressTimerRef.current);
   }, [idx]);
 
   // Preload next 4 art_crop images
   useEffect(() => {
     effectiveCards.slice(idx + 1, idx + 5).forEach(c => {
-      const url = getCardImage(c, "art_crop");
+      const url = getCardImage(c, "large");
       if (url) { const img = new Image(); img.src = url; }
     });
   }, [idx, effectiveCards]);
@@ -230,7 +201,7 @@ export default function SwipeScreen({
 
   // ── Derived visuals ──────────────────────────────────────────────────────────
 
-  const artUrl = card ? getCardImage(card, "art_crop") : null;
+  const artUrl = card ? (flipped ? getCardImage({ ...card, image_uris: card.card_faces?.[1]?.image_uris }, "large") : getCardImage(card, "large") ?? getCardImage(card, "normal")) : null;
 
   const rotation = animOut === "right" ? 14 : animOut === "left" ? -14 : offset / 22;
   const tx       = animOut === "right" ? 560 : animOut === "left" ? -560 : offset;
@@ -244,11 +215,7 @@ export default function SwipeScreen({
     ? "transform 0.26s ease, opacity 0.26s ease"
     : dragging ? "none" : "transform 0.18s ease";
 
-  const pips         = parseMana(card?.mana_cost);
   const commanderName = commanderCard?.name ?? null;
-
-  const BTNS_BOTTOM = `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 20px)`;
-  const INFO_BOTTOM = `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 20px + 72px + 12px)`;
 
   return (
     <div style={{
@@ -285,7 +252,7 @@ export default function SwipeScreen({
               style={{
                 position: "absolute", inset: 0,
                 width: "100%", height: "100%",
-                objectFit: "cover", objectPosition: "center top",
+                objectFit: "contain", objectPosition: "center center",
                 pointerEvents: "none",
               }}
             />
@@ -339,6 +306,24 @@ export default function SwipeScreen({
             pointerEvents: "none",
             transition: dragging ? "none" : "opacity 0.15s ease",
           }}>PASS</div>
+
+          {/* Flip button — double-faced cards only */}
+          {card?.card_faces?.length > 1 && (
+            <button
+              onClick={e => { e.stopPropagation(); setFlipped(f => !f); }}
+              style={{
+                position: "absolute", bottom: 16, right: 16, zIndex: 5,
+                background: "rgba(0,0,0,0.6)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 20,
+                padding: "6px 14px",
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 13, letterSpacing: 2,
+                color: "rgba(255,255,255,0.7)",
+                cursor: "pointer",
+              }}
+            >{flipped ? "FRONT" : "BACK"}</button>
+          )}
         </div>
       )}
 
@@ -428,110 +413,7 @@ export default function SwipeScreen({
         </div>
       )}
 
-      {/* ── Card info (bottom, above buttons) ── */}
-      {!done && card && (
-        <div style={{
-          position: "absolute",
-          bottom: INFO_BOTTOM,
-          left: 0, right: 0,
-          zIndex: 2,
-          padding: "0 20px 8px",
-          pointerEvents: "none",
-          background: cardExpanded ? "rgba(0,0,0,0.82)" : "transparent",
-          backdropFilter: cardExpanded ? "blur(6px)" : "none",
-          transition: "background 0.2s ease",
-        }}>
-          {/* Secondary (expanded): type, oracle text, P/T */}
-          {cardExpanded && (
-            <div style={{ marginBottom: 8 }}>
-              {card.type_line && (
-                <div style={{
-                  fontSize: 11, color: "rgba(255,255,255,0.5)",
-                  textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6,
-                }}>{card.type_line}</div>
-              )}
-              {card.oracle_text && (
-                <div style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5,
-                  marginBottom: (card.power !== undefined) ? 6 : 0,
-                }}>{card.oracle_text}</div>
-              )}
-              {card.power !== undefined && card.toughness !== undefined && (
-                <div style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.4)",
-                  fontFamily: "'IBM Plex Mono', monospace",
-                }}>{card.power}/{card.toughness}</div>
-              )}
-            </div>
-          )}
-          {/* Primary: name + mana pips */}
-          <div style={{
-            display: "flex", alignItems: "center",
-            gap: 8, flexWrap: "wrap",
-          }}>
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 28, color: "#ffffff", letterSpacing: "0.05em", lineHeight: 1,
-            }}>{card.name}</span>
-            {pips.length > 0 && (
-              <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
-                {pips.map((pip, i) => <ManaPip key={i} symbol={pip} />)}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* ── Action buttons ── */}
-      {!done && (
-        <div style={{
-          position: "absolute",
-          bottom: BTNS_BOTTOM,
-          left: 0, right: 0,
-          zIndex: 3,
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 28,
-        }}>
-          <button
-            onClick={() => doResolve(false)}
-            disabled={!!animOut}
-            style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: "rgba(220,50,50,0.2)",
-              border: "1px solid rgba(220,50,50,0.4)",
-              color: "#FF6B6B", fontSize: 22,
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(8px)",
-            }}
-          >✕</button>
-          <button
-            onClick={doMaybe}
-            disabled={!!animOut}
-            style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: "rgba(255,255,255,0.1)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              color: "rgba(255,255,255,0.7)", fontSize: 20,
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(8px)",
-            }}
-          >🔖</button>
-          <button
-            onClick={() => doResolve(true)}
-            disabled={!!animOut}
-            style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: "rgba(50,200,100,0.2)",
-              border: "1px solid rgba(50,200,100,0.4)",
-              color: "#6BFF9E", fontSize: 22,
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(8px)",
-            }}
-          >✓</button>
-        </div>
-      )}
 
       {/* ── Done state ── */}
       {done && (
@@ -577,7 +459,7 @@ export default function SwipeScreen({
       {showTip && !done && idx === 0 && !dragging && !animOut && (
         <div style={{
           position: "absolute",
-          bottom: `calc(${BTNS_BOTTOM} + 90px)`,
+          bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom) + 32px)`,
           left: 0, right: 0, zIndex: 4,
           display: "flex", alignItems: "center", justifyContent: "center",
           pointerEvents: "none",
