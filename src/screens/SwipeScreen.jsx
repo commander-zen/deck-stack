@@ -85,12 +85,10 @@ export default function SwipeScreen({
   const [showTip,      setShowTip]      = useState(false);
   const [cardExpanded, setCardExpanded] = useState(false);
 
-  const didMountRef      = useRef(false);
-  const dragStartRef     = useRef(null);
-  const saveTimerRef     = useRef(null);
-  const lastTapTime      = useRef(0);
-  const lastPointerDxRef = useRef(0);
-  const tapTimerRef      = useRef(null);
+  const didMountRef       = useRef(false);
+  const dragStartRef      = useRef(null);
+  const saveTimerRef      = useRef(null);
+  const longPressTimerRef = useRef(null);
 
   const card = effectiveCards[idx] ?? null;
   const done = idx >= effectiveCards.length;
@@ -98,7 +96,7 @@ export default function SwipeScreen({
   useEffect(() => {
     setImgError(false);
     setCardExpanded(false);
-    clearTimeout(tapTimerRef.current);
+    clearTimeout(longPressTimerRef.current);
   }, [idx]);
 
   // Preload next 4 art_crop images
@@ -198,25 +196,36 @@ export default function SwipeScreen({
     if (animOut || done) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragStartRef.current = e.clientX;
-    lastPointerDxRef.current = 0;
     setDragging(true);
+    const pressedCard = card;
+    longPressTimerRef.current = setTimeout(() => {
+      onDoubleTag?.(pressedCard?.oracle_id);
+    }, 400);
   }
 
   function onPointerMove(e) {
     if (!dragging || dragStartRef.current === null) return;
     const dx = e.clientX - dragStartRef.current;
     setOffset(dx);
+    if (Math.abs(dx) > 5) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
   }
 
   function onPointerUp(e) {
     if (!dragging) return;
+    clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
     setDragging(false);
     const dx = dragStartRef.current !== null ? e.clientX - dragStartRef.current : 0;
-    lastPointerDxRef.current = Math.abs(dx);
     dragStartRef.current = null;
     if (dx > SWIPE_THRESHOLD)       doResolve(true);
     else if (dx < -SWIPE_THRESHOLD) doResolve(false);
-    else { setOffset(0); }
+    else {
+      setOffset(0);
+      if (Math.abs(dx) < 10) setCardExpanded(v => !v);
+    }
   }
 
   // ── Derived visuals ──────────────────────────────────────────────────────────
@@ -265,21 +274,6 @@ export default function SwipeScreen({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          onClick={() => {
-            if (lastPointerDxRef.current >= 10) return;
-            const now = Date.now();
-            const last = lastTapTime.current;
-            lastTapTime.current = now;
-            clearTimeout(tapTimerRef.current);
-            if (now - last < 350) {
-              lastTapTime.current = 0;
-              onDoubleTag?.(card?.oracle_id);
-            } else {
-              tapTimerRef.current = setTimeout(() => {
-                setCardExpanded(e => !e);
-              }, 360);
-            }
-          }}
         >
           {/* Art image */}
           {artUrl && !imgError ? (
