@@ -35,8 +35,7 @@ const isStackable = c => isBasicLand(c) || isAnyNumber(c);
 
 function computeDeckName(commanderCard, query) {
   if (commanderCard?.name) return commanderCard.name;
-  if (query?.trim()) return query.trim().split(/\s+/)[0];
-  return "Untitled Brew";
+  return "New Brew";
 }
 
 export default function App() {
