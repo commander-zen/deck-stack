@@ -78,7 +78,11 @@ export default async function handler(req) {
       }),
     });
 
-    if (!response.ok) throw new Error(`Anthropic ${response.status}`);
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.log("[translate] Anthropic error status:", response.status, "body:", errBody);
+      throw new Error(`Anthropic ${response.status}: ${errBody}`);
+    }
     const data = await response.json();
     console.log("[translate] raw haiku response:", JSON.stringify(data.content));
     const query = data.content[0].text.trim();
@@ -86,7 +90,8 @@ export default async function handler(req) {
     console.log("[translate] returning query:", query);
     return new Response(JSON.stringify({ query }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   } catch (err) {
-    console.error("translate edge fn error:", err);
-    return new Response(JSON.stringify({ query: input }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
+    console.log("[translate] CAUGHT ERROR:", err?.message ?? String(err));
+    console.log("[translate] CAUGHT ERROR status:", err?.status ?? "none");
+    return new Response(JSON.stringify({ query: input, error: err?.message ?? String(err) }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   }
 }
