@@ -192,12 +192,14 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     if (rawMode) {
       query = input;
     } else {
-      setLocalLoading("translating");
-      try {
-        query = await translateToScryfall(input, commanderCard);
-      } catch {
-        query = input;
-      }
+      // NLP layer — deferred, wire back in after MVP
+      // setLocalLoading("translating");
+      // try {
+      //   query = await translateToScryfall(input, commanderCard);
+      // } catch {
+      //   query = input;
+      // }
+      query = input;
     }
 
     const settings = getSettings();
