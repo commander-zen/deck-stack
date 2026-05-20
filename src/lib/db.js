@@ -59,13 +59,7 @@ export async function saveDeck(sessionId, deck, userId) {
 
 export async function deleteDeck(sessionId, deckId, userId) {
   if (!supabase) return;
-  let query = supabase.from("decks").delete().eq("id", deckId);
-  if (userId) {
-    query = query.eq("user_id", userId);
-  } else {
-    query = query.eq("session_id", sessionId);
-  }
-  const { error } = await query;
+  const { error } = await supabase.from("decks").delete().eq("id", deckId);
   if (error) throw error;
 }
 

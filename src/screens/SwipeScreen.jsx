@@ -246,7 +246,15 @@ export default function SwipeScreen({
   const tintOpacity = Math.min(1, Math.max(0, (Math.abs(offset) - 20) / 60)) * 0.35;
   const tintColor = offset >= 0 ? "#6BFF9E" : "#FF6B6B";
 
-  const isCommanderLegal = card?.legalities?.commander === "legal";
+  function isCommanderEligible(c) {
+    const type = c?.type_line ?? "";
+    const oracle = c?.oracle_text ?? "";
+    return (
+      (type.includes("Legendary") && type.includes("Creature")) ||
+      (type.includes("Legendary") && type.includes("Vehicle")) ||
+      oracle.includes("can be your commander")
+    );
+  }
   const isGameChanger    = card?.game_changer === true;
   const commanderName    = commanderCard?.name ?? null;
 
@@ -300,7 +308,7 @@ export default function SwipeScreen({
                     objectFit: "contain",
                     pointerEvents: "none",
                     // Gold border directly on the img element, tight to card art
-                    ...(isCommanderLegal && {
+                    ...(isCommanderEligible(card) && {
                       border: "2px solid #FFD700",
                       boxShadow: "0 0 8px rgba(255,215,0,0.5)",
                     }),
