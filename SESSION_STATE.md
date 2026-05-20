@@ -1,11 +1,17 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test DeckDetailScreen in browser — verify card groups render correctly, lightbox opens on tap, WREC tags show in lightbox, chrome bar shows card count, back button returns to BrewShelfScreen, and commander can be changed freely on any brew.
+Next: Build the new swipe/stack architecture on top of the clean App.jsx shell — BrewShelfScreen is the entry point, DeckDetailScreen shows deck contents.
 
 ---
 
 ## Completed ✅
+
+- ✅ **Demolition — old swipe architecture removed** (2026-05-20)
+  - Deleted: `src/screens/SwipeScreen.jsx`, `PileScreen.jsx`, `SearchScreen.jsx`
+  - Gutted: `src/components/BottomNav.jsx` → stub with `export const NAV_HEIGHT = 60` only (kept because BrewShelfScreen, DeckDetailScreen, SettingsScreen all import it)
+  - App.jsx rewritten from ~1090 lines to ~175 lines: removed all pile/swipe/commander/search/toast/wrec state and handlers; retains Supabase init, auth subscription, deck CRUD, localStorage mirror; renders BrewShelfScreen + DeckDetailScreen + SettingsScreen
+  - Bundle: 450 KB → 371 KB gzip
 
 - ✅ **DeckDetailScreen + commander unlock** (2026-05-20)
   - `DeckDetailScreen.jsx` built out: Win98 navy title bars for COMMANDER (1) and each type group (Creatures, Planeswalkers, Instants, Sorceries, Enchantments, Artifacts, Lands, Other), card rows with qty/name/chevron, fixed chrome bar showing card count, card lightbox with WREC tag pills (read-only)

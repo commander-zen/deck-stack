@@ -39,7 +39,8 @@
       "Bash(curl -X POST https://zmzkfnljvusrqcvwuvgc.supabase.co/functions/v1/translate -H 'Content-Type: application/json' -d '{\"input\":\"ramp\",\"commanderName\":\"Gorma, the Gullet\",\"colorIdentity\":[\"B\",\"G\"]}')",
       "Bash(curl -X POST https://zmzkfnljvusrqcvwuvgc.supabase.co/functions/v1/translate -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptemtmbmxqdnVzcnFjdnd1dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTI5OTIsImV4cCI6MjA5MzU4ODk5Mn0.jhFZkwyQxEQmzzUZ8MzaVXw3Slp20_I1nXVqU6KtPhY' -d '{\"input\":\"ramp\",\"commanderName\":\"Gorma, the Gullet\",\"colorIdentity\":[\"B\",\"G\"]}')",
       "Bash(vercel --prod)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(del screens\\\\SwipeScreen.jsx screens\\\\PileScreen.jsx screens\\\\SearchScreen.jsx)"
     ]
   }
 }
