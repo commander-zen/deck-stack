@@ -3,7 +3,7 @@ export async function translateToScryfall(input, commanderCard = null) {
   if (!raw) return "";
 
   try {
-    const res = await fetch("/api/translate", {
+    const res = await fetch("https://zmzkfnljvusrqcvwuvgc.supabase.co/functions/v1/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

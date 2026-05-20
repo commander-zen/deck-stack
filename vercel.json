@@ -1,4 +1,12 @@
 {
   "framework": "vite",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "functions": {
+    "api/translate.js": {
+      "regions": ["sfo1"]
+    },
+    "api/ping.js": {
+      "regions": ["sfo1"]
+    }
+  }
 }
