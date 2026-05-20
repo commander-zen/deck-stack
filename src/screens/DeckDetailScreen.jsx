@@ -105,10 +105,11 @@ function CardRow({ card, onClick }) {
   );
 }
 
-export default function DeckDetailScreen({ deck, onBack, onUpdateDeck }) {
+export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteDeck }) {
   const [lightboxCard,  setLightboxCard]  = useState(null);
   const [browserQuery,  setBrowserQuery]  = useState(null); // null = closed
   const [localPile,     setLocalPile]     = useState(() => deck?.pile ?? []);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const searchInputRef = useRef(null);
 
   // Reset local pile when navigating to a different deck
@@ -140,8 +141,16 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck }) {
   }
 
   function handleSubmitSearch() {
-    const q = searchInputRef.current?.value?.trim();
-    if (q) setBrowserQuery(q);
+    const raw = searchInputRef.current?.value?.trim();
+    if (!raw) return;
+    const colorId = commanderCard?.color_identity;
+    const suffix = colorId?.length ? ` id<=${colorId.join("")}` : "";
+    setBrowserQuery(raw + suffix);
+  }
+
+  function handleConfirmDelete() {
+    onDeleteDeck?.(deck.id);
+    onBack();
   }
 
   function handleAddCard(card) {
@@ -354,6 +363,140 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck }) {
           </div>
         )}
       </div>
+
+      {/* Delete brew button — sits just above the chrome bar */}
+      <div style={{
+        position: "fixed",
+        bottom: `calc(${NAV_HEIGHT}px + ${40}px + max(env(safe-area-inset-bottom), 0px))`,
+        left: 0,
+        right: 0,
+        maxWidth: 600,
+        margin: "0 auto",
+        padding: "0 var(--space-2)",
+        zIndex: 50,
+      }}>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          style={{
+            width: "100%",
+            background: "#800000",
+            color: "#ffffff",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            letterSpacing: 2,
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "#ffffff",
+            borderLeftColor: "#ffffff",
+            borderBottomColor: "#400000",
+            borderRightColor: "#400000",
+            padding: "var(--space-2) 0",
+            cursor: "pointer",
+            borderRadius: 0,
+          }}
+        >
+          DELETE BREW
+        </button>
+      </div>
+
+      {/* Confirm delete dialog */}
+      {confirmDelete && (
+        <>
+          <div
+            onClick={() => setConfirmDelete(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 500,
+              background: "rgba(0,0,0,0.55)",
+            }}
+          />
+          <div style={{
+            position: "fixed",
+            top: "50%", left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 501,
+            width: "min(88vw, 320px)",
+            background: "var(--color-chrome)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+          }}>
+            {/* Dialog title bar */}
+            <div style={{
+              background: "var(--color-titlebar)",
+              color: "var(--color-titlebar-text)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-base)",
+              fontWeight: "bold",
+              padding: "var(--space-1) var(--space-2)",
+            }}>
+              Confirm Delete
+            </div>
+            {/* Dialog body */}
+            <div style={{
+              padding: "var(--space-4) var(--space-3)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-base)",
+              color: "var(--color-text-chrome)",
+              lineHeight: 1.5,
+            }}>
+              Delete this brew? This cannot be undone.
+            </div>
+            {/* Dialog buttons */}
+            <div style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "var(--space-2)",
+              padding: "0 var(--space-3) var(--space-3)",
+            }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{
+                  background: "var(--color-chrome)",
+                  color: "var(--color-text-chrome)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-base)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-light)",
+                  borderLeftColor: "var(--bevel-light)",
+                  borderBottomColor: "var(--bevel-dark)",
+                  borderRightColor: "var(--bevel-dark)",
+                  padding: "var(--space-1) var(--space-4)",
+                  cursor: "pointer",
+                  borderRadius: 0,
+                  minWidth: 72,
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                style={{
+                  background: "#800000",
+                  color: "#ffffff",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-base)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "#ffffff",
+                  borderLeftColor: "#ffffff",
+                  borderBottomColor: "#400000",
+                  borderRightColor: "#400000",
+                  padding: "var(--space-1) var(--space-4)",
+                  cursor: "pointer",
+                  borderRadius: 0,
+                  minWidth: 72,
+                }}
+              >
+                DELETE
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Fixed chrome bar — card count */}
       <div style={{

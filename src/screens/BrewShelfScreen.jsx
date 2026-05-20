@@ -50,7 +50,7 @@ export default function BrewShelfScreen({ decks, activeDeckId, onSelectDeck, onN
         top: 0,
         zIndex: 10,
       }}>
-        <span>Brews</span>
+        <span>DECK STACK</span>
         <button
           onClick={onNewBrew}
           style={{

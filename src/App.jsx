@@ -186,6 +186,7 @@ export default function App() {
           deck={activeDeck}
           onBack={handleBack}
           onUpdateDeck={handleUpdateDeck}
+          onDeleteDeck={handleDeleteDeck}
         />
       )}
 
