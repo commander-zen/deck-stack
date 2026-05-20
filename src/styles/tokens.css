@@ -1,0 +1,42 @@
+:root {
+  /* Base / background */
+  --color-bg:           #1a1a1a;
+  --color-surface:      #2a2a2a;
+  --color-surface-raised: #333333;
+
+  /* Win98 chrome */
+  --color-chrome:       #c0c0c0;
+  --color-chrome-light: #ffffff;
+  --color-chrome-mid:   #808080;
+  --color-chrome-dark:  #404040;
+
+  /* Title bar */
+  --color-titlebar:      #000080;
+  --color-titlebar-text: #ffffff;
+
+  /* Text */
+  --color-text-primary:  #e8e8e8;
+  --color-text-secondary:#a0a0a0;
+  --color-text-chrome:   #1a1a1a;
+
+  /* Bevel mixin values */
+  --bevel-light:       #ffffff;
+  --bevel-dark:        #404040;
+  --bevel-inset-light: #808080;
+  --bevel-inset-dark:  #c0c0c0;
+
+  /* Typography */
+  --font-system:    'Tahoma', 'Verdana', 'Arial', sans-serif;
+  --font-size-base: 13px;
+  --font-size-sm:   11px;
+  --font-size-lg:   16px;
+  --font-size-xl:   20px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+}

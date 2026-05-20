@@ -35,9 +35,9 @@ function DecksIcon({ color }) {
 export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe, onGoToTags, onGoToProfile }) {
   const isGhost = screen === "swipe";
 
-  const gold        = "#C9A84C";
-  const activeColor = isGhost ? "rgba(201,168,76,0.8)" : gold;
-  const inactiveColor = isGhost ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.3)";
+  const gold          = "#C9A84C";
+  const activeColor   = isGhost ? "rgba(201,168,76,0.8)"  : "#c0c0c0";
+  const inactiveColor = isGhost ? "rgba(255,255,255,0.15)" : "#808080";
 
   const tabs = [
     {
@@ -68,11 +68,12 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
       <div style={{
         maxWidth: 600,
         margin: "0 auto",
-        background: isGhost ? "transparent" : "rgba(0,0,0,0.97)",
-        borderTop: isGhost
-          ? "0.5px solid rgba(255,255,255,0.04)"
-          : "0.5px solid rgba(255,255,255,0.06)",
-        backdropFilter: isGhost ? "none" : "blur(12px)",
+        background: isGhost ? "transparent" : "var(--color-chrome)",
+        borderTop:    isGhost ? "0.5px solid rgba(255,255,255,0.04)" : "2px solid var(--bevel-light)",
+        borderLeft:   isGhost ? "none" : "2px solid var(--bevel-light)",
+        borderRight:  isGhost ? "none" : "2px solid var(--bevel-dark)",
+        borderBottom: isGhost ? "none" : "2px solid var(--bevel-dark)",
+        backdropFilter: "none",
         display: "flex",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}>
@@ -85,8 +86,11 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
               style={{
                 flex: 1,
                 height: NAV_HEIGHT,
-                background: "transparent",
-                border: "none",
+                background: isGhost ? "transparent" : isActive ? "var(--color-surface-raised)" : "var(--color-chrome)",
+                borderTop:    (!isGhost && isActive) ? "2px solid var(--bevel-dark)"  : "none",
+                borderLeft:   (!isGhost && isActive) ? "2px solid var(--bevel-dark)"  : "none",
+                borderRight:  (!isGhost && isActive) ? "2px solid var(--bevel-light)" : "none",
+                borderBottom: (!isGhost && isActive) ? "2px solid var(--bevel-light)" : "none",
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
@@ -97,26 +101,26 @@ export default function BottomNav({ screen, onGoToStack, onGoToPile, onGoToMaybe
                 position: "relative",
               }}
             >
-              {/* active indicator line */}
-              {isActive && (
+              {/* active indicator — ghost mode only (replaced by bevel in chrome mode) */}
+              {isActive && isGhost && (
                 <div style={{
                   position: "absolute",
                   top: 0,
                   left: "50%",
                   transform: "translateX(-50%)",
-                  width: isGhost ? 1.5 : 24,
-                  height: isGhost ? 1.5 : 2,
-                  background: isGhost ? "rgba(201,168,76,0.5)" : gold,
+                  width: 1.5,
+                  height: 1.5,
+                  background: "rgba(201,168,76,0.5)",
                   borderRadius: 1,
                 }}/>
               )}
               <Icon color={color} />
               {!isGhost && (
                 <span style={{
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 10,
-                  letterSpacing: "0.15em",
-                  color,
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-sm)",
+                  letterSpacing: "0.05em",
+                  color: isActive ? "var(--color-chrome)" : "var(--color-text-chrome)",
                   transition: "color 0.15s",
                 }}>
                   {label}
