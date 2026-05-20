@@ -22,8 +22,9 @@ function TextList({ pile, onRemove }) {
         return (
           <div key={cat} style={{ marginBottom: 18 }}>
             <div style={{
-              fontSize: 10,
-              color: "var(--muted)",
+              fontSize: "var(--font-size-sm)",
+              fontFamily: "var(--font-system)",
+              color: "var(--color-text-secondary)",
               letterSpacing: 2,
               marginBottom: 6,
               paddingBottom: 4,
@@ -42,7 +43,7 @@ function TextList({ pile, onRemove }) {
                   borderBottom: "1px solid rgba(255,255,255,0.03)",
                 }}
               >
-                <span style={{ flex: 1, fontSize: 12, color: "var(--text)", letterSpacing: 0.3 }}>
+                <span style={{ flex: 1, fontSize: "var(--font-size-sm)", fontFamily: "var(--font-system)", color: "var(--color-text-primary)", letterSpacing: 0.3 }}>
                   1 {card.name}
                 </span>
                 <button
@@ -81,10 +82,15 @@ function VisualGrid({ pile, onRemove }) {
             key={`${card.id}-${i}`}
             style={{
               position: "relative",
-              background: "var(--panel)",
-              borderRadius: 6,
+              background: "var(--color-surface-raised)",
+              borderRadius: 0,
               overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.05)",
+              borderStyle: "solid",
+              borderWidth: "1px",
+              borderTopColor: "var(--bevel-light)",
+              borderLeftColor: "var(--bevel-light)",
+              borderBottomColor: "var(--bevel-dark)",
+              borderRightColor: "var(--bevel-dark)",
             }}
           >
             {art ? (
@@ -92,9 +98,9 @@ function VisualGrid({ pile, onRemove }) {
             ) : (
               <div style={{
                 width: "100%", aspectRatio: "4/3",
-                background: "var(--panel2)",
+                background: "var(--color-chrome-dark)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 7, color: "var(--muted)", padding: 4, textAlign: "center",
+                fontSize: 7, color: "var(--color-text-secondary)", fontFamily: "var(--font-system)", padding: 4, textAlign: "center",
               }}>
                 {card.name}
               </div>
@@ -102,7 +108,8 @@ function VisualGrid({ pile, onRemove }) {
             <div style={{
               padding: "2px 4px 3px",
               fontSize: 7,
-              color: "var(--muted)",
+              fontFamily: "var(--font-system)",
+              color: "var(--color-text-secondary)",
               overflow: "hidden",
               whiteSpace: "nowrap",
               textOverflow: "ellipsis",
@@ -154,16 +161,19 @@ export default function DeckReviewPill({ pile, onRemove }) {
           bottom: 72,
           right: 16,
           zIndex: 50,
-          background: "var(--primary)",
-          border: "none",
-          borderRadius: 20,
+          background: "var(--color-chrome)",
+          color: "var(--color-text-chrome)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           padding: "8px 16px",
-          color: "#fff",
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 14,
-          letterSpacing: 2,
+          fontFamily: "var(--font-system)",
+          fontSize: "var(--font-size-base)",
           cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(91,143,255,0.45)",
           display: "flex",
           alignItems: "center",
           gap: 6,
@@ -180,7 +190,7 @@ export default function DeckReviewPill({ pile, onRemove }) {
             position: "fixed",
             inset: 0,
             zIndex: 100,
-            background: "rgba(0,0,0,0.65)",
+            background: "rgba(0, 0, 0, 0.75)",
             display: "flex",
             alignItems: "flex-end",
           }}
@@ -189,29 +199,33 @@ export default function DeckReviewPill({ pile, onRemove }) {
           <div style={{
             width: "100%",
             maxHeight: "80dvh",
-            background: "var(--panel)",
-            borderRadius: "18px 18px 0 0",
+            background: "var(--color-surface)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            borderRadius: 0,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
           }}>
-            {/* Sheet header */}
+            {/* Title bar */}
             <div style={{
-              padding: "14px 20px",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--color-titlebar)",
+              color: "var(--color-titlebar-text)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-base)",
+              fontWeight: "bold",
+              padding: "var(--space-1) var(--space-2)",
               display: "flex",
               alignItems: "center",
               gap: 10,
               flexShrink: 0,
             }}>
-              <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 16,
-                letterSpacing: 3,
-                flex: 1,
-                color: "var(--text)",
-              }}>
-                YOUR STACK · {pile.length} CARDS
+              <span style={{ flex: 1 }}>
+                YOUR STACK — {pile.length} CARDS
               </span>
 
               {/* Text / Visual toggle */}
@@ -221,15 +235,19 @@ export default function DeckReviewPill({ pile, onRemove }) {
                     key={v}
                     onClick={() => setView(v)}
                     style={{
-                      padding: "3px 10px",
-                      borderRadius: 6,
-                      border: "none",
-                      background: view === v ? "var(--primary)" : "rgba(255,255,255,0.07)",
-                      color: view === v ? "#fff" : "var(--muted)",
-                      fontSize: 10,
-                      letterSpacing: 1,
+                      padding: "1px 8px",
+                      borderRadius: 0,
+                      borderStyle: "solid",
+                      borderWidth: "2px",
+                      borderTopColor: view === v ? "var(--bevel-dark)" : "var(--bevel-light)",
+                      borderLeftColor: view === v ? "var(--bevel-dark)" : "var(--bevel-light)",
+                      borderBottomColor: view === v ? "var(--bevel-light)" : "var(--bevel-dark)",
+                      borderRightColor: view === v ? "var(--bevel-light)" : "var(--bevel-dark)",
+                      background: "var(--color-chrome)",
+                      color: "var(--color-text-chrome)",
+                      fontSize: "var(--font-size-sm)",
                       cursor: "pointer",
-                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontFamily: "var(--font-system)",
                     }}
                   >
                     {v.toUpperCase()}
@@ -240,13 +258,26 @@ export default function DeckReviewPill({ pile, onRemove }) {
               <button
                 onClick={() => setOpen(false)}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--muted)",
-                  fontSize: 20,
+                  background: "var(--color-chrome)",
+                  color: "var(--color-text-chrome)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-light)",
+                  borderLeftColor: "var(--bevel-light)",
+                  borderBottomColor: "var(--bevel-dark)",
+                  borderRightColor: "var(--bevel-dark)",
+                  width: "20px",
+                  height: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   cursor: "pointer",
-                  padding: "0 2px",
+                  padding: 0,
                   lineHeight: 1,
+                  borderRadius: 0,
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-sm)",
+                  flexShrink: 0,
                 }}
               >
                 ✕

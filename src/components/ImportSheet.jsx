@@ -73,10 +73,10 @@ async function resolveByCollection(names) {
 function FieldLabel({ children }) {
   return (
     <div style={{
-      fontSize: 10, fontWeight: 600,
+      fontSize: "var(--font-size-sm)", fontWeight: "bold",
       letterSpacing: "0.12em", textTransform: "uppercase",
-      color: "var(--muted)", marginBottom: 6,
-      fontFamily: "'Space Grotesk', sans-serif",
+      color: "var(--color-text-secondary)", marginBottom: 6,
+      fontFamily: "var(--font-system)",
     }}>
       {children}
     </div>
@@ -278,7 +278,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
         onClick={handleClose}
         style={{
           position: "fixed", inset: 0, zIndex: 200,
-          background: "rgba(0,0,0,0.65)",
+          background: "rgba(0, 0, 0, 0.75)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.28s",
@@ -312,26 +312,25 @@ export default function ImportSheet({ open, onClose, onImport }) {
           <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2, flexShrink: 0 }}>
             <div style={{
               display: "inline-block",
-              width: 36, height: 4, borderRadius: 2,
-              background: "rgba(255,255,255,0.18)",
+              width: 36, height: 4, borderRadius: 0,
+              background: "var(--color-chrome-mid)",
             }} />
           </div>
 
-          {/* Header */}
+          {/* Title bar */}
           <div style={{
-            display: "flex", alignItems: "center",
-            padding: "8px 18px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "var(--color-titlebar)",
+            color: "var(--color-titlebar-text)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-base)",
+            fontWeight: "bold",
+            padding: "var(--space-1) var(--space-2)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             flexShrink: 0,
           }}>
-            <span style={{
-              flex: 1,
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 18, letterSpacing: 4,
-              color: "var(--secondary)",
-            }}>
-              IMPORT DECK
-            </span>
+            <span>IMPORT DECK</span>
             <button
               onClick={handleClose}
               disabled={isWorking}
@@ -346,10 +345,15 @@ export default function ImportSheet({ open, onClose, onImport }) {
                 borderLeftColor: "var(--bevel-light)",
                 borderBottomColor: "var(--bevel-dark)",
                 borderRightColor: "var(--bevel-dark)",
-                padding: "var(--space-1) var(--space-3)",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 cursor: isWorking ? "default" : "pointer",
                 borderRadius: 0,
-                lineHeight: 1,
+                padding: 0,
+                flexShrink: 0,
                 opacity: isWorking ? 0.4 : 1,
               }}
             >
@@ -419,7 +423,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
                   resize: "vertical", lineHeight: 1.65,
                 }}
               />
-              <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+              <div style={{ fontSize: "var(--font-size-sm)", fontFamily: "var(--font-system)", color: "var(--color-text-secondary)", marginTop: 6 }}>
                 Accepts <code style={{ fontFamily: "inherit", opacity: 0.8 }}>1x Card Name</code>, <code style={{ fontFamily: "inherit", opacity: 0.8 }}>1 Card Name</code>, or plain names — MTGO, Arena, and Moxfield exports all work.
               </div>
             </div>

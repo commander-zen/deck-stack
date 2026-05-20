@@ -19,37 +19,82 @@ export default function CommanderModal({ card, onClose }) {
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, zIndex: 450,
-        background: "rgba(0,0,0,0.85)",
-        backdropFilter: "blur(16px)",
+        background: "rgba(0, 0, 0, 0.75)",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         padding: "24px 20px",
       }}
     >
-      <button
-        onClick={e => { e.stopPropagation(); onClose(); }}
-        style={{
-          position: "absolute", top: 16, right: 16,
-          width: 36, height: 36, borderRadius: "50%",
-          background: "rgba(255,255,255,0.2)",
-          border: "none",
-          color: "rgba(255,255,255,0.8)", fontSize: 16,
-          cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          lineHeight: 1,
-        }}
-      >✕</button>
-
       <div
         onClick={e => e.stopPropagation()}
         style={{
           width: "min(88vw, 380px)",
-          background: "#0d0d0f",
-          border: "0.5px solid rgba(255,255,255,0.1)",
-          borderRadius: 20,
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           overflow: "hidden",
         }}
       >
+        {/* Title bar */}
+        <div style={{
+          background: "var(--color-titlebar)",
+          color: "var(--color-titlebar-text)",
+          fontFamily: "var(--font-system)",
+          fontSize: "var(--font-size-base)",
+          fontWeight: "bold",
+          padding: "var(--space-1) var(--space-2)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}>
+          <span>{card.name}</span>
+          <button
+            onClick={e => { e.stopPropagation(); onClose(); }}
+            style={{
+              background: "var(--color-chrome)",
+              color: "var(--color-text-chrome)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-light)",
+              borderLeftColor: "var(--bevel-light)",
+              borderBottomColor: "var(--bevel-dark)",
+              borderRightColor: "var(--bevel-dark)",
+              width: "20px",
+              height: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              borderRadius: 0,
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >✕</button>
+        </div>
+
+        {/* Modal body */}
+        <div style={{
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
+          padding: "var(--space-4)",
+          fontFamily: "var(--font-system)",
+          fontSize: "var(--font-size-base)",
+          color: "var(--color-text-primary)",
+        }}>
+
         {/* Art crop as full-width hero image */}
         {artUrl && (
           <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
@@ -61,7 +106,7 @@ export default function CommanderModal({ card, onClose }) {
                 width: "100%", height: "100%",
                 objectFit: "cover",
                 display: "block",
-                borderRadius: "16px 16px 0 0",
+                borderRadius: 0,
               }}
             />
             {/* Flip button for DFCs */}
@@ -70,12 +115,20 @@ export default function CommanderModal({ card, onClose }) {
                 onClick={() => setFaceIdx(f => f === 0 ? 1 : 0)}
                 style={{
                   position: "absolute", bottom: 10, right: 10,
-                  width: 34, height: 34, borderRadius: "50%",
-                  background: "rgba(0,0,0,0.75)",
-                  border: "1px solid rgba(255,255,255,0.3)",
-                  color: "white", cursor: "pointer", fontSize: 18,
+                  width: 34, height: 34,
+                  background: "var(--color-chrome)",
+                  color: "var(--color-text-chrome)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-light)",
+                  borderLeftColor: "var(--bevel-light)",
+                  borderBottomColor: "var(--bevel-dark)",
+                  borderRightColor: "var(--bevel-dark)",
+                  cursor: "pointer", fontSize: 18,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   lineHeight: 1,
+                  borderRadius: 0,
+                  padding: 0,
                 }}
               >↻</button>
             )}
@@ -90,19 +143,11 @@ export default function CommanderModal({ card, onClose }) {
             draggable={false}
             style={{
               width: "100%", display: "block",
-              borderRadius: "16px 16px 0 0",
+              borderRadius: 0,
             }}
           />
         )}
 
-        {/* Commander name */}
-        <div style={{
-          padding: "14px 16px",
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: 24, letterSpacing: 3,
-          color: "#ffffff",
-        }}>
-          {card.name}
         </div>
       </div>
     </div>

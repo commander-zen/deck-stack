@@ -37,7 +37,7 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
         onClick={onClose}
         style={{
           position: "fixed", inset: 0, zIndex: 200,
-          background: "rgba(0,0,0,0.65)",
+          background: "rgba(0, 0, 0, 0.75)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.28s",
@@ -55,11 +55,14 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
         <div style={{
           width: "100%", maxWidth: 600,
           maxHeight: "85dvh",
-          background: "var(--bg)",
-          borderRadius: "20px 20px 0 0",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}>
@@ -68,39 +71,47 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
           <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2, flexShrink: 0 }}>
             <div style={{
               display: "inline-block",
-              width: 36, height: 4, borderRadius: 2,
-              background: "rgba(255,255,255,0.18)",
+              width: 36, height: 4, borderRadius: 0,
+              background: "var(--color-chrome-mid)",
             }} />
           </div>
 
-          {/* Header */}
+          {/* Title bar */}
           <div style={{
-            display: "flex", alignItems: "center",
-            padding: "8px 18px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "var(--color-titlebar)",
+            color: "var(--color-titlebar-text)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-base)",
+            fontWeight: "bold",
+            padding: "var(--space-1) var(--space-2)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             flexShrink: 0,
           }}>
-            <span style={{
-              flex: 1,
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 18, letterSpacing: 4,
-              color: "var(--primary)",
-            }}>
-              📚 BREWS
-            </span>
-            <span style={{
-              fontSize: 11, color: "var(--muted)",
-              fontFamily: "'Space Grotesk', sans-serif",
-              marginRight: 14,
-            }}>
-              {decks.length} saved
-            </span>
+            <span>BREWS ({decks.length})</span>
             <button
               onClick={onClose}
               style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.45)", fontSize: 18,
-                cursor: "pointer", padding: "4px 6px", lineHeight: 1,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                borderRadius: 0,
+                padding: 0,
+                flexShrink: 0,
               }}
             >
               ✕
@@ -112,7 +123,8 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
             {decks.length === 0 ? (
               <div style={{
                 textAlign: "center", padding: "48px 20px",
-                color: "var(--muted)", fontSize: 14,
+                color: "var(--color-text-secondary)", fontSize: "var(--font-size-base)",
+                fontFamily: "var(--font-system)",
               }}>
                 No saved brews yet
               </div>
@@ -131,16 +143,22 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
                       gap: 12,
                       padding: "12px 18px",
                       borderBottom: "1px solid rgba(255,255,255,0.05)",
-                      background: isActive ? "rgba(91,143,255,0.06)" : "transparent",
-                      borderLeft: isActive ? "3px solid var(--primary)" : "3px solid transparent",
+                      background: isActive ? "rgba(0,0,128,0.12)" : "transparent",
+                      borderLeft: isActive ? `3px solid var(--color-titlebar)` : "3px solid transparent",
                     }}
                   >
                     {/* Thumbnail */}
                     <div style={{
-                      width: 52, height: 36, borderRadius: 6, flexShrink: 0,
-                      background: "var(--panel)",
+                      width: 52, height: 36, borderRadius: 0, flexShrink: 0,
+                      background: "var(--color-chrome-dark)",
                       overflow: "hidden",
                       display: "flex", alignItems: "center", justifyContent: "center",
+                      borderStyle: "solid",
+                      borderWidth: "2px",
+                      borderTopColor: "var(--bevel-dark)",
+                      borderLeftColor: "var(--bevel-dark)",
+                      borderBottomColor: "var(--bevel-light)",
+                      borderRightColor: "var(--bevel-light)",
                     }}>
                       {thumb ? (
                         <img
@@ -160,21 +178,22 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
                       onClick={() => !isConfirm && handleSwitch(deck.id)}
                     >
                       <div style={{
-                        fontSize: 14, fontWeight: 500,
-                        color: isActive ? "var(--primary)" : "var(--text)",
+                        fontSize: "var(--font-size-base)", fontWeight: "bold",
+                        fontFamily: "var(--font-system)",
+                        color: isActive ? "var(--color-titlebar-text)" : "var(--color-text-primary)",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}>
                         {deck.name || "Untitled Brew"}
                         {isActive && (
                           <span style={{
                             marginLeft: 8,
-                            fontSize: 10, letterSpacing: 1,
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            color: "var(--primary)", opacity: 0.7,
+                            fontSize: "var(--font-size-sm)",
+                            fontFamily: "var(--font-system)",
+                            color: "var(--color-text-secondary)",
                           }}>ACTIVE</span>
                         )}
                       </div>
-                      <div style={{ display: "flex", gap: 8, marginTop: 3, fontSize: 11, color: "var(--muted)" }}>
+                      <div style={{ display: "flex", gap: 8, marginTop: 3, fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", fontFamily: "var(--font-system)" }}>
                         <span>{deck.pile?.length ?? 0} cards</span>
                         <span>·</span>
                         <span>{relativeTime(deck.last_opened_at)}</span>
@@ -187,25 +206,37 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
                         <button
                           onClick={() => setConfirmId(null)}
                           style={{
-                            padding: "5px 10px", borderRadius: 6,
-                            border: "1px solid rgba(255,255,255,0.15)",
-                            background: "transparent",
-                            color: "var(--muted)",
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            fontSize: 11, letterSpacing: 1,
+                            padding: "var(--space-1) var(--space-2)",
+                            borderStyle: "solid",
+                            borderWidth: "2px",
+                            borderTopColor: "var(--bevel-light)",
+                            borderLeftColor: "var(--bevel-light)",
+                            borderBottomColor: "var(--bevel-dark)",
+                            borderRightColor: "var(--bevel-dark)",
+                            background: "var(--color-chrome)",
+                            color: "var(--color-text-chrome)",
+                            fontFamily: "var(--font-system)",
+                            fontSize: "var(--font-size-sm)",
                             cursor: "pointer",
+                            borderRadius: 0,
                           }}
                         >CANCEL</button>
                         <button
                           onClick={() => handleDelete(deck.id)}
                           style={{
-                            padding: "5px 10px", borderRadius: 6,
-                            border: "1px solid rgba(255,80,80,0.4)",
-                            background: "rgba(255,80,80,0.1)",
-                            color: "var(--danger)",
-                            fontFamily: "'Space Grotesk', sans-serif",
-                            fontSize: 11, letterSpacing: 1,
+                            padding: "var(--space-1) var(--space-2)",
+                            borderStyle: "solid",
+                            borderWidth: "2px",
+                            borderTopColor: "#ffffff",
+                            borderLeftColor: "#ffffff",
+                            borderBottomColor: "#400000",
+                            borderRightColor: "#400000",
+                            background: "#800000",
+                            color: "#ffffff",
+                            fontFamily: "var(--font-system)",
+                            fontSize: "var(--font-size-sm)",
                             cursor: "pointer",
+                            borderRadius: 0,
                           }}
                         >DELETE</button>
                       </div>
@@ -213,14 +244,21 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
                       <button
                         onClick={e => { e.stopPropagation(); setConfirmId(deck.id); }}
                         style={{
-                          background: "transparent", border: "none",
-                          color: "var(--muted)", cursor: "pointer",
-                          fontSize: 14, padding: "4px 6px", flexShrink: 0,
+                          background: "var(--color-chrome)",
+                          color: "var(--color-text-chrome)",
+                          borderStyle: "solid",
+                          borderWidth: "2px",
+                          borderTopColor: "var(--bevel-light)",
+                          borderLeftColor: "var(--bevel-light)",
+                          borderBottomColor: "var(--bevel-dark)",
+                          borderRightColor: "var(--bevel-dark)",
+                          cursor: "pointer",
+                          fontSize: "var(--font-size-sm)",
+                          padding: "2px 6px", flexShrink: 0,
                           lineHeight: 1,
-                          borderRadius: 4,
+                          borderRadius: 0,
+                          fontFamily: "var(--font-system)",
                         }}
-                        onMouseOver={e => e.currentTarget.style.color = "var(--danger)"}
-                        onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
                       >✕</button>
                     )}
                   </div>
@@ -240,13 +278,18 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
               onClick={() => { onNew(); onClose(); }}
               style={{
                 width: "100%",
-                padding: "13px 20px",
-                border: "1.5px solid rgba(91,143,255,0.35)",
-                borderRadius: 12,
-                background: "transparent",
-                color: "var(--primary)",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 16, letterSpacing: 3,
+                padding: "var(--space-2) var(--space-4)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                borderRadius: 0,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-base)",
                 cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}
@@ -258,9 +301,9 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
               style={{
                 width: "100%", marginTop: 10,
                 background: "transparent", border: "none",
-                color: authUser ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.25)",
-                fontSize: 11,
-                fontFamily: "'Space Grotesk', sans-serif",
+                color: "var(--color-text-secondary)",
+                fontSize: "var(--font-size-sm)",
+                fontFamily: "var(--font-system)",
                 cursor: "pointer",
                 padding: "4px 0",
                 textAlign: "center",

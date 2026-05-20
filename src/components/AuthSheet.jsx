@@ -34,7 +34,7 @@ export default function AuthSheet({ open, onClose, user }) {
         onClick={handleClose}
         style={{
           position: "fixed", inset: 0, zIndex: 200,
-          background: "rgba(0,0,0,0.65)",
+          background: "rgba(0, 0, 0, 0.75)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.28s",
@@ -62,24 +62,23 @@ export default function AuthSheet({ open, onClose, user }) {
         }}>
           <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2 }}>
             <div style={{
-              display: "inline-block", width: 36, height: 4, borderRadius: 2,
-              background: "rgba(255,255,255,0.18)",
+              display: "inline-block", width: 36, height: 4, borderRadius: 0,
+              background: "var(--color-chrome-mid)",
             }} />
           </div>
 
           <div style={{
-            display: "flex", alignItems: "center",
-            padding: "8px 18px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "var(--color-titlebar)",
+            color: "var(--color-titlebar-text)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-base)",
+            fontWeight: "bold",
+            padding: "var(--space-1) var(--space-2)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}>
-            <span style={{
-              flex: 1,
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 18, letterSpacing: 4,
-              color: "var(--primary)",
-            }}>
-              SYNC BREWS
-            </span>
+            <span>SYNC BREWS</span>
             <button
               onClick={handleClose}
               style={{
@@ -93,10 +92,15 @@ export default function AuthSheet({ open, onClose, user }) {
                 borderLeftColor: "var(--bevel-light)",
                 borderBottomColor: "var(--bevel-dark)",
                 borderRightColor: "var(--bevel-dark)",
-                padding: "var(--space-1) var(--space-3)",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 cursor: "pointer",
                 borderRadius: 0,
-                lineHeight: 1,
+                padding: 0,
+                flexShrink: 0,
               }}
             >✕</button>
           </div>
@@ -107,9 +111,9 @@ export default function AuthSheet({ open, onClose, user }) {
           }}>
             {user ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ fontSize: 13, color: "var(--muted)" }}>
+                <div style={{ fontSize: "var(--font-size-sm)", fontFamily: "var(--font-system)", color: "var(--color-text-secondary)" }}>
                   Signed in as
-                  <span style={{ color: "var(--text)", marginLeft: 6 }}>
+                  <span style={{ color: "var(--color-text-primary)", marginLeft: 6 }}>
                     {user.user_metadata?.full_name || user.email}
                   </span>
                 </div>

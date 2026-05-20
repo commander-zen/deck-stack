@@ -9,7 +9,7 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
         onClick={onClose}
         style={{
           position: "fixed", inset: 0, zIndex: 200,
-          background: "rgba(0,0,0,0.65)",
+          background: "rgba(0, 0, 0, 0.75)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.28s",
@@ -43,37 +43,25 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
           <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2, flexShrink: 0 }}>
             <div style={{
               display: "inline-block",
-              width: 36, height: 4, borderRadius: 2,
-              background: "rgba(255,255,255,0.18)",
+              width: 36, height: 4, borderRadius: 0,
+              background: "var(--color-chrome-mid)",
             }} />
           </div>
 
-          {/* Header */}
+          {/* Title bar */}
           <div style={{
-            display: "flex", alignItems: "center",
-            padding: "8px 18px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "var(--color-titlebar)",
+            color: "var(--color-titlebar-text)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-base)",
+            fontWeight: "bold",
+            padding: "var(--space-1) var(--space-2)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             flexShrink: 0,
           }}>
-            <span style={{
-              flex: 1,
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 18, letterSpacing: 4,
-              color: "var(--primary)",
-            }}>
-              NEW SEARCH
-            </span>
-            <div style={{
-              padding: "2px 8px", borderRadius: 4,
-              background: "rgba(91,143,255,0.15)",
-              border: "1px solid rgba(91,143,255,0.35)",
-              color: "var(--primary)",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 11, letterSpacing: 2,
-              marginRight: 14,
-            }}>
-              COMMANDER
-            </div>
+            <span>NEW SEARCH</span>
             <button
               onClick={onClose}
               style={{
@@ -87,10 +75,15 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
                 borderLeftColor: "var(--bevel-light)",
                 borderBottomColor: "var(--bevel-dark)",
                 borderRightColor: "var(--bevel-dark)",
-                padding: "var(--space-1) var(--space-3)",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 cursor: "pointer",
                 borderRadius: 0,
-                lineHeight: 1,
+                padding: 0,
+                flexShrink: 0,
               }}
             >
               ✕

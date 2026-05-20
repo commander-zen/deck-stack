@@ -71,7 +71,7 @@ export default function CommanderSearchSheet({
         onClick={handleClose}
         style={{
           position: "fixed", inset: 0, zIndex: 210,
-          background: "rgba(0,0,0,0.65)",
+          background: "rgba(0, 0, 0, 0.75)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.28s",
@@ -89,11 +89,14 @@ export default function CommanderSearchSheet({
         <div style={{
           width: "100%", maxWidth: 600,
           maxHeight: "80dvh",
-          background: "var(--bg)",
-          borderRadius: "20px 20px 0 0",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}>
@@ -101,32 +104,47 @@ export default function CommanderSearchSheet({
           {/* Drag handle */}
           <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2, flexShrink: 0 }}>
             <div style={{
-              display: "inline-block", width: 36, height: 4, borderRadius: 2,
-              background: "rgba(255,255,255,0.18)",
+              display: "inline-block", width: 36, height: 4, borderRadius: 0,
+              background: "var(--color-chrome-mid)",
             }} />
           </div>
 
-          {/* Header */}
+          {/* Title bar */}
           <div style={{
-            display: "flex", alignItems: "center",
-            padding: "8px 18px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "var(--color-titlebar)",
+            color: "var(--color-titlebar-text)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-base)",
+            fontWeight: "bold",
+            padding: "var(--space-1) var(--space-2)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             flexShrink: 0,
           }}>
-            <span style={{
-              flex: 1,
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 18, letterSpacing: 4,
-              color: "var(--primary)",
-            }}>
-              SET COMMANDER
-            </span>
+            <span>SET COMMANDER</span>
             <button
               onClick={handleClose}
               style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.45)", fontSize: 18,
-                cursor: "pointer", padding: "4px 6px", lineHeight: 1,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                width: "20px",
+                height: "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                borderRadius: 0,
+                padding: 0,
+                flexShrink: 0,
               }}
             >✕</button>
           </div>
@@ -144,12 +162,18 @@ export default function CommanderSearchSheet({
               spellCheck={false}
               style={{
                 width: "100%", boxSizing: "border-box",
-                background: "var(--panel)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                borderRadius: 10, padding: "12px 14px",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 16, color: "var(--text)",
-                outline: "none", caretColor: "var(--primary)",
+                background: "var(--color-bg)",
+                color: "var(--color-text-primary)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-base)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-dark)",
+                borderLeftColor: "var(--bevel-dark)",
+                borderBottomColor: "var(--bevel-light)",
+                borderRightColor: "var(--bevel-light)",
+                borderRadius: 0, padding: "var(--space-2) var(--space-3)",
+                outline: "none",
               }}
             />
           </div>
@@ -191,12 +215,12 @@ export default function CommanderSearchSheet({
                   {thumb ? (
                     <img
                       src={thumb} alt={card.name} draggable={false}
-                      style={{ width: 52, height: 37, objectFit: "cover", borderRadius: 4, flexShrink: 0 }}
+                      style={{ width: 52, height: 37, objectFit: "cover", borderRadius: 0, flexShrink: 0 }}
                     />
                   ) : (
                     <div style={{
-                      width: 52, height: 37, borderRadius: 4, flexShrink: 0,
-                      background: "rgba(255,255,255,0.05)",
+                      width: 52, height: 37, borderRadius: 0, flexShrink: 0,
+                      background: "var(--color-chrome-dark)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       <span style={{ fontSize: 18, opacity: 0.3 }}>👑</span>
@@ -204,14 +228,16 @@ export default function CommanderSearchSheet({
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: 14, color: "var(--text)",
+                      fontSize: "var(--font-size-base)", color: "var(--color-text-primary)",
+                      fontFamily: "var(--font-system)",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {card.name}
                     </div>
                     {card.type_line && (
                       <div style={{
-                        fontSize: 11, color: "var(--muted)", marginTop: 2,
+                        fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: 2,
+                        fontFamily: "var(--font-system)",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}>
                         {card.type_line}
