@@ -1,11 +1,15 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Verify Win98/Y2K chrome styling renders correctly in browser — check bevel borders, surface panels, input inset borders, button states across all updated screens. Then test PileScreen swipe gestures on device.
+Next: Verify the three nav fixes in browser — confirm BottomNav is solid/visible on SwipeScreen, no ghost icons at bottom, and NEW BREW lands on PileScreen (empty pile state) instead of SearchScreen.
 
 ---
 
 ## Completed ✅
+
+- ✅ **Three structural nav fixes** (2026-05-20)
+  - Fix 1+2: Removed `isGhost` logic from `BottomNav.jsx` — nav is now always solid/visible on all screens including SwipeScreen; ghost icons no longer bleed through at bottom of SwipeScreen
+  - Fix 3: `handleNewDeck()` in `App.jsx` now creates a new deck with UUID, adds it to the decks list, saves it to Supabase, and navigates to `"pile"` — user arrives at their empty brew instead of SearchScreen
 
 - ✅ **Win98/Y2K Dark chrome styling — Phase 2 inline style pass** (2026-05-20)
   - Applied bevel border system (`--bevel-light`/`--bevel-dark`) to all interactive elements in 9 files

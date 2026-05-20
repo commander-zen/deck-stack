@@ -611,12 +611,30 @@ export default function App() {
         showToast("Couldn't save recent changes");
       });
     }
+
+    const newDeckId = crypto.randomUUID();
+    const newDeck = {
+      id: newDeckId, name: "New Brew",
+      commander_name: null, commander_instance_id: null, commander_card: null,
+      pile: [], maybeboard: [], swipe_cards: [], swipe_index: 0, query: "",
+      last_opened_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+
     sessionStorage.removeItem("deckstack_session");
     setPile([]); setCommander(null); setCommanderCard(null);
     setMaybeboard([]); setSwipeCards([]); setSwipeIndex(0);
-    setQuery(""); setSwipeMounted(false); setActiveDeckId(null);
+    setQuery(""); setSwipeMounted(false);
     setWrecTags({}); setAutoTagged(new Set()); setPendingTagCard(null);
-    setScreen("search");
+    setActiveDeckId(newDeckId);
+    setDecks(ds => [newDeck, ...ds]);
+    setScreen("pile");
+
+    if (sessionId) {
+      saveDeck(sessionId, newDeck, authUser?.id ?? null).catch(err => {
+        console.error("Failed to save new brew:", err);
+      });
+    }
   }
 
   // ── Delete deck ───────────────────────────────────────────────────────────
