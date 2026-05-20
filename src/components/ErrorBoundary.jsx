@@ -72,9 +72,14 @@ export default class ErrorBoundary extends Component {
 
           {/* Error message */}
           <div style={{
-            background: "#16161a",
-            border: "1px solid rgba(255,80,80,0.2)",
-            borderRadius: 10,
+            background: "var(--color-surface)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            borderRadius: 0,
             padding: "14px 16px",
             marginBottom: 24,
           }}>
@@ -111,12 +116,20 @@ export default class ErrorBoundary extends Component {
               onClick={() => { localStorage.clear(); window.location.reload(); }}
               style={{
                 width: "100%",
-                background: "rgba(255,80,80,0.1)",
-                border: "1.5px solid rgba(255,80,80,0.4)",
-                borderRadius: 12, padding: "15px 20px",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 16, letterSpacing: "0.1em",
-                color: "var(--danger)", cursor: "pointer",
+                background: "#800000",
+                color: "#ffffff",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#400000",
+                borderRightColor: "#400000",
+                padding: "15px 20px",
+                cursor: "pointer",
+                borderRadius: 0,
+                letterSpacing: "0.1em",
               }}
             >
               RELOAD APP  ·  CLEAR ALL DATA
@@ -126,12 +139,20 @@ export default class ErrorBoundary extends Component {
               onClick={() => window.location.reload()}
               style={{
                 width: "100%",
-                background: "rgba(91,143,255,0.08)",
-                border: "1.5px solid rgba(91,143,255,0.3)",
-                borderRadius: 12, padding: "15px 20px",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 16, letterSpacing: "0.1em",
-                color: "var(--primary)", cursor: "pointer",
+                background: "var(--color-titlebar)",
+                color: "var(--color-titlebar-text)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#000040",
+                borderRightColor: "#000040",
+                padding: "15px 20px",
+                cursor: "pointer",
+                borderRadius: 0,
+                letterSpacing: "0.1em",
               }}
             >
               KEEP DATA  ·  RELOAD

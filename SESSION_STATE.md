@@ -1,11 +1,20 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test PileScreen swipe gestures on device — verify CUT/CONSIDER/REMOVE/MOVE TO DECK actions, spring-back on sub-threshold release, and haptic feedback. Also test WREC score reactivity as cards are added/removed.
+Next: Verify Win98/Y2K chrome styling renders correctly in browser — check bevel borders, surface panels, input inset borders, button states across all updated screens. Then test PileScreen swipe gestures on device.
 
 ---
 
 ## Completed ✅
+
+- ✅ **Win98/Y2K Dark chrome styling — Phase 2 inline style pass** (2026-05-20)
+  - Applied bevel border system (`--bevel-light`/`--bevel-dark`) to all interactive elements in 9 files
+  - Button categories: default chrome (`--color-chrome` + raised bevel), primary/CTA (`--color-titlebar` navy + raised bevel), danger (dark red `#800000` + raised bevel)
+  - Input/textarea: inset bevel (`borderTop/Left = --bevel-dark`, `borderBottom/Right = --bevel-light`), `--color-bg` background
+  - Surface panels (sheet containers, filter panel, error box): surface bevel (`--color-surface` + raised bevel), `borderRadius: 0`
+  - Files updated: `SearchScreen.jsx`, `PileScreen.jsx`, `BrewsScreen.jsx`, `SearchForm.jsx`, `ImportSheet.jsx`, `AuthSheet.jsx`, `ErrorBoundary.jsx`, `SearchSheet.jsx`, `PileSwipeScreen.jsx`
+  - `chip()` and `opBtn()` functions in SearchForm now produce depressed vs raised bevel to indicate active toggle state
+  - `SwipeScreen.jsx` and `BottomNav.jsx` intentionally excluded per task spec
 
 - ✅ **PileScreen list swipe-to-action + WREC score rebuild** (2026-05-19)
   - `SwipeableRow` component: horizontal drag disambiguation (detects horizontal vs vertical before capturing pointer); spring-back `cubic-bezier(0.34,1.56,0.64,1) 200ms`; fly-off `200ms ease-in`; `onClickCapture` suppresses tap-to-detail on drag release; haptics via `getSettings().haptics` + try/catch

@@ -50,11 +50,14 @@ export default function AuthSheet({ open, onClose, user }) {
       }}>
         <div style={{
           width: "100%", maxWidth: 600,
-          background: "var(--bg)",
-          borderRadius: "20px 20px 0 0",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           overflow: "hidden",
         }}>
           <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2 }}>
@@ -80,9 +83,20 @@ export default function AuthSheet({ open, onClose, user }) {
             <button
               onClick={handleClose}
               style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.45)", fontSize: 18,
-                cursor: "pointer", padding: "4px 6px", lineHeight: 1,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
+                lineHeight: 1,
               }}
             >✕</button>
           </div>
@@ -105,13 +119,20 @@ export default function AuthSheet({ open, onClose, user }) {
                 <button
                   onClick={handleSignOut}
                   style={{
-                    padding: "13px 20px", borderRadius: 12,
-                    border: "1px solid rgba(255,80,80,0.3)",
-                    background: "rgba(255,80,80,0.07)",
-                    color: "var(--danger)",
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    fontSize: 15, letterSpacing: 3,
+                    background: "#800000",
+                    color: "#ffffff",
+                    fontFamily: "var(--font-system)",
+                    fontSize: "var(--font-size-sm)",
+                    borderStyle: "solid",
+                    borderWidth: "2px",
+                    borderTopColor: "#ffffff",
+                    borderLeftColor: "#ffffff",
+                    borderBottomColor: "#400000",
+                    borderRightColor: "#400000",
+                    padding: "var(--space-1) var(--space-3)",
                     cursor: "pointer",
+                    borderRadius: 0,
+                    letterSpacing: 3,
                   }}
                 >SIGN OUT</button>
               </div>
@@ -127,15 +148,20 @@ export default function AuthSheet({ open, onClose, user }) {
                   onClick={handleGoogleSignIn}
                   disabled={status === "loading"}
                   style={{
-                    padding: "13px 20px", borderRadius: 12,
-                    border: "1.5px solid rgba(255,255,255,0.15)",
-                    background: "rgba(255,255,255,0.05)",
-                    color: "var(--text)",
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    fontSize: 15, fontWeight: 500,
+                    background: "var(--color-titlebar)",
+                    color: "var(--color-titlebar-text)",
+                    fontFamily: "var(--font-system)",
+                    fontSize: "var(--font-size-sm)",
+                    borderStyle: "solid",
+                    borderWidth: "2px",
+                    borderTopColor: "#ffffff",
+                    borderLeftColor: "#ffffff",
+                    borderBottomColor: "#000040",
+                    borderRightColor: "#000040",
+                    padding: "var(--space-1) var(--space-3)",
                     cursor: status === "loading" ? "default" : "pointer",
+                    borderRadius: 0,
                     opacity: status === "loading" ? 0.5 : 1,
-                    transition: "opacity 0.15s",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                   }}
                 >

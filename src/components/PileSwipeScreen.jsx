@@ -130,12 +130,20 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
         <button
           onClick={onDone}
           style={{
-            padding: "6px 14px", borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.15)",
-            background: "transparent",
-            color: "rgba(255,255,255,0.6)",
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 13, letterSpacing: 2, cursor: "pointer",
+            background: "var(--color-chrome)",
+            color: "var(--color-text-chrome)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            padding: "var(--space-1) var(--space-3)",
+            cursor: "pointer",
+            borderRadius: 0,
+            letterSpacing: 2,
           }}
         >DONE</button>
       </div>
@@ -218,12 +226,20 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               <button
                 onClick={onDone}
                 style={{
-                  padding: "10px 24px", borderRadius: 8,
-                  border: "1px solid var(--primary)",
-                  background: "rgba(91,143,255,0.1)",
-                  color: "var(--primary)",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 15, letterSpacing: 3, cursor: "pointer",
+                  background: "var(--color-chrome)",
+                  color: "var(--color-text-chrome)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-sm)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-light)",
+                  borderLeftColor: "var(--bevel-light)",
+                  borderBottomColor: "var(--bevel-dark)",
+                  borderRightColor: "var(--bevel-dark)",
+                  padding: "var(--space-1) var(--space-3)",
+                  cursor: "pointer",
+                  borderRadius: 0,
+                  letterSpacing: 3,
                 }}
               >BACK TO PILE</button>
             </div>
@@ -295,10 +311,19 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                     onPointerDown={e => { e.stopPropagation(); setFaceIdx(f => f === 0 ? 1 : 0); }}
                     style={{
                       position: "absolute", bottom: 10, right: 10,
-                      width: 34, height: 34, borderRadius: "50%",
-                      background: "rgba(0,0,0,0.75)",
-                      border: "1px solid rgba(255,255,255,0.3)",
-                      color: "white", cursor: "pointer", fontSize: 18,
+                      width: 34, height: 34,
+                      background: "var(--color-chrome)",
+                      color: "var(--color-text-chrome)",
+                      fontFamily: "var(--font-system)",
+                      fontSize: 18,
+                      borderStyle: "solid",
+                      borderWidth: "2px",
+                      borderTopColor: "var(--bevel-light)",
+                      borderLeftColor: "var(--bevel-light)",
+                      borderBottomColor: "var(--bevel-dark)",
+                      borderRightColor: "var(--bevel-dark)",
+                      cursor: "pointer",
+                      borderRadius: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       lineHeight: 1,
                     }}
@@ -331,11 +356,19 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               onClick={() => doResolve(false)}
               disabled={!!animOut}
               style={{
-                width: 54, height: 54, borderRadius: "50%",
-                border: `2px solid ${passColor}`,
-                background: passBg,
-                color: passColor,
-                fontSize: 20, cursor: "pointer",
+                width: 54, height: 54,
+                background: "#800000",
+                color: "#ffffff",
+                fontFamily: "var(--font-system)",
+                fontSize: 20,
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#400000",
+                borderRightColor: "#400000",
+                cursor: "pointer",
+                borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >✕</button>
@@ -349,11 +382,19 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               onClick={() => doResolve(true)}
               disabled={!!animOut}
               style={{
-                width: 54, height: 54, borderRadius: "50%",
-                border: "2px solid var(--success)",
-                background: "rgba(52,211,153,0.1)",
-                color: "var(--success)",
-                fontSize: 20, cursor: "pointer",
+                width: 54, height: 54,
+                background: "var(--color-titlebar)",
+                color: "var(--color-titlebar-text)",
+                fontFamily: "var(--font-system)",
+                fontSize: 20,
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#000040",
+                borderRightColor: "#000040",
+                cursor: "pointer",
+                borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >♥</button>

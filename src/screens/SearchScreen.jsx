@@ -322,14 +322,21 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 position: "absolute",
                 bottom: -18, left: "50%",
                 transform: "translateX(-50%)",
-                background: commanderCard ? "rgba(167,139,250,0.15)" : "rgba(13,13,15,0.92)",
-                border: `1px solid ${commanderCard ? "rgba(167,139,250,0.5)" : "rgba(255,255,255,0.18)"}`,
-                borderRadius: 20,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
                 padding: "8px 16px 8px 12px",
                 display: "flex", alignItems: "center", gap: 7,
-                cursor: "pointer", backdropFilter: "blur(8px)",
+                cursor: "pointer",
                 whiteSpace: "nowrap", maxWidth: "calc(100% - 40px)",
-                transition: "border-color 0.2s, background 0.2s",
+                borderRadius: 0,
               }}
             >
               <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>👑</span>
@@ -371,18 +378,39 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                     placeholder="Search for a commander…"
                     autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
                     style={{
-                      flex: 1, background: "none", border: "none", outline: "none",
-                      fontFamily: "'Space Grotesk', sans-serif",
-                      fontSize: 16, color: "var(--text)",
-                      caretColor: "var(--secondary)",
+                      flex: 1,
+                      background: "var(--color-bg)",
+                      color: "var(--color-text-primary)",
+                      fontFamily: "var(--font-system)",
+                      fontSize: "var(--font-size-base)",
+                      borderStyle: "solid",
+                      borderWidth: "2px",
+                      borderTopColor: "var(--bevel-dark)",
+                      borderLeftColor: "var(--bevel-dark)",
+                      borderBottomColor: "var(--bevel-light)",
+                      borderRightColor: "var(--bevel-light)",
+                      padding: "var(--space-1) var(--space-2)",
+                      borderRadius: 0,
+                      outline: "none",
                     }}
                   />
                   <button
                     onClick={() => { setCmdExpanded(false); setCmdQuery(""); setCmdResults([]); }}
                     style={{
-                      background: "transparent", border: "none",
-                      color: "var(--muted)", cursor: "pointer",
-                      fontSize: 14, padding: "4px", lineHeight: 1, flexShrink: 0,
+                      background: "var(--color-chrome)",
+                      color: "var(--color-text-chrome)",
+                      fontFamily: "var(--font-system)",
+                      fontSize: "var(--font-size-sm)",
+                      borderStyle: "solid",
+                      borderWidth: "2px",
+                      borderTopColor: "var(--bevel-light)",
+                      borderLeftColor: "var(--bevel-light)",
+                      borderBottomColor: "var(--bevel-dark)",
+                      borderRightColor: "var(--bevel-dark)",
+                      padding: "var(--space-1) var(--space-3)",
+                      cursor: "pointer",
+                      borderRadius: 0,
+                      lineHeight: 1, flexShrink: 0,
                     }}
                   >✕</button>
                 </div>
@@ -468,13 +496,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
             </div>
 
             {/* Input */}
-            <div style={{
-              background: "var(--panel)",
-              border: `1px solid ${brewInput.trim() ? "rgba(91,143,255,0.4)" : "rgba(255,255,255,0.12)"}`,
-              borderRadius: 14,
-              transition: "border-color 0.15s",
-              marginBottom: 8,
-            }}>
+            <div style={{ marginBottom: 8 }}>
               <input
                 type="text"
                 value={brewInput}
@@ -486,13 +508,21 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 readOnly={isDisabled}
                 style={{
                   width: "100%",
-                  background: "none", border: "none", outline: "none",
-                  padding: "14px 16px",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 15,
-                  color: isDisabled ? "var(--muted)" : "var(--text)",
-                  caretColor: "var(--primary)",
                   boxSizing: "border-box",
+                  background: "var(--color-bg)",
+                  color: "var(--color-text-primary)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-base)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-dark)",
+                  borderLeftColor: "var(--bevel-dark)",
+                  borderBottomColor: "var(--bevel-light)",
+                  borderRightColor: "var(--bevel-light)",
+                  padding: "var(--space-1) var(--space-2)",
+                  borderRadius: 0,
+                  outline: "none",
+                  opacity: isDisabled ? 0.5 : 1,
                 }}
               />
             </div>
@@ -502,11 +532,20 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               <button
                 onClick={toggleRawMode}
                 style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 11, color: "var(--muted)",
-                  letterSpacing: "0.05em", textDecoration: "underline",
-                  padding: 0,
+                  background: "var(--color-chrome)",
+                  color: "var(--color-text-chrome)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-sm)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-light)",
+                  borderLeftColor: "var(--bevel-light)",
+                  borderBottomColor: "var(--bevel-dark)",
+                  borderRightColor: "var(--bevel-dark)",
+                  padding: "var(--space-1) var(--space-3)",
+                  cursor: "pointer",
+                  borderRadius: 0,
+                  letterSpacing: "0.05em",
                 }}
               >
                 {rawMode ? "switch to NLP" : "switch to raw query"}
@@ -519,13 +558,21 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
               disabled={isDisabled || !brewInput.trim()}
               style={{
                 width: "100%",
-                background: (isDisabled || !brewInput.trim()) ? "transparent" : "rgba(91,143,255,0.1)",
-                border: `1.5px solid ${(isDisabled || !brewInput.trim()) ? "rgba(255,255,255,0.1)" : "var(--primary)"}`,
-                borderRadius: 16,
+                background: "var(--color-titlebar)",
+                color: "var(--color-titlebar-text)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#000040",
+                borderRightColor: "#000040",
                 padding: "18px 24px",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 cursor: (isDisabled || !brewInput.trim()) ? "default" : "pointer",
-                transition: "background 0.15s, border-color 0.15s",
+                borderRadius: 0,
+                opacity: (isDisabled || !brewInput.trim()) ? 0.5 : 1,
               }}
             >
               {localLoading === "translating" && (
@@ -538,9 +585,10 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 }} />
               )}
               <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 22, letterSpacing: "0.12em",
-                color: isDisabled ? "rgba(255,255,255,0.2)" : "var(--primary)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-xl)",
+                letterSpacing: "0.12em",
+                color: "var(--color-titlebar-text)",
               }}>
                 {localLoading === "translating" ? "THINKING…" : "SEARCH"}
               </span>

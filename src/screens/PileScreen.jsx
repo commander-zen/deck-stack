@@ -584,19 +584,34 @@ export default function PileScreen({
             <button
               onClick={e => { e.stopPropagation(); handleStackableQtyChange(card, -1); }}
               style={{
-                width: 26, height: 26, border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: "6px 0 0 6px", background: "rgba(255,255,255,0.04)",
-                color: "var(--text)", cursor: "pointer", fontSize: 14, lineHeight: 1,
+                width: 26, height: 26,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                cursor: "pointer", lineHeight: 1,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: 0,
               }}
             >−</button>
             <div style={{
               minWidth: 28, height: 26,
-              border: "1px solid rgba(255,255,255,0.12)", borderLeft: "none", borderRight: "none",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-dark)",
+              borderLeftColor: "var(--bevel-dark)",
+              borderBottomColor: "var(--bevel-light)",
+              borderRightColor: "var(--bevel-light)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 12, color: "var(--text)",
-              background: "rgba(255,255,255,0.02)",
+              fontSize: 12, color: "var(--color-text-primary)",
+              background: "var(--color-bg)",
               paddingInline: 4,
             }}>
               {card.qty ?? 1}
@@ -604,10 +619,20 @@ export default function PileScreen({
             <button
               onClick={e => { e.stopPropagation(); handleStackableQtyChange(card, +1); }}
               style={{
-                width: 26, height: 26, border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: "0 6px 6px 0", background: "rgba(255,255,255,0.04)",
-                color: "var(--text)", cursor: "pointer", fontSize: 14, lineHeight: 1,
+                width: 26, height: 26,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                cursor: "pointer", lineHeight: 1,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: 0,
               }}
             >+</button>
           </div>
@@ -626,14 +651,23 @@ export default function PileScreen({
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
-            background: "transparent", border: "none",
-            color: "rgba(255,255,255,0.25)", cursor: "pointer",
-            fontSize: 12, flexShrink: 0, lineHeight: 1,
+            background: "var(--color-chrome)",
+            color: "var(--color-text-chrome)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            padding: "var(--space-1) var(--space-3)",
+            cursor: "pointer",
+            borderRadius: 0,
+            flexShrink: 0, lineHeight: 1,
             minWidth: 44, minHeight: 44,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
-          onMouseOver={e => e.currentTarget.style.color = "var(--danger)"}
-          onMouseOut={e => e.currentTarget.style.color = "rgba(255,255,255,0.25)"}
         >✕</button>
       </div>
     );
@@ -724,19 +758,22 @@ export default function PileScreen({
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
             position: "absolute", top: -6, right: -6,
-            padding: 11, background: "transparent", border: "none",
+            padding: 11,
+            background: "var(--color-chrome)",
+            color: "var(--color-text-chrome)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
             cursor: "pointer",
+            borderRadius: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
-        >
-          <span style={{
-            width: 22, height: 22, borderRadius: "50%",
-            background: "rgba(0,0,0,0.7)",
-            color: "rgba(255,255,255,0.7)", fontSize: 10,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            lineHeight: 1, flexShrink: 0,
-          }}>✕</span>
-        </button>
+        >✕</button>
       </div>
     );
   }
@@ -792,8 +829,14 @@ export default function PileScreen({
           <div style={{
             position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 401,
             maxWidth: 600, margin: "0 auto",
-            background: "var(--panel)",
-            borderRadius: "16px 16px 0 0",
+            background: "var(--color-surface)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            borderRadius: 0,
             padding: "0 20px",
             paddingBottom: "calc(max(20px, env(safe-area-inset-bottom)) + 20px)",
             maxHeight: "85dvh", overflowY: "auto",
@@ -827,13 +870,21 @@ export default function PileScreen({
             <button
               onClick={() => setWrecSheetOpen(false)}
               style={{
-                marginTop: 24, width: "100%", padding: "14px",
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: 12, cursor: "pointer",
-                color: "var(--muted)",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 13, letterSpacing: 2,
+                marginTop: 24, width: "100%",
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
+                letterSpacing: 2,
               }}
             >CLOSE</button>
           </div>
@@ -856,8 +907,14 @@ export default function PileScreen({
             <div style={{
               position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 400,
               maxWidth: 600, margin: "0 auto",
-              background: "var(--panel)",
-              borderRadius: "16px 16px 0 0",
+              background: "var(--color-surface)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-light)",
+              borderLeftColor: "var(--bevel-light)",
+              borderBottomColor: "var(--bevel-dark)",
+              borderRightColor: "var(--bevel-dark)",
+              borderRadius: 0,
               padding: "0 16px calc(max(20px, env(safe-area-inset-bottom)) + 6px)",
               fontFamily: "'Space Grotesk', sans-serif",
               maxHeight: "85dvh", overflowY: "auto",
@@ -994,29 +1051,48 @@ export default function PileScreen({
               else setMaybeViewMode(v => v === "list" ? "grid" : "list");
             }}
             style={{
-              background: "transparent", border: "none",
-              color: "rgba(255,255,255,0.45)", cursor: "pointer",
-              padding: "8px", display: "flex", alignItems: "center", borderRadius: 6,
-              minWidth: 44, minHeight: 44, justifyContent: "center",
+              background: "var(--color-chrome)",
+              color: "var(--color-text-chrome)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-light)",
+              borderLeftColor: "var(--bevel-light)",
+              borderBottomColor: "var(--bevel-dark)",
+              borderRightColor: "var(--bevel-dark)",
+              padding: "var(--space-1) var(--space-3)",
+              cursor: "pointer",
+              borderRadius: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              minWidth: 44, minHeight: 44,
             }}
             title={viewMode === "list" ? "Switch to grid" : "Switch to list"}
           >
-            {viewMode === "list" ? <ImageIcon color="rgba(255,255,255,0.45)" /> : <ListIcon color="rgba(255,255,255,0.45)" />}
+            {viewMode === "list" ? <ImageIcon color="var(--color-text-chrome)" /> : <ListIcon color="var(--color-text-chrome)" />}
           </button>
 
           {activeTab === "deck" && pile.length > 0 && (
             <button
               onClick={handleCopy}
               style={{
-                background: "transparent", border: "none",
-                color: copied ? "var(--success)" : "rgba(255,255,255,0.45)",
-                cursor: "pointer", padding: "8px",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 11, letterSpacing: 1.5, borderRadius: 6,
-                transition: "color 0.2s",
+                background: "var(--color-chrome)",
+                color: copied ? "var(--success)" : "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
                 flexShrink: 0,
                 minWidth: 44, minHeight: 44,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                letterSpacing: 1.5,
               }}
             >
               {copied ? "✓" : "COPY"}
@@ -1044,13 +1120,20 @@ export default function PileScreen({
               <button
                 onClick={() => setWrecSheetOpen(true)}
                 style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontSize: 9, letterSpacing: "0.15em",
-                  color: "var(--muted)",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  padding: "3px 0 0",
-                  textDecoration: "underline",
-                  textUnderlineOffset: 2,
+                  background: "var(--color-chrome)",
+                  color: "var(--color-text-chrome)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-sm)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-light)",
+                  borderLeftColor: "var(--bevel-light)",
+                  borderBottomColor: "var(--bevel-dark)",
+                  borderRightColor: "var(--bevel-dark)",
+                  padding: "var(--space-1) var(--space-3)",
+                  cursor: "pointer",
+                  borderRadius: 0,
+                  letterSpacing: "0.15em",
                 }}
               >
                 WREC SCORE
@@ -1103,14 +1186,21 @@ export default function PileScreen({
             onClick={() => setCmdSearchOpen(true)}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              width: "100%", padding: "9px 18px",
-              background: "rgba(91,143,255,0.10)",
-              border: "none",
-              borderTop: "1px solid rgba(91,143,255,0.2)",
+              width: "100%",
+              background: "var(--color-titlebar)",
+              color: "var(--color-titlebar-text)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "#ffffff",
+              borderLeftColor: "#ffffff",
+              borderBottomColor: "#000040",
+              borderRightColor: "#000040",
+              padding: "var(--space-1) var(--space-3)",
               cursor: "pointer",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 13, letterSpacing: 3,
-              color: "var(--primary)",
+              borderRadius: 0,
+              letterSpacing: 3,
             }}
           >
             <span style={{ fontSize: 14 }}>👑</span>
@@ -1157,13 +1247,21 @@ export default function PileScreen({
             <button
               onClick={handleMoxfield}
               style={{
-                width: "100%", padding: "10px 16px",
-                background: "transparent",
-                border: "1px solid rgba(167,139,250,0.25)",
-                borderRadius: 10, cursor: "pointer",
-                color: "var(--secondary)",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 13, letterSpacing: 2,
+                width: "100%",
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
+                letterSpacing: 2,
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               }}
             >
@@ -1177,13 +1275,21 @@ export default function PileScreen({
             <button
               onClick={onClearPile}
               style={{
-                width: "100%", padding: "10px 16px",
-                background: "transparent",
-                border: "1px solid rgba(255,80,80,0.2)",
-                borderRadius: 10, cursor: "pointer",
-                color: "rgba(255,80,80,0.55)",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 13, letterSpacing: 2,
+                width: "100%",
+                background: "#800000",
+                color: "#ffffff",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#400000",
+                borderRightColor: "#400000",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
+                letterSpacing: 2,
               }}
             >
               CLEAR PILE
@@ -1207,15 +1313,20 @@ export default function PileScreen({
             onClick={() => enterReview(activeTab)}
             style={{
               width: "100%",
+              background: "var(--color-titlebar)",
+              color: "var(--color-titlebar-text)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "#ffffff",
+              borderLeftColor: "#ffffff",
+              borderBottomColor: "#000040",
+              borderRightColor: "#000040",
               padding: "14px 20px",
-              borderRadius: 14,
-              border: `1px solid ${activeTab === "deck" ? "rgba(91,143,255,0.45)" : "rgba(167,139,250,0.45)"}`,
-              background: activeTab === "deck" ? "rgba(91,143,255,0.12)" : "rgba(167,139,250,0.12)",
-              color: activeTab === "deck" ? "var(--primary)" : "var(--secondary)",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 17, letterSpacing: 3,
               cursor: "pointer",
-              backdropFilter: "blur(10px)",
+              borderRadius: 0,
+              letterSpacing: 3,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
             }}
           >

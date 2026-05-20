@@ -83,8 +83,19 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
             <button
               onClick={onOpenSettings}
               style={{
-                background: "none", border: "none", cursor: "pointer",
-                padding: 8, color: "var(--muted)",
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 minWidth: 44, minHeight: 44,
               }}
@@ -111,14 +122,20 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
             onClick={onNew}
             style={{
               flex: 1,
-              padding: "13px 20px",
-              border: "1.5px solid rgba(91,143,255,0.35)",
-              borderRadius: 12,
-              background: "transparent",
-              color: "var(--primary)",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 16, letterSpacing: 3,
+              background: "var(--color-chrome)",
+              color: "var(--color-text-chrome)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-light)",
+              borderLeftColor: "var(--bevel-light)",
+              borderBottomColor: "var(--bevel-dark)",
+              borderRightColor: "var(--bevel-dark)",
+              padding: "var(--space-1) var(--space-3)",
               cursor: "pointer",
+              borderRadius: 0,
+              letterSpacing: 3,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
@@ -128,14 +145,20 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
             onClick={() => setImportOpen(true)}
             style={{
               flex: 1,
-              padding: "13px 20px",
-              border: "1.5px solid rgba(167,139,250,0.35)",
-              borderRadius: 12,
-              background: "transparent",
-              color: "var(--secondary)",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 16, letterSpacing: 3,
+              background: "var(--color-titlebar)",
+              color: "var(--color-titlebar-text)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "#ffffff",
+              borderLeftColor: "#ffffff",
+              borderBottomColor: "#000040",
+              borderRightColor: "#000040",
+              padding: "var(--space-1) var(--space-3)",
               cursor: "pointer",
+              borderRadius: 0,
+              letterSpacing: 3,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
           >
@@ -148,12 +171,19 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
           onClick={onOpenAuth}
           style={{
             width: "100%", margin: "8px 0 0",
-            background: "transparent", border: "none",
-            color: authUser ? "rgba(255,255,255,0.35)" : "rgba(91,143,255,0.6)",
-            fontSize: 12,
-            fontFamily: "'Space Grotesk', sans-serif",
+            background: "var(--color-chrome)",
+            color: "var(--color-text-chrome)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            padding: "var(--space-1) var(--space-3)",
             cursor: "pointer",
-            padding: "6px 18px",
+            borderRadius: 0,
             textAlign: "center",
           }}
         >
@@ -270,22 +300,39 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                     <button
                       onClick={e => { e.stopPropagation(); setConfirmId(null); }}
                       style={{
-                        padding: "5px 10px", borderRadius: 6,
-                        border: "1px solid rgba(255,255,255,0.15)",
-                        background: "transparent", color: "var(--muted)",
-                        fontFamily: "'Space Grotesk', sans-serif",
-                        fontSize: 11, letterSpacing: 1, cursor: "pointer",
+                        background: "var(--color-chrome)",
+                        color: "var(--color-text-chrome)",
+                        fontFamily: "var(--font-system)",
+                        fontSize: "var(--font-size-sm)",
+                        borderStyle: "solid",
+                        borderWidth: "2px",
+                        borderTopColor: "var(--bevel-light)",
+                        borderLeftColor: "var(--bevel-light)",
+                        borderBottomColor: "var(--bevel-dark)",
+                        borderRightColor: "var(--bevel-dark)",
+                        padding: "var(--space-1) var(--space-3)",
+                        cursor: "pointer",
+                        borderRadius: 0,
+                        letterSpacing: 1,
                       }}
                     >CANCEL</button>
                     <button
                       onClick={e => { e.stopPropagation(); handleDelete(deck.id); }}
                       style={{
-                        padding: "5px 10px", borderRadius: 6,
-                        border: "1px solid rgba(255,80,80,0.4)",
-                        background: "rgba(255,80,80,0.1)",
-                        color: "var(--danger)",
-                        fontFamily: "'Space Grotesk', sans-serif",
-                        fontSize: 11, letterSpacing: 1, cursor: "pointer",
+                        background: "#800000",
+                        color: "#ffffff",
+                        fontFamily: "var(--font-system)",
+                        fontSize: "var(--font-size-sm)",
+                        borderStyle: "solid",
+                        borderWidth: "2px",
+                        borderTopColor: "#ffffff",
+                        borderLeftColor: "#ffffff",
+                        borderBottomColor: "#400000",
+                        borderRightColor: "#400000",
+                        padding: "var(--space-1) var(--space-3)",
+                        cursor: "pointer",
+                        borderRadius: 0,
+                        letterSpacing: 1,
                       }}
                     >DELETE</button>
                   </div>
@@ -293,12 +340,21 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                   <button
                     onClick={e => { e.stopPropagation(); setConfirmId(deck.id); }}
                     style={{
-                      background: "transparent", border: "none",
-                      color: "var(--muted)", cursor: "pointer",
-                      fontSize: 14, padding: "6px", flexShrink: 0, lineHeight: 1, borderRadius: 4,
+                      background: "var(--color-chrome)",
+                      color: "var(--color-text-chrome)",
+                      fontFamily: "var(--font-system)",
+                      fontSize: "var(--font-size-sm)",
+                      borderStyle: "solid",
+                      borderWidth: "2px",
+                      borderTopColor: "var(--bevel-light)",
+                      borderLeftColor: "var(--bevel-light)",
+                      borderBottomColor: "var(--bevel-dark)",
+                      borderRightColor: "var(--bevel-dark)",
+                      padding: "var(--space-1) var(--space-3)",
+                      cursor: "pointer",
+                      borderRadius: 0,
+                      flexShrink: 0, lineHeight: 1,
                     }}
-                    onMouseOver={e => e.currentTarget.style.color = "var(--danger)"}
-                    onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
                   >✕</button>
                 )}
               </div>

@@ -28,43 +28,57 @@ const STATS_LIST = [
 const inputStyle = {
   width: "100%",
   boxSizing: "border-box",
-  background: "rgba(255,255,255,0.05)",
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 10,
-  color: "var(--text)",
-  fontSize: 16,
-  fontFamily: "'Space Grotesk', sans-serif",
-  padding: "11px 13px",
+  background: "var(--color-bg)",
+  color: "var(--color-text-primary)",
+  fontFamily: "var(--font-system)",
+  fontSize: "var(--font-size-base)",
+  borderStyle: "solid",
+  borderWidth: "2px",
+  borderTopColor: "var(--bevel-dark)",
+  borderLeftColor: "var(--bevel-dark)",
+  borderBottomColor: "var(--bevel-light)",
+  borderRightColor: "var(--bevel-light)",
+  padding: "var(--space-1) var(--space-2)",
+  borderRadius: 0,
   outline: "none",
-  caretColor: "var(--primary)",
 };
 
-function chip(active, color = "var(--primary)") {
+function chip(active) {
   return {
-    padding: "9px 16px",
-    borderRadius: 8,
-    border: active ? `1px solid ${color}` : "1px solid rgba(255,255,255,0.15)",
-    background: active ? `${color}22` : "transparent",
-    color: active ? color : "rgba(255,255,255,0.6)",
-    fontFamily: "'Space Grotesk', sans-serif",
-    fontSize: 14, letterSpacing: 1.5,
+    padding: "var(--space-1) var(--space-3)",
+    borderRadius: 0,
+    borderStyle: "solid",
+    borderWidth: "2px",
+    borderTopColor: active ? "var(--bevel-dark)" : "var(--bevel-light)",
+    borderLeftColor: active ? "var(--bevel-dark)" : "var(--bevel-light)",
+    borderBottomColor: active ? "var(--bevel-light)" : "var(--bevel-dark)",
+    borderRightColor: active ? "var(--bevel-light)" : "var(--bevel-dark)",
+    background: active ? "var(--color-chrome-mid)" : "var(--color-chrome)",
+    color: "var(--color-text-chrome)",
+    fontFamily: "var(--font-system)",
+    fontSize: "var(--font-size-sm)", letterSpacing: 1.5,
     cursor: "pointer", flexShrink: 0,
-    transition: "all 0.12s",
     minHeight: 44, display: "flex", alignItems: "center",
   };
 }
 
 function opBtn(active) {
   return {
-    padding: "0 10px", borderRadius: 6,
-    border: active ? "1px solid var(--primary)" : "1px solid rgba(255,255,255,0.12)",
-    background: active ? "rgba(91,143,255,0.15)" : "transparent",
-    color: active ? "var(--primary)" : "rgba(255,255,255,0.5)",
-    fontFamily: "'IBM Plex Mono', monospace",
-    fontSize: 13, cursor: "pointer",
+    padding: "0 10px",
+    borderRadius: 0,
+    borderStyle: "solid",
+    borderWidth: "2px",
+    borderTopColor: active ? "var(--bevel-dark)" : "var(--bevel-light)",
+    borderLeftColor: active ? "var(--bevel-dark)" : "var(--bevel-light)",
+    borderBottomColor: active ? "var(--bevel-light)" : "var(--bevel-dark)",
+    borderRightColor: active ? "var(--bevel-light)" : "var(--bevel-dark)",
+    background: active ? "var(--color-chrome-mid)" : "var(--color-chrome)",
+    color: "var(--color-text-chrome)",
+    fontFamily: "var(--font-system)",
+    fontSize: "var(--font-size-sm)", cursor: "pointer",
     minHeight: 44, minWidth: 42,
     display: "flex", alignItems: "center", justifyContent: "center",
-    transition: "all 0.12s", flexShrink: 0,
+    flexShrink: 0,
   };
 }
 
@@ -95,9 +109,20 @@ function RemovableChip({ label, onRemove }) {
     }}>
       {label}
       <button type="button" onClick={onRemove} style={{
-        background: "transparent", border: "none",
-        color: "rgba(255,255,255,0.4)", cursor: "pointer",
-        padding: 0, lineHeight: 1, fontSize: 12,
+        background: "var(--color-chrome)",
+        color: "var(--color-text-chrome)",
+        fontFamily: "var(--font-system)",
+        fontSize: "var(--font-size-sm)",
+        borderStyle: "solid",
+        borderWidth: "2px",
+        borderTopColor: "var(--bevel-light)",
+        borderLeftColor: "var(--bevel-light)",
+        borderBottomColor: "var(--bevel-dark)",
+        borderRightColor: "var(--bevel-dark)",
+        padding: "var(--space-1) var(--space-3)",
+        cursor: "pointer",
+        borderRadius: 0,
+        lineHeight: 1,
         display: "flex", alignItems: "center",
       }}>✕</button>
     </div>
@@ -119,12 +144,20 @@ function AddInputRow({ value, onChange, onAdd, placeholder, mono = false }) {
         }}
       />
       <button type="button" onClick={onAdd} style={{
-        padding: "0 16px", borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.15)",
-        background: "rgba(255,255,255,0.05)",
-        color: "rgba(255,255,255,0.7)",
-        fontFamily: "'Space Grotesk', sans-serif",
-        fontSize: 14, letterSpacing: 2, cursor: "pointer",
+        background: "var(--color-chrome)",
+        color: "var(--color-text-chrome)",
+        fontFamily: "var(--font-system)",
+        fontSize: "var(--font-size-sm)",
+        borderStyle: "solid",
+        borderWidth: "2px",
+        borderTopColor: "var(--bevel-light)",
+        borderLeftColor: "var(--bevel-light)",
+        borderBottomColor: "var(--bevel-dark)",
+        borderRightColor: "var(--bevel-dark)",
+        padding: "var(--space-1) var(--space-3)",
+        cursor: "pointer",
+        borderRadius: 0,
+        letterSpacing: 2,
         flexShrink: 0, minHeight: 44,
       }}>
         + ADD
@@ -259,10 +292,14 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
         onBlur={() => setSearchFocused(false)}
         style={{
           display: "flex", alignItems: "center",
-          background: "var(--panel)",
-          border: `1px solid ${searchFocused || advOpen ? "rgba(91,143,255,0.4)" : "rgba(255,255,255,0.07)"}`,
-          borderRadius: 14,
-          transition: "border-color 0.15s",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           overflow: "hidden",
         }}
       >
@@ -281,10 +318,20 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
             autoComplete="off"
             spellCheck={false}
             style={{
-              flex: 1, background: "none", border: "none", outline: "none",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 16, color: "var(--text)",
-              caretColor: "var(--primary)",
+              flex: 1,
+              background: "var(--color-bg)",
+              color: "var(--color-text-primary)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-base)",
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-dark)",
+              borderLeftColor: "var(--bevel-dark)",
+              borderBottomColor: "var(--bevel-light)",
+              borderRightColor: "var(--bevel-light)",
+              padding: "var(--space-1) var(--space-2)",
+              borderRadius: 0,
+              outline: "none",
               minWidth: 0,
             }}
           />
@@ -299,10 +346,19 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
           onClick={() => setAdvOpen(v => !v)}
           style={{
             display: "flex", alignItems: "center", gap: 5,
-            padding: "14px 14px",
-            background: advOpen ? "rgba(91,143,255,0.08)" : "transparent",
-            border: "none",
+            background: "var(--color-chrome)",
+            color: "var(--color-text-chrome)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: advOpen ? "var(--bevel-dark)" : "var(--bevel-light)",
+            borderLeftColor: advOpen ? "var(--bevel-dark)" : "var(--bevel-light)",
+            borderBottomColor: advOpen ? "var(--bevel-light)" : "var(--bevel-dark)",
+            borderRightColor: advOpen ? "var(--bevel-light)" : "var(--bevel-dark)",
+            padding: "var(--space-1) var(--space-3)",
             cursor: "pointer",
+            borderRadius: 0,
             flexShrink: 0,
           }}
         >
@@ -334,9 +390,15 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
       {/* Filters panel */}
       {advOpen && (
         <div style={{
-          background: "var(--panel)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          borderRadius: 14, padding: "20px 18px",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
+          padding: "20px 18px",
           display: "flex", flexDirection: "column", gap: 28,
         }}>
 
@@ -349,13 +411,19 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
                 const col    = COLOR_STYLE[c];
                 return (
                   <button key={c} type="button" onClick={() => toggleColor(c)} style={{
-                    width: 48, height: 48, borderRadius: 10,
-                    border: active ? `2px solid ${col}` : "1px solid rgba(255,255,255,0.15)",
-                    background: active ? `${col}22` : "rgba(255,255,255,0.03)",
-                    color: active ? col : "rgba(255,255,255,0.55)",
-                    fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, cursor: "pointer",
+                    width: 48, height: 48,
+                    borderRadius: 0,
+                    borderStyle: "solid",
+                    borderWidth: "2px",
+                    borderTopColor: active ? "var(--bevel-dark)" : "var(--bevel-light)",
+                    borderLeftColor: active ? "var(--bevel-dark)" : "var(--bevel-light)",
+                    borderBottomColor: active ? "var(--bevel-light)" : "var(--bevel-dark)",
+                    borderRightColor: active ? "var(--bevel-light)" : "var(--bevel-dark)",
+                    background: active ? "var(--color-chrome-mid)" : "var(--color-chrome)",
+                    color: active ? col : "var(--color-text-chrome)",
+                    fontFamily: "var(--font-system)", fontSize: 20, cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    transition: "all 0.12s", flexShrink: 0,
+                    flexShrink: 0,
                   }}>
                     {c}
                   </button>
@@ -426,12 +494,20 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
                 type="number" min="0" placeholder="0"
                 style={{ ...inputStyle, width: 70 }} />
               <button type="button" onClick={addCmcCondition} style={{
-                padding: "0 16px", borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.15)",
-                background: "rgba(255,255,255,0.05)",
-                color: "rgba(255,255,255,0.7)",
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 14, letterSpacing: 2, cursor: "pointer",
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
+                letterSpacing: 2,
                 flexShrink: 0, minHeight: 44,
               }}>
                 + ADD

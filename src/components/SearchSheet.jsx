@@ -27,11 +27,14 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
         <div style={{
           width: "100%", maxWidth: 600,
           maxHeight: "90dvh",
-          background: "var(--bg)",
-          borderRadius: "20px 20px 0 0",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}>
@@ -74,9 +77,20 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
             <button
               onClick={onClose}
               style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.45)", fontSize: 18,
-                cursor: "pointer", padding: "4px 6px", lineHeight: 1,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
+                cursor: "pointer",
+                borderRadius: 0,
+                lineHeight: 1,
               }}
             >
               ✕

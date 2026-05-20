@@ -296,11 +296,14 @@ export default function ImportSheet({ open, onClose, onImport }) {
         <div style={{
           width: "100%", maxWidth: 600,
           maxHeight: "90dvh",
-          background: "var(--bg)",
-          borderRadius: "20px 20px 0 0",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          borderLeft: "1px solid rgba(255,255,255,0.06)",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
           display: "flex", flexDirection: "column",
           overflow: "hidden",
         }}>
@@ -333,10 +336,20 @@ export default function ImportSheet({ open, onClose, onImport }) {
               onClick={handleClose}
               disabled={isWorking}
               style={{
-                background: "transparent", border: "none",
-                color: "rgba(255,255,255,0.45)", fontSize: 18,
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "var(--space-1) var(--space-3)",
                 cursor: isWorking ? "default" : "pointer",
-                padding: "4px 6px", lineHeight: 1,
+                borderRadius: 0,
+                lineHeight: 1,
                 opacity: isWorking ? 0.4 : 1,
               }}
             >
@@ -362,12 +375,19 @@ export default function ImportSheet({ open, onClose, onImport }) {
                 disabled={isWorking || isSuccess}
                 style={{
                   width: "100%", boxSizing: "border-box",
-                  background: "var(--panel)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 10, padding: "12px 14px",
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  fontSize: 14, color: "var(--text)",
-                  outline: "none", caretColor: "var(--secondary)",
+                  background: "var(--color-bg)",
+                  color: "var(--color-text-primary)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-base)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-dark)",
+                  borderLeftColor: "var(--bevel-dark)",
+                  borderBottomColor: "var(--bevel-light)",
+                  borderRightColor: "var(--bevel-light)",
+                  padding: "var(--space-1) var(--space-2)",
+                  borderRadius: 0,
+                  outline: "none",
                 }}
               />
             </div>
@@ -383,12 +403,19 @@ export default function ImportSheet({ open, onClose, onImport }) {
                 disabled={isWorking || isSuccess}
                 style={{
                   width: "100%", boxSizing: "border-box",
-                  background: "var(--panel)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 10, padding: "12px 14px",
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: 13, color: "var(--text)",
-                  outline: "none", caretColor: "var(--secondary)",
+                  background: "var(--color-bg)",
+                  color: "var(--color-text-primary)",
+                  fontFamily: "var(--font-system)",
+                  fontSize: "var(--font-size-base)",
+                  borderStyle: "solid",
+                  borderWidth: "2px",
+                  borderTopColor: "var(--bevel-dark)",
+                  borderLeftColor: "var(--bevel-dark)",
+                  borderBottomColor: "var(--bevel-light)",
+                  borderRightColor: "var(--bevel-light)",
+                  padding: "var(--space-1) var(--space-2)",
+                  borderRadius: 0,
+                  outline: "none",
                   resize: "vertical", lineHeight: 1.65,
                 }}
               />
@@ -428,33 +455,28 @@ export default function ImportSheet({ open, onClose, onImport }) {
               onClick={!isWorking && !isSuccess ? handleImport : undefined}
               style={{
                 width: "100%",
-                background: isSuccess
-                  ? "rgba(60,200,100,0.1)"
-                  : isWorking
-                    ? "transparent"
-                    : "rgba(167,139,250,0.1)",
-                border: `1.5px solid ${
-                  isSuccess
-                    ? "rgba(60,200,100,0.45)"
-                    : isWorking
-                      ? "rgba(255,255,255,0.1)"
-                      : "var(--secondary)"
-                }`,
-                borderRadius: 14,
+                background: "var(--color-titlebar)",
+                color: "var(--color-titlebar-text)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "#ffffff",
+                borderLeftColor: "#ffffff",
+                borderBottomColor: "#000040",
+                borderRightColor: "#000040",
                 padding: "16px 24px",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 cursor: isWorking || isSuccess ? "default" : "pointer",
-                transition: "background 0.2s, border-color 0.2s",
+                borderRadius: 0,
+                opacity: isWorking ? 0.6 : 1,
               }}
             >
               <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 20, letterSpacing: "0.12em",
-                color: isSuccess
-                  ? "var(--success)"
-                  : isWorking
-                    ? "rgba(255,255,255,0.25)"
-                    : "var(--secondary)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-xl)",
+                letterSpacing: "0.12em",
+                color: isSuccess ? "var(--success)" : "var(--color-titlebar-text)",
               }}>
                 {isSuccess
                   ? `IMPORTED ${importCount} CARDS`
