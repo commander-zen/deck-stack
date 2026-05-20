@@ -1010,9 +1010,9 @@ export default function PileScreen({
             <span style={{
               flex: 1,
               fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 18, letterSpacing: 4, color: "var(--primary)",
+              fontSize: 18, letterSpacing: 4, color: "#c0c0c0",
             }}>
-              {activeTab === "deck" ? "DECK" : "CONSIDERING"}
+              {activeTab === "deck" ? "BREW" : "CONSIDERING"}
             </span>
           )}
 
@@ -1229,7 +1229,7 @@ export default function PileScreen({
             textAlign: "center", padding: "72px 20px",
             color: "rgba(255,255,255,0.35)", fontSize: 14,
           }}>
-            {activeTab === "deck" ? "Your pile is empty" : "Your maybeboard is empty"}
+            {activeTab === "deck" ? "Your brew is empty" : "Your maybeboard is empty"}
             <br />
             <span style={{ opacity: 0.6, fontSize: 12, marginTop: 6, display: "block" }}>
               {activeTab === "deck"

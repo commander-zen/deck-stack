@@ -303,6 +303,7 @@ export default function SwipeScreen({
                 borderBottomColor: "var(--bevel-dark)",
                 borderRightColor: "var(--bevel-dark)",
                 borderRadius: 0,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
               }}>
                 <img
                   src={artUrl}

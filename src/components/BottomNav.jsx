@@ -28,7 +28,27 @@ export default function BottomNav({ screen, onSearch, onBrew, onSearchDoubleTap,
     {
       id: "brew",
       label: "BREW",
-      icon: "⚗️",
+      icon: (
+        <svg width="24" height="28" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* cork */}
+          <rect x="8" y="0" width="8" height="4" fill="#c8a46e" />
+          <rect x="7" y="1" width="10" height="2" fill="#b8904e" />
+          {/* neck */}
+          <rect x="9" y="4" width="6" height="4" fill="#c0c0c0" />
+          <rect x="10" y="4" width="4" height="4" fill="#e0e0e0" />
+          {/* bottle body outline */}
+          <rect x="3" y="8" width="18" height="18" rx="4" fill="#c0c0c0" />
+          <rect x="4" y="9" width="16" height="16" rx="3" fill="#e8e8e8" />
+          {/* liquid fill */}
+          <rect x="4" y="16" width="16" height="9" rx="0" fill="#cc2233" />
+          <rect x="4" y="22" width="16" height="3" rx="0" fill="#aa1122" style={{borderRadius: "0 0 3px 3px"}} />
+          {/* shine */}
+          <rect x="6" y="10" width="3" height="8" rx="1" fill="rgba(255,255,255,0.45)" />
+          {/* cross */}
+          <rect x="10" y="12" width="4" height="1.5" fill="white" opacity="0.9" />
+          <rect x="11.25" y="11" width="1.5" height="4" fill="white" opacity="0.9" />
+        </svg>
+      ),
       isActive: screen === "pile" || screen === "maybe" || screen === "brews" || screen === "settings" || screen === "deck-detail",
       onClick: () => handleTap("brew", onBrew, onBrewDoubleTap),
     },

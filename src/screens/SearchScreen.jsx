@@ -52,14 +52,10 @@ function Win98ProgressBar({ active }) {
   );
 }
 
-// Approximate height of the pinned SEARCH button for bottom padding calculation
-const SEARCH_BTN_HEIGHT = 58;
-
 export default function SearchScreen({ onSearch, loading, error, commanderCard, onCommanderCardChange }) {
   const [brewInput,    setBrewInput]    = useState("");
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [draftInput,   setDraftInput]   = useState("");
-  // rawMode — NLP translation deferred; kept for placeholder + handleSearch parity
   const [rawMode] = useState(() => getSettings().rawQueryMode);
 
   const isDisabled = loading;
@@ -96,140 +92,101 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   }
 
   return (
-    <>
+    <div style={{
+      minHeight: "100dvh",
+      background: "var(--bg)",
+      color: "var(--text)",
+      fontFamily: "'Space Grotesk', sans-serif",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      paddingBottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+      overflowY: "auto",
+    }}>
       <div style={{
-        minHeight: "100dvh",
-        background: "var(--bg)",
-        color: "var(--text)",
-        fontFamily: "'Space Grotesk', sans-serif",
+        width: "100%",
+        maxWidth: 430,
+        padding: "0 20px",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        paddingBottom: `calc(${NAV_HEIGHT}px + ${SEARCH_BTN_HEIGHT}px + env(safe-area-inset-bottom) + 16px)`,
+        flex: 1,
+        minHeight: `calc(100dvh - ${NAV_HEIGHT}px - env(safe-area-inset-bottom))`,
       }}>
-        <div style={{
-          width: "100%",
-          maxWidth: 430,
-          padding: "0 20px",
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
-        }}>
 
-          {/* ── Title ── */}
-          <div style={{ padding: "48px 0 16px" }}>
-            <div style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 48, lineHeight: 1,
-              letterSpacing: "0.04em",
-              color: "var(--text)",
-            }}>
-              DECK STACK
-            </div>
-          </div>
-
-          {/* ── Subtitle ── */}
+        {/* ── Title ── */}
+        <div style={{ padding: "48px 0 12px" }}>
           <div style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 14,
-            color: "var(--muted)",
-            marginBottom: 28,
-            lineHeight: 1.5,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 48, lineHeight: 1,
+            letterSpacing: "0.04em",
+            color: "var(--text)",
           }}>
-            Search. Swipe. Brew. Deck Stack uses Scryfall syntax to stack and swipe cards for your commander pile.
+            DECK STACK
           </div>
-
-          {/* ── Search label ── */}
-          <div style={{
-            fontSize: 10, letterSpacing: "0.15em",
-            color: "var(--muted)", marginBottom: 8,
-          }}>
-            SEARCH YOUR STACK
-          </div>
-
-          {/* ── Input ── */}
-          <div style={{ marginBottom: 8 }}>
-            <input
-              type="text"
-              value={brewInput}
-              onChange={e => { if (!isDisabled) setBrewInput(e.target.value); }}
-              onKeyDown={handleBrewKeyDown}
-              onFocus={() => { setHistoryIndex(-1); setDraftInput(""); }}
-              placeholder={rawMode ? "f:commander c:g cmc<=3 otag:ramp" : "What are you looking for?"}
-              autoComplete="off" autoCorrect="off" spellCheck={false}
-              readOnly={isDisabled}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                background: "var(--color-bg)",
-                color: "var(--color-text-primary)",
-                fontFamily: "var(--font-system)",
-                fontSize: 16,
-                borderStyle: "solid",
-                borderWidth: "2px",
-                borderTopColor: "var(--bevel-dark)",
-                borderLeftColor: "var(--bevel-dark)",
-                borderBottomColor: "var(--bevel-light)",
-                borderRightColor: "var(--bevel-light)",
-                padding: "var(--space-1) var(--space-2)",
-                borderRadius: 0,
-                outline: "none",
-                opacity: isDisabled ? 0.5 : 1,
-              }}
-            />
-          </div>
-
-          {/* ── Win98 progress bar — visible while Scryfall is loading ── */}
-          <Win98ProgressBar active={loading} />
-
-          {/* ── Hint ── */}
-          <div style={{
-            textAlign: "center",
-            fontSize: 12, color: "var(--muted)",
-            marginBottom: 20,
-          }}>
-            ← swipe left to yeet &nbsp;·&nbsp; swipe right to keep →
-          </div>
-
-          {/* ── Footer ── */}
-          <div style={{
-            marginTop: "auto",
-            display: "flex", justifyContent: "center", gap: 20,
-            paddingBottom: 28,
-          }}>
-            <a
-              href="https://bsky.app/profile/commanderzen.bsky.social"
-              target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
-              onMouseOver={e => e.currentTarget.style.color = "var(--text)"}
-              onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
-            >
-              reach out @commanderzen
-            </a>
-            <a
-              href="https://github.com/commander-zen/deck-stack/issues/new?labels=bug&template=bug_report.md"
-              target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 12, color: "var(--muted)", textDecoration: "none" }}
-              onMouseOver={e => e.currentTarget.style.color = "var(--text)"}
-              onMouseOut={e => e.currentTarget.style.color = "var(--muted)"}
-            >
-              Report a Bug
-            </a>
-          </div>
-
         </div>
-      </div>
 
-      {/* ── SEARCH button — pinned above nav bar ── */}
-      <div style={{
-        position: "fixed",
-        bottom: `calc(${NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
-        left: 0, right: 0,
-        maxWidth: 430,
-        margin: "0 auto",
-        padding: "0 20px",
-        zIndex: 50,
-      }}>
+        {/* ── Tagline ── */}
+        <div style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 20,
+          fontWeight: 600,
+          color: "var(--text)",
+          marginBottom: 10,
+          lineHeight: 1.3,
+        }}>
+          Search. Swipe. Brew.
+        </div>
+
+        {/* ── Description ── */}
+        <div style={{
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13,
+          color: "var(--muted)",
+          marginBottom: 0,
+          lineHeight: 1.5,
+        }}>
+          Deck Stack uses Scryfall syntax to stack and swipe cards for your commander pile.
+        </div>
+
+        {/* ── Spacer ── */}
+        <div style={{ flex: 1 }} />
+
+        {/* ── Input ── */}
+        <div style={{ marginBottom: 0 }}>
+          <input
+            type="text"
+            value={brewInput}
+            onChange={e => { if (!isDisabled) setBrewInput(e.target.value); }}
+            onKeyDown={handleBrewKeyDown}
+            onFocus={() => { setHistoryIndex(-1); setDraftInput(""); }}
+            placeholder={rawMode ? "f:commander c:g cmc<=3 otag:ramp" : "What are you looking for?"}
+            autoComplete="off" autoCorrect="off" spellCheck={false}
+            readOnly={isDisabled}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              background: "var(--color-bg)",
+              color: "var(--color-text-primary)",
+              fontFamily: "var(--font-system)",
+              fontSize: 16,
+              borderStyle: "solid",
+              borderWidth: "2px",
+              borderTopColor: "var(--bevel-dark)",
+              borderLeftColor: "var(--bevel-dark)",
+              borderBottomColor: "var(--bevel-light)",
+              borderRightColor: "var(--bevel-light)",
+              padding: "var(--space-1) var(--space-2)",
+              borderRadius: 0,
+              outline: "none",
+              opacity: isDisabled ? 0.5 : 1,
+            }}
+          />
+        </div>
+
+        {/* ── Win98 progress bar ── */}
+        <Win98ProgressBar active={loading} />
+
+        {/* ── SEARCH button ── */}
         <button
           onClick={handleSearch}
           disabled={isDisabled || !brewInput.trim()}
@@ -250,6 +207,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
             cursor: (isDisabled || !brewInput.trim()) ? "default" : "pointer",
             borderRadius: 0,
             opacity: (isDisabled || !brewInput.trim()) ? 0.5 : 1,
+            marginTop: 0,
           }}
         >
           <span style={{
@@ -261,7 +219,40 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
             SEARCH
           </span>
         </button>
+
+        {/* ── Swipe hint ── */}
+        <div style={{
+          textAlign: "center",
+          fontSize: 12, color: "var(--muted)",
+          marginTop: 10,
+          marginBottom: 8,
+        }}>
+          ← swipe left to yeet &nbsp;·&nbsp; swipe right to keep →
+        </div>
+
+        {/* ── Easter egg footer — sits just below the fold ── */}
+        <div style={{
+          display: "flex", justifyContent: "center", gap: 20,
+          paddingBottom: 28,
+          paddingTop: 12,
+        }}>
+          <a
+            href="https://bsky.app/profile/commanderzen.bsky.social"
+            target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, color: "rgba(255,255,255,0.18)", textDecoration: "none" }}
+          >
+            reach out @commanderzen
+          </a>
+          <a
+            href="https://github.com/commander-zen/deck-stack/issues/new?labels=bug&template=bug_report.md"
+            target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, color: "rgba(255,255,255,0.18)", textDecoration: "none" }}
+          >
+            Report a Bug
+          </a>
+        </div>
+
       </div>
-    </>
+    </div>
   );
 }
