@@ -714,14 +714,6 @@ export default function App() {
   // PERSISTS: commanderCard change — `commanderCard` is in the auto-save dep array so
   // the debounced save fires automatically within 1500ms of any change here.
   function handleCommanderCardChange(newCard) {
-    const activeDeckCommander = activeDeckId
-      ? (decks.find(d => d.id === activeDeckId)?.commander_card ?? null)
-      : null;
-    // Lock fires whenever the brew has a commander set — pile size is not the gate.
-    // handleSearch and handleImport enforce their own lock logic independently.
-    if (newCard !== null && activeDeckCommander) {
-      return;
-    }
     setCommanderCard(newCard);
   }
 

@@ -1,11 +1,16 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Verify the three screen-level fixes in browser — confirm WREC + bracket are hidden in PileScreen, search input doesn't zoom on iOS (font-size 16px), SearchScreen has no commander/raw-mode buttons, subtitle text updated, SEARCH button is pinned to bottom, and Win98 progress bar appears on Scryfall load.
+Next: Test DeckDetailScreen in browser — verify card groups render correctly, lightbox opens on tap, WREC tags show in lightbox, chrome bar shows card count, back button returns to BrewShelfScreen, and commander can be changed freely on any brew.
 
 ---
 
 ## Completed ✅
+
+- ✅ **DeckDetailScreen + commander unlock** (2026-05-20)
+  - `DeckDetailScreen.jsx` built out: Win98 navy title bars for COMMANDER (1) and each type group (Creatures, Planeswalkers, Instants, Sorceries, Enchantments, Artifacts, Lands, Other), card rows with qty/name/chevron, fixed chrome bar showing card count, card lightbox with WREC tag pills (read-only)
+  - Navigation: BrewShelfScreen already wired to `setSelectedDeckId` + `setScreen("deck-detail")`; back button returns to "brews"
+  - Commander lock removed from `handleCommanderCardChange` in App.jsx — commander now freely editable like any other field
 
 - ✅ **Three screen-level fixes** (2026-05-20)
   - Fix 1: WREC batting-average block and BRACKET display in PileScreen commented out (not deleted)
