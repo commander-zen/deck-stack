@@ -3,7 +3,7 @@ import { initAuth } from "./lib/supabase.js";
 import BrewShelfScreen from "./screens/BrewShelfScreen.jsx";
 import DeckDetailScreen from "./screens/DeckDetailScreen.jsx";
 import AuthSheet from "./components/AuthSheet.jsx";
-import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks, updateDeckStatus } from "./lib/db.js";
+import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks } from "./lib/db.js";
 import { onAuthChange } from "./lib/auth.js";
 
 function readLocalDecks() {
@@ -15,15 +15,14 @@ export default function App() {
   const [appReady,      setAppReady]      = useState(false);
   const [sessionId,     setSessionId]     = useState(null);
   const [decks,         setDecks]         = useState(readLocalDecks);
-  const [activeDeckId,  setActiveDeckId]  = useState(null);
-  const [selectedDeckId, setSelectedDeckId] = useState(null);
-  const [screen,        setScreen]        = useState("brews"); // "brews" | "deck-detail"
+  const [activeScreen,  setActiveScreen]  = useState("shelf"); // "shelf" | "detail"
+  const [activeDeck,    setActiveDeck]    = useState(null);
   const [authUser,      setAuthUser]      = useState(null);
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
 
   const initFetchedRef = useRef(false);
   const stateRef = useRef({});
-  stateRef.current = { sessionId, authUser, decks, activeDeckId };
+  stateRef.current = { sessionId, authUser };
 
   // ── Init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -34,7 +33,7 @@ export default function App() {
 
       const localDecks = readLocalDecks();
       if (localDecks.length > 0) {
-        setActiveDeckId(localDecks[0].id);
+        setDecks(localDecks);
         clearTimeout(safetyTimer);
         setAppReady(true);
       }
@@ -46,10 +45,7 @@ export default function App() {
         const user = session?.user ?? null;
         setAuthUser(user);
         const dbDecks = await loadDecks(sid, user?.id ?? null);
-        if (dbDecks.length > 0) {
-          setDecks(dbDecks);
-          setActiveDeckId(dbDecks[0].id);
-        }
+        if (dbDecks.length > 0) setDecks(dbDecks);
       } catch (err) {
         console.error("Failed to init from Supabase:", err);
       } finally {
@@ -72,10 +68,7 @@ export default function App() {
         if (initFetchedRef.current) return;
         try {
           const dbDecks = await loadDecks(s.sessionId, user.id);
-          if (dbDecks.length > 0 && stateRef.current.decks.length === 0) {
-            setDecks(dbDecks);
-            setActiveDeckId(dbDecks[0].id);
-          }
+          if (dbDecks.length > 0) setDecks(dbDecks);
         } catch (err) {
           console.error("Session restore failed:", err);
         }
@@ -110,7 +103,18 @@ export default function App() {
     catch (err) { console.warn("localStorage decks write failed:", err); }
   }, [decks, appReady]);
 
-  // ── Deck management ───────────────────────────────────────────────────────
+  // ── Navigation ────────────────────────────────────────────────────────────
+  function handleDeckSelect(deck) {
+    setActiveDeck(deck);
+    setActiveScreen("detail");
+  }
+
+  function handleBack() {
+    setActiveDeck(null);
+    setActiveScreen("shelf");
+  }
+
+  // ── Deck CRUD ─────────────────────────────────────────────────────────────
   function handleNewDeck() {
     const newDeckId = crypto.randomUUID();
     const newDeck = {
@@ -120,8 +124,9 @@ export default function App() {
       last_opened_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
     };
-    setActiveDeckId(newDeckId);
     setDecks(ds => [newDeck, ...ds]);
+    setActiveDeck(newDeck);
+    setActiveScreen("detail");
     const s = stateRef.current;
     if (s.sessionId) {
       saveDeck(s.sessionId, newDeck, s.authUser?.id ?? null).catch(err => {
@@ -130,29 +135,22 @@ export default function App() {
     }
   }
 
-  function handleSwitchDeck(deckId) {
-    setActiveDeckId(deckId);
-    const now = new Date().toISOString();
-    setDecks(ds =>
-      ds.map(d => d.id === deckId ? { ...d, last_opened_at: now } : d)
-        .sort((a, b) => new Date(b.last_opened_at) - new Date(a.last_opened_at))
-    );
-  }
-
   async function handleDeleteDeck(deckId) {
-    await deleteDeck(sessionId, deckId, authUser?.id ?? null);
-    const remaining = decks.filter(d => d.id !== deckId);
-    setDecks(remaining);
-    if (deckId === activeDeckId) {
-      setActiveDeckId(remaining.length > 0 ? remaining[0].id : null);
-    }
+    const s = stateRef.current;
+    await deleteDeck(s.sessionId, deckId, s.authUser?.id ?? null);
+    setDecks(ds => ds.filter(d => d.id !== deckId));
+    if (activeDeck?.id === deckId) setActiveDeck(null);
   }
 
-  function handleUpdateDeckStatus(deckId, newStatus) {
-    setDecks(ds => ds.map(d => d.id === deckId ? { ...d, status: newStatus } : d));
+  function handleUpdateDeck(updatedDeck) {
+    setDecks(ds => ds.map(d => d.id === updatedDeck.id ? updatedDeck : d));
+    setActiveDeck(updatedDeck);
     const s = stateRef.current;
-    updateDeckStatus(deckId, newStatus, s.sessionId, s.authUser?.id ?? null)
-      .catch(err => console.error("Failed to update deck status:", err));
+    if (s.sessionId) {
+      saveDeck(s.sessionId, updatedDeck, s.authUser?.id ?? null).catch(err => {
+        console.error("Failed to save deck:", err);
+      });
+    }
   }
 
   // ── Loading splash ────────────────────────────────────────────────────────
@@ -174,20 +172,20 @@ export default function App() {
 
   return (
     <>
-      {screen !== "deck-detail" && screen !== "settings" && (
+      {activeScreen === "shelf" && (
         <BrewShelfScreen
           decks={decks}
-          activeDeckId={activeDeckId}
-          onSelectDeck={id => { setSelectedDeckId(id); setScreen("deck-detail"); }}
+          onSelectDeck={id => handleDeckSelect(decks.find(d => d.id === id))}
           onNewBrew={handleNewDeck}
-          authUser={authUser}
+          onDeleteDeck={handleDeleteDeck}
         />
       )}
 
-      {screen === "deck-detail" && (
+      {activeScreen === "detail" && (
         <DeckDetailScreen
-          deck={decks.find(d => d.id === selectedDeckId)}
-          onBack={() => setScreen("brews")}
+          deck={activeDeck}
+          onBack={handleBack}
+          onUpdateDeck={handleUpdateDeck}
         />
       )}
 
