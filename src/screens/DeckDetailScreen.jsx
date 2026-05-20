@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NAV_HEIGHT } from "../components/BottomNav.jsx";
 import { getCardImage } from "../lib/scryfall.js";
 import { WREC_CHIP } from "../constants/wrec.js";
+import CardBrowserScreen from "./CardBrowserScreen.jsx";
 
 const TYPE_GROUPS = [
   { label: "Creatures",     test: t => t.includes("Creature") },
@@ -104,12 +105,20 @@ function CardRow({ card, onClick }) {
   );
 }
 
-export default function DeckDetailScreen({ deck, onBack }) {
-  const [lightboxCard, setLightboxCard] = useState(null);
+export default function DeckDetailScreen({ deck, onBack, onUpdateDeck }) {
+  const [lightboxCard,  setLightboxCard]  = useState(null);
+  const [browserQuery,  setBrowserQuery]  = useState(null); // null = closed
+  const [localPile,     setLocalPile]     = useState(() => deck?.pile ?? []);
+  const searchInputRef = useRef(null);
+
+  // Reset local pile when navigating to a different deck
+  useEffect(() => {
+    setLocalPile(deck?.pile ?? []);
+  }, [deck?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!deck) return null;
 
-  const pile = deck.pile ?? [];
+  const pile = localPile;
   const commanderInstanceId = deck.commander_instance_id ?? null;
   const commanderCard =
     (commanderInstanceId ? pile.find(c => c.instanceId === commanderInstanceId) : null)
@@ -130,6 +139,23 @@ export default function DeckDetailScreen({ deck, onBack }) {
       .map(([cat]) => cat);
   }
 
+  function handleSubmitSearch() {
+    const q = searchInputRef.current?.value?.trim();
+    if (q) setBrowserQuery(q);
+  }
+
+  function handleAddCard(card) {
+    const newCard = { ...card, instanceId: crypto.randomUUID() };
+    const newPile = [...localPile, newCard];
+    setLocalPile(newPile);
+    onUpdateDeck?.({ ...deck, pile: newPile });
+  }
+
+  function handleCloseBrowser() {
+    setBrowserQuery(null);
+    if (searchInputRef.current) searchInputRef.current.value = "";
+  }
+
   const CHROME_BAR_H = 40;
   const scrollPadBottom = `calc(${NAV_HEIGHT}px + ${CHROME_BAR_H}px + max(env(safe-area-inset-bottom), 8px) + 12px)`;
   const chromeBarBottom = `calc(${NAV_HEIGHT}px + max(env(safe-area-inset-bottom), 0px))`;
@@ -140,7 +166,8 @@ export default function DeckDetailScreen({ deck, onBack }) {
       background: "var(--color-bg)",
       fontFamily: "var(--font-system)",
     }}>
-      {/* Sticky title bar with back button */}
+      {/* Sticky header — title bar + search bar */}
+      <div style={{ position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{
         background: "var(--color-titlebar)",
         color: "var(--color-titlebar-text)",
@@ -151,9 +178,6 @@ export default function DeckDetailScreen({ deck, onBack }) {
         display: "flex",
         alignItems: "center",
         gap: "var(--space-2)",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
       }}>
         <button
           onClick={onBack}
@@ -184,6 +208,63 @@ export default function DeckDetailScreen({ deck, onBack }) {
           {deck.name ?? "Brew"}
         </span>
       </div>
+
+      {/* Search bar */}
+      <div style={{
+        display: "flex",
+        gap: "var(--space-1)",
+        padding: "var(--space-1) var(--space-2)",
+        background: "var(--color-chrome)",
+        borderBottom: "2px solid var(--bevel-dark)",
+      }}>
+        <input
+          ref={searchInputRef}
+          type="search"
+          placeholder="Search Scryfall..."
+          defaultValue=""
+          onKeyDown={e => e.key === "Enter" && handleSubmitSearch()}
+          style={{
+            flex: 1,
+            fontFamily: "var(--font-system)",
+            fontSize: 16,
+            padding: "3px 6px",
+            background: "var(--color-chrome-light)",
+            color: "var(--color-text-chrome)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-dark)",
+            borderLeftColor: "var(--bevel-dark)",
+            borderBottomColor: "var(--bevel-light)",
+            borderRightColor: "var(--bevel-light)",
+            borderRadius: 0,
+            outline: "none",
+            minWidth: 0,
+          }}
+        />
+        <button
+          onClick={handleSubmitSearch}
+          style={{
+            background: "var(--color-chrome)",
+            color: "var(--color-text-chrome)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "var(--bevel-light)",
+            borderLeftColor: "var(--bevel-light)",
+            borderBottomColor: "var(--bevel-dark)",
+            borderRightColor: "var(--bevel-dark)",
+            padding: "var(--space-1) var(--space-2)",
+            cursor: "pointer",
+            borderRadius: 0,
+            flexShrink: 0,
+            letterSpacing: 1,
+          }}
+        >
+          SEARCH
+        </button>
+      </div>
+      </div>{/* end sticky header */}
 
       {/* Scrollable body */}
       <div style={{
@@ -297,6 +378,16 @@ export default function DeckDetailScreen({ deck, onBack }) {
       }}>
         {totalCards} card{totalCards !== 1 ? "s" : ""}
       </div>
+
+      {/* Card browser overlay */}
+      {browserQuery && (
+        <CardBrowserScreen
+          query={browserQuery}
+          brewCards={localPile}
+          onAddCard={handleAddCard}
+          onClose={handleCloseBrowser}
+        />
+      )}
 
       {/* Card lightbox */}
       {lightboxCard && (() => {
