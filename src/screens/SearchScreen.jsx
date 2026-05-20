@@ -139,7 +139,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
   const isDisabled = loading || !!localLoading;
   const placeholder = rawMode
     ? "f:commander c:g cmc<=3 otag:ramp"
-    : "what are you looking for?";
+    : "What are you looking for?";
 
   // Auto-focus commander input when panel opens
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     setCmdQuery(""); setCmdResults([]); setCmdOpen(false); setCmdExpanded(false);
   }
 
-  function handlePillClick() {
+  function handleCommanderToggle() {
     if (commanderCard) { onCommanderCardChange(null); setCmdExpanded(true); }
     else setCmdExpanded(e => !e);
   }
@@ -238,7 +238,6 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
     }
   }
 
-  const artUrl = commanderCard ? getCardImage(commanderCard, "art_crop") : null;
   const showAnimation = localLoading === "animating-full" || localLoading === "animating-short";
 
   return (
@@ -278,50 +277,11 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
             </div>
           </div>
 
-          {/* ── Hero area ── */}
-          <div style={{
-            position: "relative",
-            width: "100%",
-            height: 220,
-            background: "var(--panel)",
-            borderRadius: 16,
-            marginBottom: 36,
-            overflow: "visible",
-            flexShrink: 0,
-          }}>
-            <div style={{
-              position: "absolute", inset: 0,
-              borderRadius: 16, overflow: "hidden",
-              background: "var(--panel)",
-            }}>
-              {artUrl && (
-                <img
-                  src={artUrl}
-                  alt={commanderCard?.name}
-                  draggable={false}
-                  style={{
-                    width: "100%", height: "100%",
-                    objectFit: "cover", objectPosition: "center top",
-                    display: "block",
-                    transition: "opacity 0.3s ease",
-                  }}
-                />
-              )}
-              {artUrl && (
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(to bottom, rgba(13,13,15,0.1) 50%, rgba(13,13,15,0.7) 100%)",
-                }} />
-              )}
-            </div>
-
-            {/* Commander pill */}
+          {/* ── Commander toggle ── */}
+          <div style={{ marginBottom: "var(--space-3)" }}>
             <button
-              onClick={handlePillClick}
+              onClick={handleCommanderToggle}
               style={{
-                position: "absolute",
-                bottom: -18, left: "50%",
-                transform: "translateX(-50%)",
                 background: "var(--color-chrome)",
                 color: "var(--color-text-chrome)",
                 fontFamily: "var(--font-system)",
@@ -332,25 +292,19 @@ export default function SearchScreen({ onSearch, loading, error, commanderCard, 
                 borderLeftColor: "var(--bevel-light)",
                 borderBottomColor: "var(--bevel-dark)",
                 borderRightColor: "var(--bevel-dark)",
-                padding: "8px 16px 8px 12px",
-                display: "flex", alignItems: "center", gap: 7,
+                padding: "var(--space-1) var(--space-3)",
                 cursor: "pointer",
-                whiteSpace: "nowrap", maxWidth: "calc(100% - 40px)",
                 borderRadius: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--space-2)",
               }}
             >
-              <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>👑</span>
-              <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 13,
-                color: commanderCard ? "var(--secondary)" : "var(--muted)",
-                overflow: "hidden", textOverflow: "ellipsis",
-              }}>
+              <span>👑</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
                 {commanderCard ? commanderCard.name : "Set commander…"}
               </span>
-              {commanderCard && (
-                <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0, marginLeft: 2 }}>✕</span>
-              )}
+              {commanderCard && <span style={{ color: "var(--color-chrome-dark)" }}>✕</span>}
             </button>
           </div>
 

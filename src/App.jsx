@@ -4,6 +4,8 @@ import SearchScreen  from "./screens/SearchScreen.jsx";
 import SwipeScreen   from "./screens/SwipeScreen.jsx";
 import PileScreen    from "./screens/PileScreen.jsx";
 import BrewsScreen   from "./screens/BrewsScreen.jsx";
+import BrewShelfScreen from "./screens/BrewShelfScreen.jsx";
+import DeckDetailScreen from "./screens/DeckDetailScreen.jsx";
 import SettingsScreen from "./screens/SettingsScreen.jsx";
 import WrecTagPicker from "./components/WrecTagPicker.jsx";
 import { autoDetectCategory } from "./constants/wrec.js";
@@ -65,6 +67,8 @@ export default function App() {
   const [authUser,      setAuthUser]      = useState(null);
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
   const [toastMsg,      setToastMsg]      = useState(null);
+  const [toastAction,   setToastAction]   = useState(null);
+  const [selectedDeckId, setSelectedDeckId] = useState(null);
 
   const bgFetchAbort   = useRef(null);
   const toastTimer     = useRef(null);
@@ -343,10 +347,11 @@ export default function App() {
     }) ?? null;
   }
 
-  function showToast(msg) {
+  function showToast(msg, action = null) {
     clearTimeout(toastTimer.current);
     setToastMsg(msg);
-    toastTimer.current = setTimeout(() => setToastMsg(null), 3500);
+    setToastAction(action);
+    toastTimer.current = setTimeout(() => { setToastMsg(null); setToastAction(null); }, action ? 4000 : 3500);
   }
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -851,6 +856,31 @@ export default function App() {
 
   function goToProfile() { setScreen("brews"); }
 
+  // 2-tab nav
+  function goToSearchTab() {
+    if (swipeMounted) setScreen("swipe");
+    else setScreen("search");
+  }
+
+  function goToBrewTab() {
+    if (pile.length > 0 || maybeboard.length > 0) setScreen("pile");
+    else setScreen("brews");
+  }
+
+  function handleSearchDoubleTap() {
+    const snapshot = { commanderCard };
+    setCommanderCard(null);
+    setScreen("search");
+    showToast("Search reset", {
+      label: "UNDO",
+      onClick: () => setCommanderCard(snapshot.commanderCard),
+    });
+  }
+
+  function handleBrewDoubleTap() {
+    setScreen("brews");
+  }
+
   const showNav = true;
 
   if (!appReady) {
@@ -932,17 +962,19 @@ export default function App() {
       )}
 
       {screen === "brews" && (
-        <BrewsScreen
+        <BrewShelfScreen
           decks={decks}
           activeDeckId={activeDeckId}
-          onSwitch={id => { handleSwitchDeck(id); }}
-          onNew={() => { handleNewDeck(); }}
-          onDelete={handleDeleteDeck}
+          onSelectDeck={id => { setSelectedDeckId(id); setScreen("deck-detail"); }}
+          onNewBrew={handleNewDeck}
           authUser={authUser}
-          onOpenAuth={() => setAuthSheetOpen(true)}
-          onImport={handleImport}
-          onSetCommanderForDeck={handleSetCommanderForDeck}
-          onOpenSettings={() => setScreen("settings")}
+        />
+      )}
+
+      {screen === "deck-detail" && (
+        <DeckDetailScreen
+          deck={decks.find(d => d.id === selectedDeckId)}
+          onBack={() => setScreen("brews")}
         />
       )}
 
@@ -987,11 +1019,41 @@ export default function App() {
           fontFamily: "var(--font-system)",
           maxWidth: "min(90vw, 360px)",
           width: "max-content",
-          textAlign: "center",
-          pointerEvents: "none",
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--space-3)",
+          pointerEvents: toastAction ? "auto" : "none",
           whiteSpace: "nowrap",
         }}>
-          {toastMsg}
+          <span>{toastMsg}</span>
+          {toastAction && (
+            <button
+              onClick={() => {
+                toastAction.onClick();
+                clearTimeout(toastTimer.current);
+                setToastMsg(null);
+                setToastAction(null);
+              }}
+              style={{
+                background: "var(--color-chrome)",
+                color: "var(--color-text-chrome)",
+                fontFamily: "var(--font-system)",
+                fontSize: "var(--font-size-sm)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                padding: "2px var(--space-2)",
+                cursor: "pointer",
+                borderRadius: 0,
+                flexShrink: 0,
+              }}
+            >
+              {toastAction.label}
+            </button>
+          )}
         </div>
       )}
 
@@ -1009,9 +1071,10 @@ export default function App() {
       {showNav && (
         <BottomNav
           screen={screen}
-          onGoToStack={goToStack}
-          onGoToPile={goToPile}
-          onGoToProfile={goToProfile}
+          onSearch={goToSearchTab}
+          onBrew={goToBrewTab}
+          onSearchDoubleTap={handleSearchDoubleTap}
+          onBrewDoubleTap={handleBrewDoubleTap}
         />
       )}
 
