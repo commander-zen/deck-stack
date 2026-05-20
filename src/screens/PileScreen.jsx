@@ -523,9 +523,15 @@ export default function PileScreen({
           display: "flex", alignItems: "center",
           padding: "8px 14px",
           paddingLeft: isGC ? 11 : 14,
-          borderLeft: isGC ? "3px solid var(--gc-gold)" : "none",
-          borderBottom: "0.5px solid rgba(255,255,255,0.06)",
-          background: isGC ? "rgba(201,168,76,0.05)" : isCommander ? "rgba(255,215,0,0.04)" : "transparent",
+          background: "var(--color-surface)",
+          borderStyle: "solid",
+          borderWidth: "2px",
+          borderTopColor: "var(--bevel-light)",
+          borderLeftColor: isGC ? "var(--gc-gold)" : "var(--bevel-light)",
+          borderBottomColor: "var(--bevel-dark)",
+          borderRightColor: "var(--bevel-dark)",
+          borderRadius: 0,
+          marginBottom: "var(--space-1)",
           cursor: stackable ? "default" : "pointer",
         }}
         onClick={() => !stackable && handleCardClick(card.oracle_id ?? card.id, card)}
@@ -536,8 +542,9 @@ export default function PileScreen({
 
         <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{
-            fontSize: 14,
-            color: isCommander ? "gold" : dimName ? "rgba(255,255,255,0.75)" : "var(--text)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-base)",
+            color: isCommander ? "gold" : dimName ? "var(--color-text-secondary)" : "var(--color-text-primary)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
             fontWeight: isCommander ? 500 : 400,
           }}>
@@ -640,9 +647,10 @@ export default function PileScreen({
 
         {!stackable && mana && (
           <span style={{
-            fontSize: 11, color: "rgba(255,255,255,0.4)",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            color: "var(--color-text-secondary)",
             flexShrink: 0, marginLeft: 8, marginRight: 8,
-            fontFamily: "'IBM Plex Mono', monospace",
           }}>
             {mana}
           </span>
@@ -651,16 +659,16 @@ export default function PileScreen({
         <button
           onClick={e => { e.stopPropagation(); onRemove(card.instanceId, e); }}
           style={{
-            background: "var(--color-chrome)",
-            color: "var(--color-text-chrome)",
+            background: "#800000",
+            color: "#ffffff",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
             borderStyle: "solid",
             borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
+            borderTopColor: "#ffffff",
+            borderLeftColor: "#ffffff",
+            borderBottomColor: "#400000",
+            borderRightColor: "#400000",
             padding: "var(--space-1) var(--space-3)",
             cursor: "pointer",
             borderRadius: 0,
@@ -759,16 +767,16 @@ export default function PileScreen({
           style={{
             position: "absolute", top: -6, right: -6,
             padding: 11,
-            background: "var(--color-chrome)",
-            color: "var(--color-text-chrome)",
+            background: "#800000",
+            color: "#ffffff",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
             borderStyle: "solid",
             borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
+            borderTopColor: "#ffffff",
+            borderLeftColor: "#ffffff",
+            borderBottomColor: "#400000",
+            borderRightColor: "#400000",
             cursor: "pointer",
             borderRadius: 0,
             display: "flex", alignItems: "center", justifyContent: "center",

@@ -261,7 +261,7 @@ export default function SwipeScreen({
   return (
     <div style={{
       position: "fixed", inset: 0,
-      background: "#000",
+      background: "var(--color-bg)",
       fontFamily: "'Space Grotesk', sans-serif",
       overflow: "hidden",
     }}>
@@ -295,6 +295,14 @@ export default function SwipeScreen({
                 width: "88vw",
                 height: "calc(88vw * 1.4)",
                 maxHeight: "62vh",
+                background: "var(--color-surface)",
+                borderStyle: "solid",
+                borderWidth: "2px",
+                borderTopColor: "var(--bevel-light)",
+                borderLeftColor: "var(--bevel-light)",
+                borderBottomColor: "var(--bevel-dark)",
+                borderRightColor: "var(--bevel-dark)",
+                borderRadius: 0,
               }}>
                 <img
                   src={artUrl}
@@ -307,11 +315,6 @@ export default function SwipeScreen({
                     height: "100%",
                     objectFit: "contain",
                     pointerEvents: "none",
-                    // Gold border directly on the img element, tight to card art
-                    ...(isCommanderEligible(card) && {
-                      border: "2px solid #FFD700",
-                      boxShadow: "0 0 8px rgba(255,215,0,0.5)",
-                    }),
                   }}
                 />
                 {/* Drag intent tint — scoped to card image only */}
@@ -327,12 +330,12 @@ export default function SwipeScreen({
           ) : (
             <div style={{
               position: "absolute", inset: 0,
-              background: "#0d0d0f",
+              background: "var(--color-surface)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 28, color: "#ffffff", letterSpacing: 2,
+                fontFamily: "var(--font-system)",
+                fontSize: 28, color: "var(--color-text-primary)", letterSpacing: 2,
                 textAlign: "center", padding: "0 32px",
               }}>{card?.name}</span>
             </div>
@@ -357,30 +360,34 @@ export default function SwipeScreen({
 
           {/* Drag intent labels — opacity driven by offset/animOut */}
           <div style={{
-            position: "absolute", top: 28, left: 20, zIndex: 5,
+            position: "absolute", top: "50%", left: "50%", zIndex: 5,
+            transform: "translate(-50%, -50%) rotate(-15deg)",
             opacity: animOut === "right" ? 0.9 : animOut ? 0 :
                      Math.min(0.85, Math.max(0, (offset - 20) / 60)),
-            padding: "5px 12px",
-            border: "2.5px solid #6BFF9E", borderRadius: 8,
-            color: "#6BFF9E",
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 24, letterSpacing: 3,
-            transform: "rotate(-12deg)",
-            background: "rgba(0,0,0,0.5)",
+            padding: "var(--space-2) var(--space-4)",
+            border: "4px solid #00aa00",
+            borderRadius: 0,
+            color: "#00aa00",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-xl)",
+            fontWeight: "bold",
+            background: "transparent",
             pointerEvents: "none",
             transition: dragging ? "none" : "opacity 0.15s ease",
           }}>KEEP</div>
           <div style={{
-            position: "absolute", top: 28, right: 20, zIndex: 5,
+            position: "absolute", top: "50%", left: "50%", zIndex: 5,
+            transform: "translate(-50%, -50%) rotate(15deg)",
             opacity: animOut === "left" ? 0.9 : animOut ? 0 :
                      Math.min(0.85, Math.max(0, (-offset - 20) / 60)),
-            padding: "5px 12px",
-            border: "2.5px solid #FF6B6B", borderRadius: 8,
-            color: "#FF6B6B",
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 24, letterSpacing: 3,
-            transform: "rotate(12deg)",
-            background: "rgba(0,0,0,0.5)",
+            padding: "var(--space-2) var(--space-4)",
+            border: "4px solid #cc0000",
+            borderRadius: 0,
+            color: "#cc0000",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-xl)",
+            fontWeight: "bold",
+            background: "transparent",
             pointerEvents: "none",
             transition: dragging ? "none" : "opacity 0.15s ease",
           }}>PASS</div>
@@ -515,10 +522,10 @@ export default function SwipeScreen({
           gap: 16,
         }}>
           <div style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: 32, letterSpacing: 4, color: "#ffffff",
+            fontFamily: "var(--font-system)",
+            fontSize: 32, letterSpacing: 4, color: "var(--color-text-primary)",
           }}>ALL CARDS SEEN</div>
-          <div style={{ fontSize: 14, color: "rgba(255,255,255,0.45)" }}>
+          <div style={{ fontFamily: "var(--font-system)", fontSize: 14, color: "var(--color-text-secondary)" }}>
             {pile.length} card{pile.length !== 1 ? "s" : ""} kept
           </div>
           <button
