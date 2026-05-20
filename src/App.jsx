@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { initAuth } from "./lib/supabase.js";
 import BrewShelfScreen from "./screens/BrewShelfScreen.jsx";
 import DeckDetailScreen from "./screens/DeckDetailScreen.jsx";
-import SettingsScreen from "./screens/SettingsScreen.jsx";
 import AuthSheet from "./components/AuthSheet.jsx";
 import { getOrCreateSession, loadDecks, saveDeck, deleteDeck, migrateAnonymousDecks, updateDeckStatus } from "./lib/db.js";
 import { onAuthChange } from "./lib/auth.js";
@@ -18,7 +17,7 @@ export default function App() {
   const [decks,         setDecks]         = useState(readLocalDecks);
   const [activeDeckId,  setActiveDeckId]  = useState(null);
   const [selectedDeckId, setSelectedDeckId] = useState(null);
-  const [screen,        setScreen]        = useState("brews"); // "brews" | "deck-detail" | "settings"
+  const [screen,        setScreen]        = useState("brews"); // "brews" | "deck-detail"
   const [authUser,      setAuthUser]      = useState(null);
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
 
@@ -190,10 +189,6 @@ export default function App() {
           deck={decks.find(d => d.id === selectedDeckId)}
           onBack={() => setScreen("brews")}
         />
-      )}
-
-      {screen === "settings" && (
-        <SettingsScreen onBack={() => setScreen("brews")} />
       )}
 
       <AuthSheet
