@@ -1024,6 +1024,7 @@ export default function PileScreen({
             {activeCardsRawLen}
           </span>
 
+          {/* BRACKET display — commented out
           {activeTab === "deck" && pile.length > 0 && (() => {
             const bracketColor =
               bracket === 4 ? { color: "#ef4444", border: "rgba(239,68,68,0.45)",  bg: "rgba(239,68,68,0.10)"  } :
@@ -1052,6 +1053,7 @@ export default function PileScreen({
               </div>
             );
           })()}
+          */}
 
           <button
             onClick={() => {
@@ -1108,13 +1110,12 @@ export default function PileScreen({
           )}
         </div>
 
-        {/* ── Rebuilt WREC section — deck tab with cards ── */}
+        {/* ── WREC section — commented out
         {activeTab === "deck" && pile.length > 0 && (
           <div style={{
             borderTop: "0.5px solid rgba(255,255,255,0.06)",
             padding: "10px 14px 12px",
           }}>
-            {/* Batting average */}
             <div style={{ textAlign: "center", marginBottom: 8 }}>
               <div style={{
                 fontFamily: "'Space Grotesk', sans-serif",
@@ -1147,8 +1148,6 @@ export default function PileScreen({
                 WREC SCORE
               </button>
             </div>
-
-            {/* Segment bar */}
             <div style={{ display: "flex", gap: 3 }}>
               {wrecBar.map(({ cat, abbrev, count, target }) => {
                 const segColor = count >= target ? "var(--success)"
@@ -1187,6 +1186,7 @@ export default function PileScreen({
             </div>
           </div>
         )}
+        */}
 
         {/* SET COMMANDER banner */}
         {!hasCommander && pile.length > 0 && activeTab === "deck" && onCommanderCardChange && (

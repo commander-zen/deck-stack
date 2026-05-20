@@ -1,11 +1,16 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Verify the three nav fixes in browser — confirm BottomNav is solid/visible on SwipeScreen, no ghost icons at bottom, and NEW BREW lands on PileScreen (empty pile state) instead of SearchScreen.
+Next: Verify the three screen-level fixes in browser — confirm WREC + bracket are hidden in PileScreen, search input doesn't zoom on iOS (font-size 16px), SearchScreen has no commander/raw-mode buttons, subtitle text updated, SEARCH button is pinned to bottom, and Win98 progress bar appears on Scryfall load.
 
 ---
 
 ## Completed ✅
+
+- ✅ **Three screen-level fixes** (2026-05-20)
+  - Fix 1: WREC batting-average block and BRACKET display in PileScreen commented out (not deleted)
+  - Fix 2: SearchScreen main input `fontSize` set to 16px — prevents iOS auto-zoom on focus
+  - Fix 3: SearchScreen rebuilt — removed Set Commander button + panel, removed raw/NLP toggle button, new static subtitle, SEARCH button pinned fixed above nav bar, Win98 chunky segmented progress bar replaces card-fan animation (shows on `loading` prop)
 
 - ✅ **Three structural nav fixes** (2026-05-20)
   - Fix 1+2: Removed `isGhost` logic from `BottomNav.jsx` — nav is now always solid/visible on all screens including SwipeScreen; ghost icons no longer bleed through at bottom of SwipeScreen
