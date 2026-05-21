@@ -165,9 +165,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
     if (searchInputRef.current) searchInputRef.current.value = "";
   }
 
-  const CHROME_BAR_H = 40;
-  const scrollPadBottom = `calc(${NAV_HEIGHT}px + ${CHROME_BAR_H}px + max(env(safe-area-inset-bottom), 8px) + 12px)`;
-  const chromeBarBottom = `calc(${NAV_HEIGHT}px + max(env(safe-area-inset-bottom), 0px))`;
+  const scrollPadBottom = `calc(${NAV_HEIGHT}px + max(env(safe-area-inset-bottom), 8px) + 12px)`;
 
   return (
     <div style={{
@@ -216,6 +214,28 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
         }}>
           {deck.name ?? "Brew"}
         </span>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          style={{
+            background: "#8b1a1a",
+            color: "#ffffff",
+            fontFamily: "var(--font-system)",
+            fontSize: "var(--font-size-sm)",
+            letterSpacing: 1,
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderTopColor: "#cc4444",
+            borderLeftColor: "#cc4444",
+            borderBottomColor: "#400000",
+            borderRightColor: "#400000",
+            padding: "2px 8px",
+            cursor: "pointer",
+            borderRadius: 0,
+            flexShrink: 0,
+          }}
+        >
+          DEL
+        </button>
       </div>
 
       {/* Search bar */}
@@ -364,41 +384,6 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
         )}
       </div>
 
-      {/* Delete brew button — sits just above the chrome bar */}
-      <div style={{
-        position: "fixed",
-        bottom: `calc(${NAV_HEIGHT}px + ${40}px + max(env(safe-area-inset-bottom), 0px))`,
-        left: 0,
-        right: 0,
-        maxWidth: 600,
-        margin: "0 auto",
-        padding: "0 var(--space-2)",
-        zIndex: 50,
-      }}>
-        <button
-          onClick={() => setConfirmDelete(true)}
-          style={{
-            width: "100%",
-            background: "#800000",
-            color: "#ffffff",
-            fontFamily: "var(--font-system)",
-            fontSize: "var(--font-size-sm)",
-            letterSpacing: 2,
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "#ffffff",
-            borderLeftColor: "#ffffff",
-            borderBottomColor: "#400000",
-            borderRightColor: "#400000",
-            padding: "var(--space-2) 0",
-            cursor: "pointer",
-            borderRadius: 0,
-          }}
-        >
-          DELETE BREW
-        </button>
-      </div>
-
       {/* Confirm delete dialog */}
       {confirmDelete && (
         <>
@@ -497,30 +482,6 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
           </div>
         </>
       )}
-
-      {/* Fixed chrome bar — card count */}
-      <div style={{
-        position: "fixed",
-        bottom: chromeBarBottom,
-        left: 0,
-        right: 0,
-        height: CHROME_BAR_H,
-        maxWidth: 600,
-        margin: "0 auto",
-        background: "var(--color-chrome)",
-        color: "var(--color-text-chrome)",
-        borderStyle: "solid",
-        borderWidth: "2px 0 0 0",
-        borderTopColor: "var(--bevel-light)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "var(--font-system)",
-        fontSize: "var(--font-size-sm)",
-        zIndex: 50,
-      }}>
-        {totalCards} card{totalCards !== 1 ? "s" : ""}
-      </div>
 
       {/* Card browser overlay */}
       {browserQuery && (
