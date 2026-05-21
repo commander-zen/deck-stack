@@ -1,11 +1,20 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Build the new swipe/stack architecture on top of the clean App.jsx shell — BrewShelfScreen is the entry point, DeckDetailScreen shows deck contents.
+Next: Test /nlp-testbed locally — run dev server, verify password gate works, verify RAG TRAIN flow calls Claude, verify query Run button returns results.
 
 ---
 
 ## Completed ✅
+
+- ✅ **NLP Testbed route at /nlp-testbed** (2026-05-21)
+  - `src/pages/NLPTestbed.jsx` created — password gate (sessionStorage), commander input, bracket selector 1–5, query textarea + Run, results area, RAG knowledge base accordion (conversational TRAIN input), system prompt accordion, history accordion
+  - RAG chunks persist to `nlp_rag_chunks` localStorage; system prompt to `nlp_system_prompt`
+  - Direct browser Anthropic API calls using `VITE_ANTHROPIC_API_KEY` with `anthropic-dangerous-direct-browser-access: true`; model `claude-sonnet-4-20250514`
+  - `App.jsx`: import + `window.location.pathname === "/nlp-testbed"` early return added
+  - `vercel.json`: SPA rewrite fallback added (`/(.*) → /index.html`)
+  - `.env.local`: `VITE_TESTBED_PASSWORD=cardstock2026` and `VITE_ANTHROPIC_API_KEY` added
+  - Vercel env vars: `VITE_TESTBED_PASSWORD` and `VITE_ANTHROPIC_API_KEY` added to Production + Development; Preview skipped due to CLI v54 bug (add manually via dashboard if needed)
 
 - ✅ **Demolition — old swipe architecture removed** (2026-05-20)
   - Deleted: `src/screens/SwipeScreen.jsx`, `PileScreen.jsx`, `SearchScreen.jsx`

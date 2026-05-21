@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { initAuth } from "./lib/supabase.js";
+import NLPTestbed from "./pages/NLPTestbed.jsx";
 import BrewShelfScreen from "./screens/BrewShelfScreen.jsx";
 import DeckDetailScreen from "./screens/DeckDetailScreen.jsx";
 import AuthSheet from "./components/AuthSheet.jsx";
@@ -151,6 +152,11 @@ export default function App() {
         console.error("Failed to save deck:", err);
       });
     }
+  }
+
+  // ── NLP Testbed route ─────────────────────────────────────────────────────
+  if (window.location.pathname === "/nlp-testbed") {
+    return <NLPTestbed />;
   }
 
   // ── Loading splash ────────────────────────────────────────────────────────
