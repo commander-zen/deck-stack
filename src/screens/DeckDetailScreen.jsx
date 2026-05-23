@@ -202,9 +202,12 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             padding: "var(--space-1) var(--space-2)",
             cursor: "pointer",
             borderRadius: 0,
+            minHeight: 44,
+            display: "flex",
+            alignItems: "center",
           }}
         >
-          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>arrow_back</span> BACK
+          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>arrow_back</span> BACK
         </button>
         <span style={{
           flex: 1,
@@ -232,6 +235,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             cursor: "pointer",
             borderRadius: 0,
             flexShrink: 0,
+            minHeight: 44,
           }}
         >
           DEL
@@ -288,6 +292,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             borderRadius: 0,
             flexShrink: 0,
             letterSpacing: 1,
+            minHeight: 44,
           }}
         >
           SEARCH
@@ -324,7 +329,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
               userSelect: "none",
             }}
           >
-            <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 16, marginRight: 6, flexShrink: 0, color: "gold" }}>crown</span>
+            <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 16, marginRight: 6, flexShrink: 0, color: "gold" }}>crown</span>
             <span style={{
               fontFamily: "var(--font-system)",
               fontSize: "var(--font-size-base)",
@@ -342,7 +347,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
               fontSize: 12,
               flexShrink: 0,
               marginLeft: 8,
-            }}><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>expand_more</span></span>
+            }}><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>expand_more</span></span>
           </div>
         ) : (
           <div style={{
@@ -553,8 +558,8 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
                     borderLeftColor: "var(--bevel-light)",
                     borderBottomColor: "var(--bevel-dark)",
                     borderRightColor: "var(--bevel-dark)",
-                    width: 20,
-                    height: 20,
+                    minWidth: 44,
+                    minHeight: 44,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -564,7 +569,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
                     flexShrink: 0,
                     marginLeft: 8,
                   }}
-                ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+                ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
               </div>
 
               {/* Card image + WREC tags */}

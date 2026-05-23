@@ -66,8 +66,8 @@ export default function CommanderModal({ card, onClose }) {
               borderLeftColor: "var(--bevel-light)",
               borderBottomColor: "var(--bevel-dark)",
               borderRightColor: "var(--bevel-dark)",
-              width: "20px",
-              height: "20px",
+              minWidth: 44,
+              minHeight: 44,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -76,7 +76,7 @@ export default function CommanderModal({ card, onClose }) {
               padding: 0,
               flexShrink: 0,
             }}
-          ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+          ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
         </div>
 
         {/* Modal body */}
@@ -114,8 +114,8 @@ export default function CommanderModal({ card, onClose }) {
               <button
                 onClick={() => setFaceIdx(f => f === 0 ? 1 : 0)}
                 style={{
-                  position: "absolute", bottom: 10, right: 10,
-                  width: 34, height: 34,
+                  position: "absolute", bottom: 6, right: 6,
+                  width: 44, height: 44,
                   background: "var(--color-chrome)",
                   color: "var(--color-text-chrome)",
                   borderStyle: "solid",
@@ -130,7 +130,7 @@ export default function CommanderModal({ card, onClose }) {
                   borderRadius: 0,
                   padding: 0,
                 }}
-              ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>flip</span></button>
+              ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>flip</span></button>
             )}
           </div>
         )}

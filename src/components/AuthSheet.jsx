@@ -92,8 +92,8 @@ export default function AuthSheet({ open, onClose, user }) {
                 borderLeftColor: "var(--bevel-light)",
                 borderBottomColor: "var(--bevel-dark)",
                 borderRightColor: "var(--bevel-dark)",
-                width: "20px",
-                height: "20px",
+                minWidth: 44,
+                minHeight: 44,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -102,7 +102,7 @@ export default function AuthSheet({ open, onClose, user }) {
                 padding: 0,
                 flexShrink: 0,
               }}
-            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
           </div>
 
           <div style={{

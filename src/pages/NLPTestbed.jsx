@@ -98,7 +98,7 @@ function Accordion({ title, children }) {
         }}
       >
         <span>{title}</span>
-        <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 14, color: C.muted }}>{open ? "expand_less" : "expand_more"}</span>
+        <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 14, color: C.muted }}>{open ? "expand_less" : "expand_more"}</span>
       </button>
       {open && (
         <div style={{ padding: 16, background: C.panel, borderTop: `1px solid ${C.border}` }}>

@@ -30,7 +30,7 @@ function TextList({ pile, onRemove }) {
               paddingBottom: 4,
               borderBottom: "1px solid rgba(255,255,255,0.05)",
             }}>
-              {meta.emoji} {meta.label.toUpperCase()} — {cards.length}
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", fontVariationSettings: "'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24", color: meta.color, fontSize: 20, verticalAlign: "middle" }}>{meta.icon}</span>{" "}{meta.label.toUpperCase()} — {cards.length}
             </div>
             {cards.map((card, i) => (
               <div
@@ -54,12 +54,17 @@ function TextList({ pile, onRemove }) {
                     color: "rgba(255,255,255,0.25)",
                     fontSize: 14,
                     cursor: "pointer",
-                    padding: "0 4px",
+                    padding: 0,
                     lineHeight: 1,
                     flexShrink: 0,
+                    minWidth: 44,
+                    minHeight: 44,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
-                  <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
+                  <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span>
                 </button>
               </div>
             ))}
@@ -116,6 +121,7 @@ function VisualGrid({ pile, onRemove }) {
             }}>
               {card.name}
             </div>
+            {/* NNG_TOUCH_TARGET: needs design review — 16×16 overlay on small card thumbnail, expanding to 44×44 would cover most of the card visual */}
             <button
               onClick={() => onRemove(card.id, card._deckCategory ?? "plan")}
               style={{
@@ -134,7 +140,7 @@ function VisualGrid({ pile, onRemove }) {
                 lineHeight: 1,
               }}
             >
-              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span>
             </button>
           </div>
         );
@@ -266,8 +272,8 @@ export default function DeckReviewPill({ pile, onRemove }) {
                   borderLeftColor: "var(--bevel-light)",
                   borderBottomColor: "var(--bevel-dark)",
                   borderRightColor: "var(--bevel-dark)",
-                  width: "20px",
-                  height: "20px",
+                  minWidth: 44,
+                  minHeight: 44,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -280,7 +286,7 @@ export default function DeckReviewPill({ pile, onRemove }) {
                   flexShrink: 0,
                 }}
               >
-                <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
+                <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span>
               </button>
             </div>
 

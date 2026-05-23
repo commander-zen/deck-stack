@@ -171,7 +171,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               background: "rgba(255,255,255,0.05)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 16, opacity: 0.4 }}>crown</span>
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 16, opacity: 0.4 }}>crown</span>
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
@@ -310,8 +310,8 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                   <button
                     onPointerDown={e => { e.stopPropagation(); setFaceIdx(f => f === 0 ? 1 : 0); }}
                     style={{
-                      position: "absolute", bottom: 10, right: 10,
-                      width: 34, height: 34,
+                      position: "absolute", bottom: 6, right: 6,
+                      width: 44, height: 44,
                       background: "var(--color-chrome)",
                       color: "var(--color-text-chrome)",
                       fontFamily: "var(--font-system)",
@@ -327,7 +327,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                       display: "flex", alignItems: "center", justifyContent: "center",
                       lineHeight: 1,
                     }}
-                  ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>flip</span></button>
+                  ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>flip</span></button>
                 )}
               </>
             ) : (
@@ -371,7 +371,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
-            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
             <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Noto Sans', sans-serif" }}>
               {passLabel}
             </span>
@@ -397,7 +397,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
-            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>favorite</span></button>
+            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>favorite</span></button>
             <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Noto Sans', sans-serif" }}>
               {keepLabel}
             </span>

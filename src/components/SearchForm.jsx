@@ -119,12 +119,13 @@ function RemovableChip({ label, onRemove }) {
         borderLeftColor: "var(--bevel-light)",
         borderBottomColor: "var(--bevel-dark)",
         borderRightColor: "var(--bevel-dark)",
-        padding: "var(--space-1) var(--space-3)",
+        padding: 0,
         cursor: "pointer",
         borderRadius: 0,
         lineHeight: 1,
-        display: "flex", alignItems: "center",
-      }}><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+        display: "flex", alignItems: "center", justifyContent: "center",
+        minWidth: 44, minHeight: 44,
+      }}><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
     </div>
   );
 }
@@ -305,7 +306,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
       >
         {/* Search icon + input */}
         <div style={{ display: "flex", alignItems: "center", flex: 1, gap: 10, padding: "14px 16px", minWidth: 0 }}>
-          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 18, flexShrink: 0, opacity: 0.5 }}>search</span>
+          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 18, flexShrink: 0, opacity: 0.5 }}>search</span>
           <input
             value={rawQuery}
             onChange={e => setRawQuery(e.target.value)}
@@ -355,9 +356,10 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
             cursor: "pointer",
             borderRadius: 0,
             flexShrink: 0,
+            minHeight: 44,
           }}
         >
-          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 16, flexShrink: 0, color: advOpen || activeFilterCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.45)" }}>filter_list</span>
+          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 16, flexShrink: 0, color: advOpen || activeFilterCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.45)" }}>filter_list</span>
           {activeFilterCount > 0 && (
             <span style={{
               background: "rgba(91,143,255,0.2)",

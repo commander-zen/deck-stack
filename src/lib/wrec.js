@@ -3,14 +3,13 @@
 // Measures how close a deck is to Rachel's recommended template.
 // 1.000 is perfect — going over OR under is bad.
 
-// NOTE: emoji fields (🌱📖✂️💥🗺️📋) have no direct Material Symbols equivalents — kept as-is
 export const CATEGORY_META = {
-  "ramp":            { label: "Ramp",           emoji: "🌱", target: 10, exportTag: "ramp"            },
-  "card-advantage":  { label: "Card Advantage",  emoji: "📖", target: 12, exportTag: "card advantage"  },
-  "disruption":      { label: "Disruption",      emoji: "✂️", target: 12, exportTag: "disruption"      },
-  "mass-disruption": { label: "Mass Disruption", emoji: "💥", target: 6,  exportTag: "mass disruption" },
-  "mana-base":       { label: "Mana Base",       emoji: "🗺️", target: 38, exportTag: "mana base"       },
-  "plan":            { label: "Plan",            emoji: "📋", target: 30, exportTag: "plan"            },
+  "ramp":            { label: "Ramp",           icon: "bolt",          color: "#4CAF50", target: 10, exportTag: "ramp"            },
+  "card-advantage":  { label: "Card Advantage",  icon: "library_books", color: "#2196F3", target: 12, exportTag: "card advantage"  },
+  "disruption":      { label: "Disruption",      icon: "content_cut",   color: "#F44336", target: 12, exportTag: "disruption"      },
+  "mass-disruption": { label: "Mass Disruption", icon: "crisis_alert",  color: "#FF9800", target: 6,  exportTag: "mass disruption" },
+  "mana-base":       { label: "Mana Base",       icon: "hub",           color: "#9C27B0", target: 38, exportTag: "mana base"       },
+  "plan":            { label: "Plan",            icon: "flag",          color: "#00BCD4", target: 30, exportTag: "plan"            },
 };
 
 export const CATEGORY_ORDER = [

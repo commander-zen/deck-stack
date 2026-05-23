@@ -75,6 +75,8 @@ function Toast({ msg }) {
 // ── Card Detail Sheet ─────────────────────────────────────────────────────────
 function CardDetailSheet({ card, visible, onClose, rulingsCache, onCacheRulings, rulingsLoading }) {
   const cardRulings = card ? (rulingsCache[card.id] ?? null) : null;
+  const panelRef  = useRef(null);
+  const dragState = useRef({ active: false, startY: 0 });
 
   const legalityColor = (() => {
     const l = card?.legalities?.commander;
@@ -88,6 +90,32 @@ function CardDetailSheet({ card, visible, onClose, rulingsCache, onCacheRulings,
     if (l === "banned") return "Banned";
     return "Not Legal";
   })();
+
+  function onHandleTouchStart(e) {
+    dragState.current = { active: true, startY: e.touches[0].clientY };
+  }
+  function onHandleTouchMove(e) {
+    if (!dragState.current.active) return;
+    const dy = e.touches[0].clientY - dragState.current.startY;
+    if (dy > 0 && panelRef.current) {
+      panelRef.current.style.transform = `translateY(${dy}px)`;
+      panelRef.current.style.transition = "none";
+    }
+  }
+  function onHandleTouchEnd(e) {
+    if (!dragState.current.active) return;
+    dragState.current.active = false;
+    const dy = e.changedTouches[0].clientY - dragState.current.startY;
+    if (!panelRef.current) return;
+    if (dy > 80) {
+      panelRef.current.style.transform = "translateY(100%)";
+      panelRef.current.style.transition = "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)";
+      setTimeout(() => onClose(), 300);
+    } else {
+      panelRef.current.style.transform = "translateY(0%)";
+      panelRef.current.style.transition = "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+    }
+  }
 
 return (
     <div
@@ -104,6 +132,7 @@ return (
     >
       {/* Sheet panel — stop propagation so taps inside don't close */}
       <div
+        ref={panelRef}
         onClick={e => e.stopPropagation()}
         style={{
           position: "absolute",
@@ -123,12 +152,19 @@ return (
         }}
       >
         {/* Drag handle */}
-        <div style={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "10px 0 6px",
-          flexShrink: 0,
-        }}>
+        <div
+          onTouchStart={onHandleTouchStart}
+          onTouchMove={onHandleTouchMove}
+          onTouchEnd={onHandleTouchEnd}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "12px 0 6px",
+            flexShrink: 0,
+            touchAction: "none",
+            cursor: "grab",
+          }}
+        >
           <div style={{
             width: 36,
             height: 4,
@@ -569,7 +605,7 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
             padding: 0,
             flexShrink: 0,
           }}
-        ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+        ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
       </div>
 
       {/* Content area — centered vertically */}

@@ -19,10 +19,11 @@ export default function WrecCategoryButtons({ currentTags = [], onToggle }) {
               fontSize: 13, letterSpacing: 2,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "space-between",
+              minHeight: 44,
             }}
           >
             <span>{chip.label}</span>
-            {isActive && <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 14, color: chip.color }}>check</span>}
+            {isActive && <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 14, color: chip.color }}>check</span>}
           </button>
         );
       })}

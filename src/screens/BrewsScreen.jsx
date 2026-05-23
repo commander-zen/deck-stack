@@ -100,7 +100,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                 minWidth: 44, minHeight: 44,
               }}
             >
-              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 20 }}>settings</span>
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24", fontSize: 20 }}>settings</span>
             </button>
           )}
         </div>
@@ -310,6 +310,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                         cursor: "pointer",
                         borderRadius: 0,
                         letterSpacing: 1,
+                        minHeight: 44,
                       }}
                     >CANCEL</button>
                     <button
@@ -329,6 +330,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                         cursor: "pointer",
                         borderRadius: 0,
                         letterSpacing: 1,
+                        minHeight: 44,
                       }}
                     >DELETE</button>
                   </div>
@@ -346,12 +348,14 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                       borderLeftColor: "var(--bevel-light)",
                       borderBottomColor: "var(--bevel-dark)",
                       borderRightColor: "var(--bevel-dark)",
-                      padding: "var(--space-1) var(--space-3)",
+                      padding: 0,
                       cursor: "pointer",
                       borderRadius: 0,
                       flexShrink: 0, lineHeight: 1,
+                      minWidth: 44, minHeight: 44,
+                      display: "flex", alignItems: "center", justifyContent: "center",
                     }}
-                  ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+                  ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
                 )}
               </div>
             );
