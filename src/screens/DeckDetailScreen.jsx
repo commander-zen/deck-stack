@@ -39,14 +39,14 @@ function groupCards(cards) {
 function SectionBar({ children }) {
   return (
     <div style={{
-      background: "var(--color-titlebar)",
-      color: "var(--color-titlebar-text)",
       fontFamily: "var(--font-system)",
       fontSize: "var(--font-size-sm)",
-      fontWeight: "bold",
-      padding: "3px var(--space-2)",
-      letterSpacing: 1,
-      marginTop: "var(--space-2)",
+      color: "var(--color-text-muted)",
+      fontWeight: 600,
+      letterSpacing: 2,
+      padding: "14px 14px 6px",
+      textTransform: "uppercase",
+      borderBottom: "1px solid var(--color-border)",
     }}>
       {children}
     </div>
@@ -60,15 +60,8 @@ function CardRow({ card, onClick }) {
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "8px 14px",
-        background: "var(--color-surface)",
-        borderStyle: "solid",
-        borderWidth: "2px",
-        borderTopColor: "var(--bevel-light)",
-        borderLeftColor: "var(--bevel-light)",
-        borderBottomColor: "var(--bevel-dark)",
-        borderRightColor: "var(--bevel-dark)",
-        marginBottom: "var(--space-1)",
+        padding: "10px 14px",
+        borderBottom: "1px solid var(--color-border)",
         cursor: "pointer",
         userSelect: "none",
       }}
@@ -176,35 +169,31 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
       {/* Sticky header — title bar + search bar */}
       <div style={{ position: "sticky", top: 0, zIndex: 10 }}>
       <div style={{
-        background: "var(--color-titlebar)",
-        color: "var(--color-titlebar-text)",
+        background: "var(--color-bg)",
+        borderBottom: "1px solid var(--color-border)",
         fontFamily: "var(--font-system)",
         fontSize: "var(--font-size-base)",
-        fontWeight: "bold",
-        padding: "var(--space-1) var(--space-2)",
+        padding: "0 var(--space-2)",
         display: "flex",
         alignItems: "center",
         gap: "var(--space-2)",
+        height: 52,
       }}>
         <button
           onClick={onBack}
           style={{
-            background: "var(--color-chrome)",
-            color: "var(--color-text-chrome)",
+            background: "transparent",
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
+            border: "none",
             padding: "var(--space-1) var(--space-2)",
             cursor: "pointer",
-            borderRadius: 0,
+            borderRadius: 8,
             minHeight: 44,
             display: "flex",
             alignItems: "center",
+            gap: 4,
           }}
         >
           <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>arrow_back</span> BACK
@@ -214,26 +203,23 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
+          color: "var(--color-text-primary)",
+          fontWeight: 600,
         }}>
           {deck.name ?? "Brew"}
         </span>
         <button
           onClick={() => setConfirmDelete(true)}
           style={{
-            background: "#8b1a1a",
-            color: "#ffffff",
+            background: "transparent",
+            color: "var(--color-danger)",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
             letterSpacing: 1,
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "#cc4444",
-            borderLeftColor: "#cc4444",
-            borderBottomColor: "#400000",
-            borderRightColor: "#400000",
-            padding: "2px 8px",
+            border: "1px solid rgba(239,68,68,0.3)",
+            padding: "2px 10px",
             cursor: "pointer",
-            borderRadius: 0,
+            borderRadius: 6,
             flexShrink: 0,
             minHeight: 44,
           }}
@@ -247,8 +233,8 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
         display: "flex",
         gap: "var(--space-1)",
         padding: "var(--space-1) var(--space-2)",
-        background: "var(--color-chrome)",
-        borderBottom: "2px solid var(--bevel-dark)",
+        background: "var(--color-bg)",
+        borderBottom: "1px solid var(--color-border)",
       }}>
         <input
           ref={searchInputRef}
@@ -260,16 +246,11 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             flex: 1,
             fontFamily: "var(--font-system)",
             fontSize: 16,
-            padding: "3px 6px",
-            background: "var(--color-chrome-light)",
-            color: "var(--color-text-chrome)",
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-dark)",
-            borderLeftColor: "var(--bevel-dark)",
-            borderBottomColor: "var(--bevel-light)",
-            borderRightColor: "var(--bevel-light)",
-            borderRadius: 0,
+            padding: "6px 10px",
+            background: "var(--color-surface)",
+            color: "var(--color-text-primary)",
+            border: "1px solid var(--color-border)",
+            borderRadius: 8,
             outline: "none",
             minWidth: 0,
           }}
@@ -277,19 +258,14 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
         <button
           onClick={handleSubmitSearch}
           style={{
-            background: "var(--color-chrome)",
-            color: "var(--color-text-chrome)",
+            background: "transparent",
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
+            border: "1px solid var(--color-border)",
             padding: "var(--space-1) var(--space-2)",
             cursor: "pointer",
-            borderRadius: 0,
+            borderRadius: 8,
             flexShrink: 0,
             letterSpacing: 1,
             minHeight: 44,
@@ -316,15 +292,8 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             style={{
               display: "flex",
               alignItems: "center",
-              padding: "8px 14px",
-              background: "var(--color-surface)",
-              borderStyle: "solid",
-              borderWidth: "2px",
-              borderTopColor: "var(--bevel-light)",
-              borderLeftColor: "var(--bevel-light)",
-              borderBottomColor: "var(--bevel-dark)",
-              borderRightColor: "var(--bevel-dark)",
-              marginBottom: "var(--space-1)",
+              padding: "10px 14px",
+              borderBottom: "1px solid var(--color-border)",
               cursor: "pointer",
               userSelect: "none",
             }}
@@ -405,58 +374,48 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             transform: "translate(-50%, -50%)",
             zIndex: 501,
             width: "min(88vw, 320px)",
-            background: "var(--color-chrome)",
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: 12,
+            overflow: "hidden",
           }}>
-            {/* Dialog title bar */}
-            <div style={{
-              background: "var(--color-titlebar)",
-              color: "var(--color-titlebar-text)",
-              fontFamily: "var(--font-system)",
-              fontSize: "var(--font-size-base)",
-              fontWeight: "bold",
-              padding: "var(--space-1) var(--space-2)",
-            }}>
-              Confirm Delete
-            </div>
             {/* Dialog body */}
             <div style={{
-              padding: "var(--space-4) var(--space-3)",
+              padding: "var(--space-5) var(--space-4) var(--space-3)",
               fontFamily: "var(--font-system)",
               fontSize: "var(--font-size-base)",
-              color: "var(--color-text-chrome)",
+              color: "var(--color-text-primary)",
               lineHeight: 1.5,
+              fontWeight: 600,
             }}>
-              Delete this brew? This cannot be undone.
+              Delete this brew?
+            </div>
+            <div style={{
+              padding: "0 var(--space-4) var(--space-4)",
+              fontFamily: "var(--font-system)",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+            }}>
+              This cannot be undone.
             </div>
             {/* Dialog buttons */}
             <div style={{
               display: "flex",
               justifyContent: "flex-end",
               gap: "var(--space-2)",
-              padding: "0 var(--space-3) var(--space-3)",
+              padding: "0 var(--space-4) var(--space-4)",
             }}>
               <button
                 onClick={() => setConfirmDelete(false)}
                 style={{
-                  background: "var(--color-chrome)",
-                  color: "var(--color-text-chrome)",
+                  background: "transparent",
+                  color: "var(--color-text-primary)",
                   fontFamily: "var(--font-system)",
                   fontSize: "var(--font-size-base)",
-                  borderStyle: "solid",
-                  borderWidth: "2px",
-                  borderTopColor: "var(--bevel-light)",
-                  borderLeftColor: "var(--bevel-light)",
-                  borderBottomColor: "var(--bevel-dark)",
-                  borderRightColor: "var(--bevel-dark)",
+                  border: "1px solid var(--color-border)",
                   padding: "var(--space-1) var(--space-4)",
                   cursor: "pointer",
-                  borderRadius: 0,
+                  borderRadius: 8,
                   minWidth: 72,
                 }}
               >
@@ -465,19 +424,14 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
               <button
                 onClick={handleConfirmDelete}
                 style={{
-                  background: "#800000",
-                  color: "#ffffff",
+                  background: "transparent",
+                  color: "var(--color-danger)",
                   fontFamily: "var(--font-system)",
                   fontSize: "var(--font-size-base)",
-                  borderStyle: "solid",
-                  borderWidth: "2px",
-                  borderTopColor: "#ffffff",
-                  borderLeftColor: "#ffffff",
-                  borderBottomColor: "#400000",
-                  borderRightColor: "#400000",
+                  border: "1px solid rgba(239,68,68,0.4)",
                   padding: "var(--space-1) var(--space-4)",
                   cursor: "pointer",
-                  borderRadius: 0,
+                  borderRadius: 8,
                   minWidth: 72,
                 }}
               >
@@ -525,62 +479,12 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
               onClick={e => e.stopPropagation()}
               style={{ width: "min(88vw, 340px)" }}
             >
-              {/* Title bar */}
-              <div style={{
-                background: "var(--color-titlebar)",
-                color: "var(--color-titlebar-text)",
-                fontFamily: "var(--font-system)",
-                fontSize: "var(--font-size-base)",
-                fontWeight: "bold",
-                padding: "var(--space-1) var(--space-2)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}>
-                <span style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  flex: 1,
-                }}>
-                  {card.name}
-                </span>
-                <button
-                  onClick={() => setLightboxCard(null)}
-                  style={{
-                    background: "var(--color-chrome)",
-                    color: "var(--color-text-chrome)",
-                    fontFamily: "var(--font-system)",
-                    fontSize: "var(--font-size-sm)",
-                    borderStyle: "solid",
-                    borderWidth: "2px",
-                    borderTopColor: "var(--bevel-light)",
-                    borderLeftColor: "var(--bevel-light)",
-                    borderBottomColor: "var(--bevel-dark)",
-                    borderRightColor: "var(--bevel-dark)",
-                    minWidth: 44,
-                    minHeight: 44,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    borderRadius: 0,
-                    padding: 0,
-                    flexShrink: 0,
-                    marginLeft: 8,
-                  }}
-                ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>close</span></button>
-              </div>
-
               {/* Card image + WREC tags */}
               <div style={{
                 background: "var(--color-surface)",
-                borderStyle: "solid",
-                borderWidth: "2px",
-                borderTopColor: "var(--bevel-light)",
-                borderLeftColor: "var(--bevel-light)",
-                borderBottomColor: "var(--bevel-dark)",
-                borderRightColor: "var(--bevel-dark)",
+                border: "1px solid var(--color-border)",
+                borderRadius: 10,
+                overflow: "hidden",
               }}>
                 {imgUrl ? (
                   <img

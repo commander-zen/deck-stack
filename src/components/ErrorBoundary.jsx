@@ -72,27 +72,22 @@ export default class ErrorBoundary extends Component {
 
           {/* Error message */}
           <div style={{
-            background: "var(--color-surface)",
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
-            borderRadius: 0,
+            background: "#161616",
+            border: "1px solid rgba(245,245,245,0.08)",
+            borderRadius: 8,
             padding: "14px 16px",
             marginBottom: 24,
           }}>
             <div style={{
               fontSize: 10, fontWeight: 600,
               letterSpacing: "0.1em", textTransform: "uppercase",
-              color: "#555566", marginBottom: 8,
+              color: "rgba(245,245,245,0.4)", marginBottom: 8,
             }}>
               {sourceLabel}
             </div>
             <pre style={{
               fontFamily: "'Noto Sans', sans-serif",
-              fontSize: 12, color: "#ff4d6d",
+              fontSize: 12, color: "#EF4444",
               whiteSpace: "pre-wrap", wordBreak: "break-word",
               margin: 0, lineHeight: 1.6,
             }}>
@@ -101,7 +96,7 @@ export default class ErrorBoundary extends Component {
             {error.stack && (
               <pre style={{
                 fontFamily: "'Noto Sans', sans-serif",
-                fontSize: 10, color: "#555566",
+                fontSize: 10, color: "rgba(245,245,245,0.3)",
                 whiteSpace: "pre-wrap", wordBreak: "break-word",
                 margin: "10px 0 0", lineHeight: 1.5,
               }}>
@@ -116,19 +111,14 @@ export default class ErrorBoundary extends Component {
               onClick={() => { localStorage.clear(); window.location.reload(); }}
               style={{
                 width: "100%",
-                background: "#800000",
-                color: "#ffffff",
+                background: "transparent",
+                color: "#EF4444",
                 fontFamily: "var(--font-system)",
                 fontSize: "var(--font-size-sm)",
-                borderStyle: "solid",
-                borderWidth: "2px",
-                borderTopColor: "#ffffff",
-                borderLeftColor: "#ffffff",
-                borderBottomColor: "#400000",
-                borderRightColor: "#400000",
+                border: "1px solid rgba(239,68,68,0.4)",
                 padding: "15px 20px",
                 cursor: "pointer",
-                borderRadius: 0,
+                borderRadius: 8,
                 letterSpacing: "0.1em",
               }}
             >
@@ -139,19 +129,14 @@ export default class ErrorBoundary extends Component {
               onClick={() => window.location.reload()}
               style={{
                 width: "100%",
-                background: "var(--color-titlebar)",
-                color: "var(--color-titlebar-text)",
+                background: "transparent",
+                color: "#F5F5F5",
                 fontFamily: "var(--font-system)",
                 fontSize: "var(--font-size-sm)",
-                borderStyle: "solid",
-                borderWidth: "2px",
-                borderTopColor: "#ffffff",
-                borderLeftColor: "#ffffff",
-                borderBottomColor: "#000040",
-                borderRightColor: "#000040",
+                border: "1px solid rgba(245,245,245,0.15)",
                 padding: "15px 20px",
                 cursor: "pointer",
-                borderRadius: 0,
+                borderRadius: 8,
                 letterSpacing: "0.1em",
               }}
             >

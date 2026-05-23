@@ -1,18 +1,18 @@
 @import './styles/tokens.css';
 
 :root {
-  --bg:        #12082a;
-  --panel:     #1e1040;
-  --panel2:    #2a1a50;
-  --primary:   #00e5cc;
-  --secondary: #c8b8f0;
-  --success:   #34d399;
-  --danger:    #ff4d6d;
-  --muted:     #7a6a9a;
-  --active:    #00e5cc;
-  --text:      #f0f0f8;
+  --bg:        #0D0D0D;
+  --panel:     #161616;
+  --panel2:    #1e1e1e;
+  --primary:   #F5F5F5;
+  --secondary: rgba(245,245,245,0.6);
+  --success:   #22c55e;
+  --danger:    #EF4444;
+  --muted:     rgba(245,245,245,0.45);
+  --active:    rgba(245,245,245,0.7);
+  --text:      #F5F5F5;
   --gc-gold:   #C9A84C;
-  --border:    rgba(200,184,240,0.12);
+  --border:    rgba(245,245,245,0.08);
 }
 
 *, *::before, *::after { box-sizing: border-box; }

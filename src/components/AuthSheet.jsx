@@ -51,54 +51,42 @@ export default function AuthSheet({ open, onClose, user }) {
         <div style={{
           width: "100%", maxWidth: 600,
           background: "var(--color-surface)",
-          borderStyle: "solid",
-          borderWidth: "2px",
-          borderTopColor: "var(--bevel-light)",
-          borderLeftColor: "var(--bevel-light)",
-          borderBottomColor: "var(--bevel-dark)",
-          borderRightColor: "var(--bevel-dark)",
-          borderRadius: 0,
+          borderTop: "1px solid var(--color-border)",
+          borderRadius: "12px 12px 0 0",
           overflow: "hidden",
         }}>
-          <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 2 }}>
+          {/* Drag handle */}
+          <div style={{ textAlign: "center", paddingTop: 12, paddingBottom: 4 }}>
             <div style={{
-              display: "inline-block", width: 36, height: 4, borderRadius: 0,
-              background: "var(--color-chrome-mid)",
+              display: "inline-block", width: 36, height: 4, borderRadius: 2,
+              background: "rgba(245,245,245,0.2)",
             }} />
           </div>
 
+          {/* Header row */}
           <div style={{
-            background: "var(--color-titlebar)",
-            color: "var(--color-titlebar-text)",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-base)",
-            fontWeight: "bold",
-            padding: "var(--space-1) var(--space-2)",
+            fontWeight: 600,
+            padding: "var(--space-2) var(--space-4)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            color: "var(--color-text-primary)",
           }}>
             <span>SYNC BREWS</span>
             <button
               onClick={handleClose}
               style={{
-                background: "var(--color-chrome)",
-                color: "var(--color-text-chrome)",
-                fontFamily: "var(--font-system)",
-                fontSize: "var(--font-size-sm)",
-                borderStyle: "solid",
-                borderWidth: "2px",
-                borderTopColor: "var(--bevel-light)",
-                borderLeftColor: "var(--bevel-light)",
-                borderBottomColor: "var(--bevel-dark)",
-                borderRightColor: "var(--bevel-dark)",
+                background: "transparent",
+                color: "var(--color-text-muted)",
+                border: "none",
                 minWidth: 44,
                 minHeight: 44,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                borderRadius: 0,
                 padding: 0,
                 flexShrink: 0,
               }}
@@ -106,66 +94,58 @@ export default function AuthSheet({ open, onClose, user }) {
           </div>
 
           <div style={{
-            padding: "24px 18px",
+            padding: "8px 18px",
             paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
           }}>
             {user ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ fontSize: "var(--font-size-sm)", fontFamily: "var(--font-system)", color: "var(--color-text-secondary)" }}>
+                <div style={{ fontSize: "var(--font-size-sm)", fontFamily: "var(--font-system)", color: "var(--color-text-muted)" }}>
                   Signed in as
                   <span style={{ color: "var(--color-text-primary)", marginLeft: 6 }}>
                     {user.user_metadata?.full_name || user.email}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", lineHeight: 1.5 }}>
+                <div style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
                   Your brews sync across devices automatically.
                 </div>
                 <button
                   onClick={handleSignOut}
                   style={{
-                    background: "#800000",
-                    color: "#ffffff",
+                    background: "transparent",
+                    color: "var(--color-danger)",
                     fontFamily: "var(--font-system)",
                     fontSize: "var(--font-size-sm)",
-                    borderStyle: "solid",
-                    borderWidth: "2px",
-                    borderTopColor: "#ffffff",
-                    borderLeftColor: "#ffffff",
-                    borderBottomColor: "#400000",
-                    borderRightColor: "#400000",
-                    padding: "var(--space-1) var(--space-3)",
+                    border: "1px solid rgba(239,68,68,0.4)",
+                    padding: "var(--space-2) var(--space-3)",
                     cursor: "pointer",
-                    borderRadius: 0,
-                    letterSpacing: 3,
+                    borderRadius: 8,
+                    letterSpacing: 2,
+                    minHeight: 44,
                   }}
                 >SIGN OUT</button>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                <div style={{ fontSize: 13, color: "var(--color-text-muted)", lineHeight: 1.5 }}>
                   Sign in to access your brews on any device.
                 </div>
                 {errMsg && (
-                  <div style={{ fontSize: 12, color: "var(--danger)" }}>{errMsg}</div>
+                  <div style={{ fontSize: 12, color: "var(--color-danger)" }}>{errMsg}</div>
                 )}
                 <button
                   onClick={handleGoogleSignIn}
                   disabled={status === "loading"}
                   style={{
-                    background: "var(--color-titlebar)",
-                    color: "var(--color-titlebar-text)",
+                    background: "transparent",
+                    color: "var(--color-text-primary)",
                     fontFamily: "var(--font-system)",
                     fontSize: "var(--font-size-sm)",
-                    borderStyle: "solid",
-                    borderWidth: "2px",
-                    borderTopColor: "#ffffff",
-                    borderLeftColor: "#ffffff",
-                    borderBottomColor: "#000040",
-                    borderRightColor: "#000040",
-                    padding: "var(--space-1) var(--space-3)",
+                    border: "1px solid var(--color-border)",
+                    padding: "var(--space-2) var(--space-3)",
                     cursor: status === "loading" ? "default" : "pointer",
-                    borderRadius: 0,
+                    borderRadius: 8,
                     opacity: status === "loading" ? 0.5 : 1,
+                    minHeight: 44,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                   }}
                 >

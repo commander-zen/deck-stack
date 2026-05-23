@@ -1,11 +1,21 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test in browser — verify 44px touch targets on close/delete/flip buttons, MS icons render with correct variation settings (FILL 0 wght 400 baseline; FILL 1 wght 500 for WREC category icons), WREC category icons display colored MS icons in DeckReviewPill.
+Next: Test in browser — verify minimal dark redesign renders correctly: no Win98 chrome visible, card art full-bleed, headers transparent, section labels minimal text, inputs/buttons use border-only style.
 
 ---
 
 ## Completed ✅
+
+- ✅ **Full visual redesign — strip Y2K/Win98 chrome** (2026-05-23)
+  - `tokens.css`: replaced all Win98 tokens (chrome, titlebar, bevel) with minimal dark palette — `--color-bg: #0D0D0D`, `--color-surface: #161616`, `--color-border: rgba(245,245,245,0.08)`, `--color-text-primary: #F5F5F5`, `--color-text-muted: rgba(245,245,245,0.45)`, `--color-danger: #EF4444`
+  - `index.css`: updated legacy vars (`--bg`, `--text`, `--muted`, `--primary`, `--danger`) to match new palette
+  - `BrewShelfScreen.jsx`: navy title bar → transparent header with `border-bottom`; bevel button → `border: 1px solid` outline; deck cards → `border-radius: 8` with single border
+  - `DeckDetailScreen.jsx`: SectionBar → text-only muted label; CardRow/CommanderRow → bottom-border only; title bar → transparent with minimal buttons; search bar → `background: surface, border-radius: 8`; DEL button → danger outline; delete dialog → borderRadius 12 surface modal; lightbox → removed Win98 title bar, card border-radius 10
+  - `CardBrowserScreen.jsx`: ProgressBar → plain loading text; Toast → frosted glass (`rgba` + backdrop-filter); header → transparent dark; close → transparent icon button; CardDetailSheet → `borderRadius: 12 12 0 0`, single `border-top`
+  - `AuthSheet.jsx`: rewritten — sheet → surface bg + borderRadius 12 12 0 0; Google button → transparent outlined; sign out → danger outlined
+  - `ErrorBoundary.jsx`: error box → `border-radius: 8` surface; recovery buttons → outlined style
+  - Dead code (`BrewsScreen.jsx` and other legacy components) left as-is since not in active render path
 
 - ✅ **NLP Testbed route at /nlp-testbed** (2026-05-21)
   - `src/pages/NLPTestbed.jsx` created — password gate (sessionStorage), commander input, bracket selector 1–5, query textarea + Run, results area, RAG knowledge base accordion (conversational TRAIN input), system prompt accordion, history accordion

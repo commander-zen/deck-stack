@@ -1,29 +1,20 @@
 :root {
-  /* Base / background */
-  --color-bg:           #1a1a1a;
-  --color-surface:      #2a2a2a;
-  --color-surface-raised: #333333;
+  /* Backgrounds */
+  --color-bg:              #0D0D0D;
+  --color-surface:         #161616;
 
-  /* Win98 chrome */
-  --color-chrome:       #c0c0c0;
-  --color-chrome-light: #ffffff;
-  --color-chrome-mid:   #808080;
-  --color-chrome-dark:  #404040;
-
-  /* Title bar */
-  --color-titlebar:      #000080;
-  --color-titlebar-text: #ffffff;
+  /* Borders */
+  --color-border:          rgba(245, 245, 245, 0.08);
 
   /* Text */
-  --color-text-primary:  #e8e8e8;
-  --color-text-secondary:#a0a0a0;
-  --color-text-chrome:   #1a1a1a;
+  --color-text-primary:    #F5F5F5;
+  --color-text-secondary:  rgba(245, 245, 245, 0.45);
+  --color-text-muted:      rgba(245, 245, 245, 0.45);
 
-  /* Bevel mixin values */
-  --bevel-light:       #ffffff;
-  --bevel-dark:        #404040;
-  --bevel-inset-light: #808080;
-  --bevel-inset-dark:  #c0c0c0;
+  /* Accent + status */
+  --color-accent:          #F5F5F5;
+  --color-danger:          #EF4444;
+  --color-success:         #22c55e;
 
   /* Typography */
   --font-system:    'Noto Sans', sans-serif;

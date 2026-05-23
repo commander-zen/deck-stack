@@ -1,43 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { getCardImage, fetchFirstPage } from "../lib/scryfall.js";
 
-// ── Win98 segmented progress bar ──────────────────────────────────────────────
+// ── Loading indicator ─────────────────────────────────────────────────────────
 function ProgressBar() {
-  const N = 10;
-  const [lit, setLit] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setLit(n => (n + 1) % (N + 1)), 130);
-    return () => clearInterval(t);
-  }, []);
   return (
-    <div style={{ padding: "0 40px" }}>
+    <div style={{ textAlign: "center", padding: "0 40px" }}>
       <div style={{
-        borderStyle: "solid", borderWidth: "2px",
-        borderTopColor: "var(--bevel-dark)",
-        borderLeftColor: "var(--bevel-dark)",
-        borderBottomColor: "var(--bevel-light)",
-        borderRightColor: "var(--bevel-light)",
-        background: "var(--color-surface)",
-        padding: 3,
-        display: "flex",
-        gap: 3,
-      }}>
-        {Array.from({ length: N }, (_, i) => (
-          <div key={i} style={{
-            flex: 1,
-            height: 18,
-            background: i < lit ? "var(--color-titlebar)" : "transparent",
-          }} />
-        ))}
-      </div>
-      <div style={{
-        textAlign: "center",
-        marginTop: 8,
+        color: "var(--color-text-muted)",
         fontFamily: "var(--font-system)",
         fontSize: "var(--font-size-sm)",
-        color: "var(--color-text-secondary)",
+        letterSpacing: 2,
       }}>
-        Loading cards…
+        LOADING CARDS…
       </div>
     </div>
   );
@@ -53,17 +27,14 @@ function Toast({ msg }) {
       left: "50%",
       transform: "translateX(-50%)",
       zIndex: 10,
-      background: "var(--color-chrome)",
-      color: "var(--color-text-chrome)",
+      background: "rgba(245,245,245,0.1)",
+      backdropFilter: "blur(8px)",
+      color: "var(--color-text-primary)",
       fontFamily: "var(--font-system)",
       fontSize: "var(--font-size-sm)",
-      borderStyle: "solid",
-      borderWidth: "2px",
-      borderTopColor: "var(--bevel-light)",
-      borderLeftColor: "var(--bevel-light)",
-      borderBottomColor: "var(--bevel-dark)",
-      borderRightColor: "var(--bevel-dark)",
-      padding: "5px 14px",
+      border: "1px solid rgba(245,245,245,0.15)",
+      borderRadius: 8,
+      padding: "6px 14px",
       whiteSpace: "nowrap",
       pointerEvents: "none",
     }}>
@@ -140,8 +111,9 @@ return (
           left: 0,
           right: 0,
           height: "85%",
-          background: "var(--color-bg, #1a1a1a)",
-          borderTop: "2px solid var(--bevel-light, #ffffff)",
+          background: "#161616",
+          borderTop: "1px solid rgba(245,245,245,0.1)",
+          borderRadius: "12px 12px 0 0",
           zIndex: 300,
           display: "flex",
           flexDirection: "column",
@@ -193,7 +165,7 @@ return (
                 <div style={{
                   fontSize: 18,
                   fontWeight: 700,
-                  color: "var(--color-text-primary, #e8e8e8)",
+                  color: "var(--color-text-primary)",
                   lineHeight: 1.2,
                   flex: 1,
                 }}>
@@ -202,7 +174,7 @@ return (
                 {card.mana_cost && (
                   <div style={{
                     fontSize: 13,
-                    color: "var(--color-text-secondary, #a0a0a0)",
+                    color: "var(--color-text-muted)",
                     fontFamily: "'Noto Sans', sans-serif",
                     flexShrink: 0,
                     paddingTop: 3,
@@ -216,7 +188,7 @@ return (
               {card.oracle_text && (
                 <div style={{
                   fontSize: 14,
-                  color: "var(--color-text-primary, #e8e8e8)",
+                  color: "var(--color-text-primary)",
                   lineHeight: 1.55,
                   whiteSpace: "pre-wrap",
                   marginBottom: 16,
@@ -230,7 +202,7 @@ return (
               {/* Type line + set info */}
               <div style={{
                 fontSize: 12,
-                color: "var(--color-text-secondary, #a0a0a0)",
+                color: "var(--color-text-muted)",
                 marginBottom: 16,
                 lineHeight: 1.6,
               }}>
@@ -267,7 +239,7 @@ return (
                 {card.prices?.usd && (
                   <div style={{
                     fontSize: 12,
-                    color: "var(--color-text-secondary, #a0a0a0)",
+                    color: "var(--color-text-muted)",
                   }}>
                     ${card.prices.usd}
                   </div>
@@ -283,7 +255,7 @@ return (
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: 1,
-                  color: "var(--color-text-secondary, #a0a0a0)",
+                  color: "var(--color-text-muted)",
                   marginBottom: 12,
                   textTransform: "uppercase",
                 }}>
@@ -293,14 +265,14 @@ return (
                 {rulingsLoading && !cardRulings ? (
                   <div style={{
                     fontSize: 13,
-                    color: "var(--color-text-secondary, #a0a0a0)",
+                    color: "var(--color-text-muted)",
                   }}>
                     Loading…
                   </div>
                 ) : cardRulings && cardRulings.length === 0 ? (
                   <div style={{
                     fontSize: 13,
-                    color: "var(--color-text-secondary, #a0a0a0)",
+                    color: "var(--color-text-muted)",
                     fontStyle: "italic",
                   }}>
                     No rulings for this card.
@@ -311,14 +283,14 @@ return (
                       <div key={i}>
                         <div style={{
                           fontSize: 11,
-                          color: "var(--color-text-secondary, #a0a0a0)",
+                          color: "var(--color-text-muted)",
                           marginBottom: 3,
                         }}>
                           {r.published_at}
                         </div>
                         <div style={{
                           fontSize: 13,
-                          color: "var(--color-text-primary, #e8e8e8)",
+                          color: "var(--color-text-primary)",
                           lineHeight: 1.5,
                         }}>
                           {r.comment}
@@ -545,17 +517,17 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
       overflow: "hidden",
     }}>
 
-      {/* Title bar */}
+      {/* Header */}
       <div style={{
-        background: "var(--color-titlebar)",
-        color: "var(--color-titlebar-text)",
+        background: "#0D0D0D",
+        borderBottom: "1px solid rgba(245,245,245,0.08)",
         fontFamily: "var(--font-system)",
-        fontSize: "var(--font-size-base)",
-        fontWeight: "bold",
-        padding: "var(--space-1) var(--space-2)",
+        fontSize: "var(--font-size-sm)",
+        padding: "0 var(--space-2)",
         display: "flex",
         alignItems: "center",
         gap: "var(--space-2)",
+        height: 44,
         flexShrink: 0,
       }}>
         <span style={{
@@ -563,8 +535,7 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
-          fontSize: "var(--font-size-sm)",
-          opacity: 0.9,
+          color: "rgba(245,245,245,0.5)",
         }}>
           {query}
         </span>
@@ -573,7 +544,7 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
           <span style={{
             fontFamily: "'Noto Sans', sans-serif",
             fontSize: "var(--font-size-sm)",
-            opacity: 0.65,
+            color: "rgba(245,245,245,0.4)",
             flexShrink: 0,
             letterSpacing: 1,
           }}>
@@ -584,24 +555,18 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
         <button
           onClick={onClose}
           style={{
-            background: "var(--color-chrome)",
-            color: "var(--color-text-chrome)",
+            background: "transparent",
+            color: "rgba(245,245,245,0.6)",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
             lineHeight: 1,
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
-            width: 20,
-            height: 20,
+            border: "none",
+            minWidth: 44,
+            minHeight: 44,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
-            borderRadius: 0,
             padding: 0,
             flexShrink: 0,
           }}
@@ -720,9 +685,9 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
             <div style={{
               textAlign: "center",
               marginTop: 16,
-              color: "rgba(255,255,255,0.22)",
+              color: "var(--color-text-muted)",
               fontFamily: "var(--font-system)",
-              fontSize: "var(--font-size-sm)",
+              fontSize: 12,
               letterSpacing: 1,
               userSelect: "none",
             }}>

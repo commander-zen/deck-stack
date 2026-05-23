@@ -35,38 +35,38 @@ export default function BrewShelfScreen({ decks, activeDeckId, onSelectDeck, onN
       fontFamily: "var(--font-system)",
       paddingBottom: bottomPad,
     }}>
-      {/* Title bar */}
+      {/* Header */}
       <div style={{
-        background: "var(--color-titlebar)",
-        color: "var(--color-titlebar-text)",
+        background: "var(--color-bg)",
+        borderBottom: "1px solid var(--color-border)",
         fontFamily: "var(--font-system)",
-        fontSize: "var(--font-size-base)",
-        fontWeight: "bold",
-        padding: "var(--space-1) var(--space-2)",
+        padding: "0 var(--space-2)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        height: 52,
         position: "sticky",
         top: 0,
         zIndex: 10,
       }}>
-        <span>DECK STACK</span>
+        <span style={{
+          color: "var(--color-text-primary)",
+          fontSize: "var(--font-size-lg)",
+          fontWeight: 600,
+          letterSpacing: 3,
+        }}>DECK STACK</span>
         <button
           onClick={onNewBrew}
           style={{
-            background: "var(--color-chrome)",
-            color: "var(--color-text-chrome)",
+            background: "transparent",
+            color: "var(--color-text-primary)",
             fontFamily: "var(--font-system)",
             fontSize: "var(--font-size-sm)",
-            borderStyle: "solid",
-            borderWidth: "2px",
-            borderTopColor: "var(--bevel-light)",
-            borderLeftColor: "var(--bevel-light)",
-            borderBottomColor: "var(--bevel-dark)",
-            borderRightColor: "var(--bevel-dark)",
+            border: "1px solid var(--color-border)",
             padding: "var(--space-1) var(--space-3)",
             cursor: "pointer",
-            borderRadius: 0,
+            borderRadius: 8,
+            letterSpacing: 1,
           }}
         >
           + NEW BREW
@@ -107,13 +107,8 @@ export default function BrewShelfScreen({ decks, activeDeckId, onSelectDeck, onN
               onClick={() => onSelectDeck(deck.id)}
               style={{
                 background: "var(--color-surface)",
-                borderStyle: "solid",
-                borderWidth: "2px",
-                borderTopColor: isActive ? "var(--color-titlebar)" : "var(--bevel-light)",
-                borderLeftColor: isActive ? "var(--color-titlebar)" : "var(--bevel-light)",
-                borderBottomColor: "var(--bevel-dark)",
-                borderRightColor: "var(--bevel-dark)",
-                borderRadius: 0,
+                border: isActive ? "1px solid rgba(245,245,245,0.3)" : "1px solid var(--color-border)",
+                borderRadius: 8,
                 cursor: "pointer",
                 textAlign: "left",
                 padding: 0,
@@ -126,7 +121,7 @@ export default function BrewShelfScreen({ decks, activeDeckId, onSelectDeck, onN
               <div style={{
                 width: "100%",
                 aspectRatio: "16/9",
-                background: "var(--color-surface-raised)",
+                background: "#0D0D0D",
                 overflow: "hidden",
                 flexShrink: 0,
               }}>
