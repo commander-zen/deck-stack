@@ -59,7 +59,7 @@ function TextList({ pile, onRemove }) {
                     flexShrink: 0,
                   }}
                 >
-                  ✕
+                  <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
                 </button>
               </div>
             ))}
@@ -134,7 +134,7 @@ function VisualGrid({ pile, onRemove }) {
                 lineHeight: 1,
               }}
             >
-              ✕
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
             </button>
           </div>
         );
@@ -280,7 +280,7 @@ export default function DeckReviewPill({ pile, onRemove }) {
                   flexShrink: 0,
                 }}
               >
-                ✕
+                <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
               </button>
             </div>
 

@@ -55,7 +55,7 @@ export default class ErrorBoundary extends Component {
 
           {/* Title */}
           <div style={{
-            fontFamily: "monospace",
+            fontFamily: "'Noto Sans', sans-serif",
             fontSize: 20, letterSpacing: "0.06em",
             color: "#ff4d6d",
             marginBottom: 6,
@@ -91,7 +91,7 @@ export default class ErrorBoundary extends Component {
               {sourceLabel}
             </div>
             <pre style={{
-              fontFamily: "monospace",
+              fontFamily: "'Noto Sans', sans-serif",
               fontSize: 12, color: "#ff4d6d",
               whiteSpace: "pre-wrap", wordBreak: "break-word",
               margin: 0, lineHeight: 1.6,
@@ -100,7 +100,7 @@ export default class ErrorBoundary extends Component {
             </pre>
             {error.stack && (
               <pre style={{
-                fontFamily: "monospace",
+                fontFamily: "'Noto Sans', sans-serif",
                 fontSize: 10, color: "#555566",
                 whiteSpace: "pre-wrap", wordBreak: "break-word",
                 margin: "10px 0 0", lineHeight: 1.5,

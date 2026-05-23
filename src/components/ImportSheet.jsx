@@ -357,7 +357,7 @@ export default function ImportSheet({ open, onClose, onImport }) {
                 opacity: isWorking ? 0.4 : 1,
               }}
             >
-              ✕
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
             </button>
           </div>
 

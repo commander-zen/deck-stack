@@ -15,14 +15,14 @@ export default function WrecCategoryButtons({ currentTags = [], onToggle }) {
               border: isActive ? `1px solid ${chip.border}` : "1px solid rgba(255,255,255,0.08)",
               background: isActive ? chip.bg : "rgba(255,255,255,0.04)",
               color: isActive ? chip.color : "var(--text)",
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Noto Sans', sans-serif",
               fontSize: 13, letterSpacing: 2,
               cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "space-between",
             }}
           >
             <span>{chip.label}</span>
-            {isActive && <span style={{ fontSize: 11, color: chip.color }}>✓</span>}
+            {isActive && <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 14, color: chip.color }}>check</span>}
           </button>
         );
       })}

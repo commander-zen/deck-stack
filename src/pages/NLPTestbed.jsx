@@ -89,7 +89,7 @@ function Accordion({ title, children }) {
           background: C.panel2,
           border: "none",
           color: C.text,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Noto Sans', sans-serif",
           fontSize: 13,
           fontWeight: 600,
           letterSpacing: 2,
@@ -98,7 +98,7 @@ function Accordion({ title, children }) {
         }}
       >
         <span>{title}</span>
-        <span style={{ fontSize: 10, color: C.muted }}>{open ? "▲" : "▼"}</span>
+        <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 14, color: C.muted }}>{open ? "expand_less" : "expand_more"}</span>
       </button>
       {open && (
         <div style={{ padding: 16, background: C.panel, borderTop: `1px solid ${C.border}` }}>
@@ -116,7 +116,7 @@ const inputBase = {
   border: `1px solid ${C.border}`,
   borderRadius: 8,
   color: C.text,
-  fontFamily: "'DM Sans', sans-serif",
+  fontFamily: "'Noto Sans', sans-serif",
   fontSize: 15,
   outline: "none",
   boxSizing: "border-box",
@@ -283,13 +283,13 @@ export default function NLPTestbed() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Noto Sans', sans-serif",
       }}>
         <form
           onSubmit={handlePasswordSubmit}
           style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: 280 }}
         >
-          <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, letterSpacing: 4, color: C.text }}>
+          <span style={{ fontFamily: "'Noto Sans', sans-serif", fontSize: 32, letterSpacing: 4, color: C.text }}>
             NLP TESTBED
           </span>
           <span style={{ color: C.muted, fontSize: 13 }}>Commander NLP Tool</span>
@@ -311,7 +311,7 @@ export default function NLPTestbed() {
               border: "none",
               borderRadius: 8,
               color: "#fff",
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Noto Sans', sans-serif",
               fontWeight: 700,
               fontSize: 14,
               letterSpacing: 2,
@@ -332,14 +332,14 @@ export default function NLPTestbed() {
       minHeight: "100dvh",
       background: C.bg,
       color: C.text,
-      fontFamily: "'DM Sans', sans-serif",
+      fontFamily: "'Noto Sans', sans-serif",
       padding: "24px 16px 64px",
       maxWidth: 720,
       margin: "0 auto",
       boxSizing: "border-box",
     }}>
       <h1 style={{
-        fontFamily: "'Bebas Neue', sans-serif",
+        fontFamily: "'Noto Sans', sans-serif",
         fontSize: 36,
         letterSpacing: 6,
         color: C.text,
@@ -378,7 +378,7 @@ export default function NLPTestbed() {
                 border: `1px solid ${bracket === n ? C.primary : C.border}`,
                 borderRadius: 8,
                 color: bracket === n ? "#fff" : C.muted,
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "'Noto Sans', sans-serif",
                 fontSize: 22,
                 cursor: "pointer",
               }}
@@ -411,7 +411,7 @@ export default function NLPTestbed() {
           border: "none",
           borderRadius: 8,
           color: running ? C.muted : "#fff",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Noto Sans', sans-serif",
           fontWeight: 700,
           fontSize: 14,
           letterSpacing: 2,
@@ -499,7 +499,7 @@ export default function NLPTestbed() {
               border: "none",
               borderRadius: 6,
               color: ragLoading ? C.muted : "#061a0e",
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Noto Sans', sans-serif",
               fontWeight: 700,
               fontSize: 12,
               letterSpacing: 2,
@@ -520,7 +520,7 @@ export default function NLPTestbed() {
           rows={8}
           style={{
             ...inputBase,
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: "'Noto Sans', sans-serif",
             fontSize: 13,
             lineHeight: 1.6,
             resize: "vertical",

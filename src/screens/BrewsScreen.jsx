@@ -50,7 +50,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
       minHeight: "100dvh",
       background: "var(--bg)",
       color: "var(--text)",
-      fontFamily: "'Space Grotesk', sans-serif",
+      fontFamily: "'Noto Sans', sans-serif",
     }}>
 
       {/* Header */}
@@ -67,7 +67,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
         }}>
           <span style={{
             flex: 1,
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: "'Noto Sans', sans-serif",
             fontSize: 22, letterSpacing: 4,
             color: "var(--primary)",
           }}>
@@ -75,7 +75,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
           </span>
           <span style={{
             fontSize: 11, color: "var(--muted)",
-            fontFamily: "'Space Grotesk', sans-serif",
+            fontFamily: "'Noto Sans', sans-serif",
           }}>
             {decks.length} saved
           </span>
@@ -100,11 +100,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                 minWidth: 44, minHeight: 44,
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 20 }}>settings</span>
             </button>
           )}
         </div>
@@ -282,7 +278,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                     {isActive && (
                       <span style={{
                         marginLeft: 8, fontSize: 10, letterSpacing: 1,
-                        fontFamily: "'Space Grotesk', sans-serif",
+                        fontFamily: "'Noto Sans', sans-serif",
                         color: "var(--primary)", opacity: 0.7,
                       }}>ACTIVE</span>
                     )}
@@ -355,7 +351,7 @@ export default function BrewsScreen({ decks, activeDeckId, onSwitch, onNew, onDe
                       borderRadius: 0,
                       flexShrink: 0, lineHeight: 1,
                     }}
-                  >✕</button>
+                  ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
                 )}
               </div>
             );

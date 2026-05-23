@@ -86,7 +86,7 @@ export default function SearchSheet({ open, onClose, onSearch, loading, error })
                 flexShrink: 0,
               }}
             >
-              ✕
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
             </button>
           </div>
 

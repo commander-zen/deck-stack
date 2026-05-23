@@ -114,7 +114,7 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
                 flexShrink: 0,
               }}
             >
-              ✕
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span>
             </button>
           </div>
 
@@ -259,7 +259,7 @@ export default function QuiverDrawer({ open, onClose, decks, activeDeckId, onSwi
                           borderRadius: 0,
                           fontFamily: "var(--font-system)",
                         }}
-                      >✕</button>
+                      ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
                     )}
                   </div>
                 );

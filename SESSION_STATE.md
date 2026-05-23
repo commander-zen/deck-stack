@@ -1,7 +1,7 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test CardBrowserScreen tap-to-detail sheet — verify tap opens sheet, rulings load, legality chip shows correct color, dismiss via backdrop and drag works.
+Next: Test typography migration in browser — verify Noto Sans renders, Material Symbols icons appear (close, crown, arrow_back, flip, favorite, settings, search, filter_list, expand_more, check).
 
 ---
 
@@ -26,6 +26,26 @@ Next: Test CardBrowserScreen tap-to-detail sheet — verify tap opens sheet, rul
   - `DeckDetailScreen.jsx` built out: Win98 navy title bars for COMMANDER (1) and each type group (Creatures, Planeswalkers, Instants, Sorceries, Enchantments, Artifacts, Lands, Other), card rows with qty/name/chevron, fixed chrome bar showing card count, card lightbox with WREC tag pills (read-only)
   - Navigation: BrewShelfScreen already wired to `setSelectedDeckId` + `setScreen("deck-detail")`; back button returns to "brews"
   - Commander lock removed from `handleCommanderCardChange` in App.jsx — commander now freely editable like any other field
+
+- ✅ **Typography + iconography migration to Noto Sans + Material Symbols** (2026-05-23)
+  - `index.html`: removed Space Grotesk + IBM Plex Mono; added Noto Sans variable font + Material Symbols Outlined variable font; body font-family updated
+  - `tokens.css`: `--font-system` updated to `'Noto Sans', sans-serif`
+  - All hardcoded `'Space Grotesk', sans-serif`, `'IBM Plex Mono', monospace`, `'DM Sans', sans-serif`, `'Bebas Neue', sans-serif`, `'Tahoma'/'Verdana'`, `'Courier New', monospace`, and bare `monospace` references replaced with `'Noto Sans', sans-serif` across 10+ files
+  - Icons migrated to `<span style={{ fontFamily: "'Material Symbols Outlined'", ... }}>icon_name</span>` pattern:
+    - `✕` → `close` (CardBrowserScreen, CommanderModal, CommanderSearchSheet, AuthSheet, SearchSheet, QuiverDrawer×2, DeckReviewPill×3, PileSwipeScreen, ImportSheet, BrewsScreen, DeckDetailScreen)
+    - `👑` → `crown` (DeckDetailScreen, CommanderSearchSheet, PileSwipeScreen)
+    - `↻` → `flip` (CommanderModal, PileSwipeScreen)
+    - `♥` → `favorite` (PileSwipeScreen keep button)
+    - `▲`/`▼` → `expand_less`/`expand_more` (NLPTestbed accordion)
+    - `✓` → `check` (WrecCategoryButtons)
+    - `◄ BACK` → `arrow_back` + BACK text (DeckDetailScreen)
+    - `▾` → `expand_more` (DeckDetailScreen commander row chevron)
+    - SVG search → `search` (SearchForm)
+    - SVG filter lines → `filter_list` (SearchForm)
+    - SVG gear → `settings` (BrewsScreen)
+  - Flagged: WREC category emojis (🌱📖✂️💥🗺️📋) in wrec.js — no Material Symbols equivalent, kept with comment
+  - Flagged: Google brand logo SVG in AuthSheet — no Material Symbols equivalent, kept with comment
+  - Final grep: zero results for Bebas Neue, DM Sans, Space Grotesk, IBM Plex Mono, Tahoma, Verdana
 
 - ✅ **CardBrowserScreen tap-to-detail bottom sheet** (2026-05-23)
   - Tap detection added to `onPU`: if `|dx| < 5 && |dy| < 5`, opens detail sheet (checked before flick-up logic)

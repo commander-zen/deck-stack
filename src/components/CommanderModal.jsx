@@ -76,7 +76,7 @@ export default function CommanderModal({ card, onClose }) {
               padding: 0,
               flexShrink: 0,
             }}
-          >✕</button>
+          ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
         </div>
 
         {/* Modal body */}
@@ -130,7 +130,7 @@ export default function CommanderModal({ card, onClose }) {
                   borderRadius: 0,
                   padding: 0,
                 }}
-              >↻</button>
+              ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>flip</span></button>
             )}
           </div>
         )}

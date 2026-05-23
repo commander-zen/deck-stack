@@ -26,7 +26,7 @@
   --bevel-inset-dark:  #c0c0c0;
 
   /* Typography */
-  --font-system:    'Tahoma', 'Verdana', 'Arial', sans-serif;
+  --font-system:    'Noto Sans', sans-serif;
   --font-size-base: 13px;
   --font-size-sm:   11px;
   --font-size-lg:   16px;

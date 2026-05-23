@@ -89,9 +89,7 @@ function CardDetailSheet({ card, visible, onClose, rulingsCache, onCacheRulings,
     return "Not Legal";
   })();
 
-  const dmSans = "'DM Sans', 'Segoe UI', Arial, sans-serif";
-
-  return (
+return (
     <div
       onClick={onClose}
       style={{
@@ -120,7 +118,7 @@ function CardDetailSheet({ card, visible, onClose, rulingsCache, onCacheRulings,
           flexDirection: "column",
           transform: visible ? "translateY(0%)" : "translateY(100%)",
           transition: "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)",
-          fontFamily: dmSans,
+          fontFamily: "'Noto Sans', sans-serif",
           overflow: "hidden",
         }}
       >
@@ -169,7 +167,7 @@ function CardDetailSheet({ card, visible, onClose, rulingsCache, onCacheRulings,
                   <div style={{
                     fontSize: 13,
                     color: "var(--color-text-secondary, #a0a0a0)",
-                    fontFamily: "'Courier New', monospace",
+                    fontFamily: "'Noto Sans', sans-serif",
                     flexShrink: 0,
                     paddingTop: 3,
                   }}>
@@ -537,7 +535,7 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
 
         {!loading && !error && cards.length > 0 && (
           <span style={{
-            fontFamily: "'Courier New', monospace",
+            fontFamily: "'Noto Sans', sans-serif",
             fontSize: "var(--font-size-sm)",
             opacity: 0.65,
             flexShrink: 0,
@@ -571,7 +569,7 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
             padding: 0,
             flexShrink: 0,
           }}
-        >✕</button>
+        ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
       </div>
 
       {/* Content area — centered vertically */}

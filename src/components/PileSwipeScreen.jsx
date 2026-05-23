@@ -95,7 +95,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
       position: "fixed", inset: 0, zIndex: 200,
       background: "var(--bg)",
       display: "flex", flexDirection: "column",
-      fontFamily: "'Space Grotesk', sans-serif",
+      fontFamily: "'Noto Sans', sans-serif",
       overflow: "hidden",
     }}>
 
@@ -121,7 +121,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
       }}>
         <span style={{
           flex: 1,
-          fontFamily: "'Space Grotesk', sans-serif",
+          fontFamily: "'Noto Sans', sans-serif",
           fontSize: 18, letterSpacing: 4,
           color: mode === "deck" ? "var(--primary)" : "var(--secondary)",
         }}>
@@ -171,11 +171,11 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               background: "rgba(255,255,255,0.05)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <span style={{ fontSize: 16, opacity: 0.4 }}>👑</span>
+              <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 16, opacity: 0.4 }}>crown</span>
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Space Grotesk', sans-serif" }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Noto Sans', sans-serif" }}>
               COMMANDER
             </div>
             <div style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -199,7 +199,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
         <div style={{
           fontSize: 12, letterSpacing: 2, marginBottom: 8, flexShrink: 0,
           color: done ? "var(--success)" : "rgba(255,255,255,0.5)",
-          fontFamily: "'Space Grotesk', sans-serif",
+          fontFamily: "'Noto Sans', sans-serif",
         }}>
           {done ? "REVIEW COMPLETE" : `${idx + 1} / ${snapshot.length}`}
         </div>
@@ -218,7 +218,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
               alignItems: "center", justifyContent: "center", gap: 14,
             }}>
               <div style={{
-                fontFamily: "'Space Grotesk', sans-serif",
+                fontFamily: "'Noto Sans', sans-serif",
                 fontSize: 24, letterSpacing: 3, color: "var(--success)",
               }}>
                 ALL CARDS REVIEWED
@@ -268,7 +268,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 padding: "6px 14px",
                 border: "3px solid var(--success)", borderRadius: 8,
                 color: "var(--success)",
-                fontFamily: "'Space Grotesk', sans-serif",
+                fontFamily: "'Noto Sans', sans-serif",
                 fontSize: 26, letterSpacing: 4,
                 transform: "rotate(-15deg)",
                 background: "rgba(0,0,0,0.55)",
@@ -280,7 +280,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 padding: "6px 14px",
                 border: `3px solid ${passColor}`, borderRadius: 8,
                 color: passColor,
-                fontFamily: "'Space Grotesk', sans-serif",
+                fontFamily: "'Noto Sans', sans-serif",
                 fontSize: 26, letterSpacing: 4,
                 transform: "rotate(15deg)",
                 background: "rgba(0,0,0,0.55)",
@@ -327,7 +327,7 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                       display: "flex", alignItems: "center", justifyContent: "center",
                       lineHeight: 1,
                     }}
-                  >↻</button>
+                  ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>flip</span></button>
                 )}
               </>
             ) : (
@@ -371,8 +371,8 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
-            >✕</button>
-            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Space Grotesk', sans-serif" }}>
+            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
+            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Noto Sans', sans-serif" }}>
               {passLabel}
             </span>
           </div>
@@ -397,8 +397,8 @@ export default function PileSwipeScreen({ cards: cardsProp, startIndex = 0, onKe
                 borderRadius: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
-            >♥</button>
-            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Space Grotesk', sans-serif" }}>
+            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>favorite</span></button>
+            <span style={{ fontSize: 10, color: "var(--muted)", letterSpacing: 1, fontFamily: "'Noto Sans', sans-serif" }}>
               {keepLabel}
             </span>
           </div>

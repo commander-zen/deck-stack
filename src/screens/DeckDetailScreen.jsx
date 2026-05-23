@@ -204,7 +204,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
             borderRadius: 0,
           }}
         >
-          ◄ BACK
+          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>arrow_back</span> BACK
         </button>
         <span style={{
           flex: 1,
@@ -324,7 +324,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
               userSelect: "none",
             }}
           >
-            <span style={{ fontSize: 12, marginRight: 6, flexShrink: 0 }}>👑</span>
+            <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 16, marginRight: 6, flexShrink: 0, color: "gold" }}>crown</span>
             <span style={{
               fontFamily: "var(--font-system)",
               fontSize: "var(--font-size-base)",
@@ -342,7 +342,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
               fontSize: 12,
               flexShrink: 0,
               marginLeft: 8,
-            }}>▾</span>
+            }}><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>expand_more</span></span>
           </div>
         ) : (
           <div style={{
@@ -564,7 +564,7 @@ export default function DeckDetailScreen({ deck, onBack, onUpdateDeck, onDeleteD
                     flexShrink: 0,
                     marginLeft: 8,
                   }}
-                >✕</button>
+                ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
               </div>
 
               {/* Card image + WREC tags */}

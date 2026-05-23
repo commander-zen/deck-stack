@@ -3,6 +3,7 @@
 // Measures how close a deck is to Rachel's recommended template.
 // 1.000 is perfect — going over OR under is bad.
 
+// NOTE: emoji fields (🌱📖✂️💥🗺️📋) have no direct Material Symbols equivalents — kept as-is
 export const CATEGORY_META = {
   "ramp":            { label: "Ramp",           emoji: "🌱", target: 10, exportTag: "ramp"            },
   "card-advantage":  { label: "Card Advantage",  emoji: "📖", target: 12, exportTag: "card advantage"  },

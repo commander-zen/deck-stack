@@ -167,7 +167,7 @@ export default function App() {
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <span style={{
-          fontFamily: "'Space Grotesk', sans-serif",
+          fontFamily: "'Noto Sans', sans-serif",
           fontSize: 18, letterSpacing: 4, color: "var(--muted)",
         }}>
           LOADING…

@@ -86,7 +86,7 @@ function FilterSectionLabel({ children }) {
   return (
     <div style={{
       fontSize: 11, fontWeight: 600,
-      fontFamily: "'Space Grotesk', sans-serif",
+      fontFamily: "'Noto Sans', sans-serif",
       letterSpacing: "0.1em",
       textTransform: "uppercase",
       color: "var(--muted)",
@@ -105,7 +105,7 @@ function RemovableChip({ label, onRemove }) {
       background: "rgba(91,143,255,0.12)",
       border: "1px solid rgba(91,143,255,0.25)",
       color: "var(--primary)", fontSize: 13,
-      fontFamily: "'IBM Plex Mono', monospace",
+      fontFamily: "'Noto Sans', sans-serif",
     }}>
       {label}
       <button type="button" onClick={onRemove} style={{
@@ -124,7 +124,7 @@ function RemovableChip({ label, onRemove }) {
         borderRadius: 0,
         lineHeight: 1,
         display: "flex", alignItems: "center",
-      }}>✕</button>
+      }}><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
     </div>
   );
 }
@@ -140,7 +140,7 @@ function AddInputRow({ value, onChange, onAdd, placeholder, mono = false }) {
         autoComplete="off"
         style={{
           ...inputStyle, flex: 1,
-          fontFamily: mono ? "'IBM Plex Mono', monospace" : "'Space Grotesk', sans-serif",
+          fontFamily: mono ? "'Noto Sans', sans-serif" : "'Noto Sans', sans-serif",
         }}
       />
       <button type="button" onClick={onAdd} style={{
@@ -305,12 +305,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
       >
         {/* Search icon + input */}
         <div style={{ display: "flex", alignItems: "center", flex: 1, gap: 10, padding: "14px 16px", minWidth: 0 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="var(--text2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ flexShrink: 0, opacity: 0.5 }}>
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
+          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 18, flexShrink: 0, opacity: 0.5 }}>search</span>
           <input
             value={rawQuery}
             onChange={e => setRawQuery(e.target.value)}
@@ -362,11 +357,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
             flexShrink: 0,
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M1 3h12M3 7h8M5 11h4"
-              stroke={advOpen || activeFilterCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.45)"}
-              strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+          <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 16, flexShrink: 0, color: advOpen || activeFilterCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.45)" }}>filter_list</span>
           {activeFilterCount > 0 && (
             <span style={{
               background: "rgba(91,143,255,0.2)",
@@ -374,7 +365,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
               borderRadius: 10,
               padding: "1px 6px",
               fontSize: 11, fontWeight: 600,
-              fontFamily: "'Space Grotesk', sans-serif",
+              fontFamily: "'Noto Sans', sans-serif",
               lineHeight: 1.4,
             }}>
               {activeFilterCount}
@@ -467,7 +458,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
             <FilterSectionLabel>Mana Cost</FilterSectionLabel>
             <input value={manaCost} onChange={e => setManaCost(e.target.value)}
               placeholder="{2}{G}{W}" autoComplete="off"
-              style={{ ...inputStyle, fontFamily: "'IBM Plex Mono', monospace" }} />
+              style={{ ...inputStyle, fontFamily: "'Noto Sans', sans-serif" }} />
           </div>
 
           {/* CMC */}
@@ -574,7 +565,7 @@ export default function SearchForm({ onSearch, onQueryChange, loading, error }) 
             <FilterSectionLabel>Set</FilterSectionLabel>
             <input value={setCode} onChange={e => setSetCode(e.target.value)}
               placeholder="e.g. dsk, otj, mkm" autoComplete="off"
-              style={{ ...inputStyle, fontFamily: "'IBM Plex Mono', monospace" }} />
+              style={{ ...inputStyle, fontFamily: "'Noto Sans', sans-serif" }} />
           </div>
 
           {/* ARTIST */}

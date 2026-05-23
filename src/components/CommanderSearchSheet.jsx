@@ -146,7 +146,7 @@ export default function CommanderSearchSheet({
                 padding: 0,
                 flexShrink: 0,
               }}
-            >✕</button>
+            ><span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1 }}>close</span></button>
           </div>
 
           {/* Search input */}
@@ -223,7 +223,7 @@ export default function CommanderSearchSheet({
                       background: "var(--color-chrome-dark)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      <span style={{ fontSize: 18, opacity: 0.3 }}>👑</span>
+                      <span style={{ fontFamily: "'Material Symbols Outlined'", fontStyle: "normal", lineHeight: 1, fontSize: 18, opacity: 0.3 }}>crown</span>
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
