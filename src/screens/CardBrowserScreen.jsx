@@ -72,16 +72,253 @@ function Toast({ msg }) {
   );
 }
 
+// ── Card Detail Sheet ─────────────────────────────────────────────────────────
+function CardDetailSheet({ card, visible, onClose, rulingsCache, onCacheRulings, rulingsLoading }) {
+  const cardRulings = card ? (rulingsCache[card.id] ?? null) : null;
+
+  const legalityColor = (() => {
+    const l = card?.legalities?.commander;
+    if (l === "legal")  return "#22c55e";
+    if (l === "banned") return "#ef4444";
+    return "#6b7280";
+  })();
+  const legalityLabel = (() => {
+    const l = card?.legalities?.commander;
+    if (l === "legal")  return "Commander Legal";
+    if (l === "banned") return "Banned";
+    return "Not Legal";
+  })();
+
+  const dmSans = "'DM Sans', 'Segoe UI', Arial, sans-serif";
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 299,
+        background: "rgba(0,0,0,0.55)",
+        pointerEvents: visible ? "auto" : "none",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 250ms ease",
+      }}
+    >
+      {/* Sheet panel — stop propagation so taps inside don't close */}
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: "85%",
+          background: "var(--color-bg, #1a1a1a)",
+          borderTop: "2px solid var(--bevel-light, #ffffff)",
+          zIndex: 300,
+          display: "flex",
+          flexDirection: "column",
+          transform: visible ? "translateY(0%)" : "translateY(100%)",
+          transition: "transform 300ms cubic-bezier(0.32, 0.72, 0, 1)",
+          fontFamily: dmSans,
+          overflow: "hidden",
+        }}
+      >
+        {/* Drag handle */}
+        <div style={{
+          display: "flex",
+          justifyContent: "center",
+          padding: "10px 0 6px",
+          flexShrink: 0,
+        }}>
+          <div style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            background: "rgba(255,255,255,0.2)",
+          }} />
+        </div>
+
+        {/* Scrollable content */}
+        <div style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "8px 20px 32px",
+          WebkitOverflowScrolling: "touch",
+        }}>
+          {card && (
+            <>
+              {/* Name + mana cost */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 12,
+                marginBottom: 12,
+              }}>
+                <div style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "var(--color-text-primary, #e8e8e8)",
+                  lineHeight: 1.2,
+                  flex: 1,
+                }}>
+                  {card.name}
+                </div>
+                {card.mana_cost && (
+                  <div style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary, #a0a0a0)",
+                    fontFamily: "'Courier New', monospace",
+                    flexShrink: 0,
+                    paddingTop: 3,
+                  }}>
+                    {card.mana_cost}
+                  </div>
+                )}
+              </div>
+
+              {/* Oracle text */}
+              {card.oracle_text && (
+                <div style={{
+                  fontSize: 14,
+                  color: "var(--color-text-primary, #e8e8e8)",
+                  lineHeight: 1.55,
+                  whiteSpace: "pre-wrap",
+                  marginBottom: 16,
+                  borderLeft: "2px solid rgba(255,255,255,0.1)",
+                  paddingLeft: 12,
+                }}>
+                  {card.oracle_text}
+                </div>
+              )}
+
+              {/* Type line + set info */}
+              <div style={{
+                fontSize: 12,
+                color: "var(--color-text-secondary, #a0a0a0)",
+                marginBottom: 16,
+                lineHeight: 1.6,
+              }}>
+                {card.type_line && (
+                  <div>{card.type_line}</div>
+                )}
+                {(card.set_name || card.collector_number) && (
+                  <div style={{ opacity: 0.7 }}>
+                    {[card.set_name, card.collector_number ? `#${card.collector_number}` : null]
+                      .filter(Boolean).join(" · ")}
+                  </div>
+                )}
+              </div>
+
+              {/* Commander legality chip + USD price */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 20,
+                flexWrap: "wrap",
+              }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: legalityColor,
+                  border: `1px solid ${legalityColor}`,
+                  borderRadius: 3,
+                  padding: "2px 8px",
+                  letterSpacing: 0.5,
+                }}>
+                  {legalityLabel}
+                </div>
+                {card.prices?.usd && (
+                  <div style={{
+                    fontSize: 12,
+                    color: "var(--color-text-secondary, #a0a0a0)",
+                  }}>
+                    ${card.prices.usd}
+                  </div>
+                )}
+              </div>
+
+              {/* Rulings */}
+              <div style={{
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+                paddingTop: 16,
+              }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  color: "var(--color-text-secondary, #a0a0a0)",
+                  marginBottom: 12,
+                  textTransform: "uppercase",
+                }}>
+                  Rulings
+                </div>
+
+                {rulingsLoading && !cardRulings ? (
+                  <div style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary, #a0a0a0)",
+                  }}>
+                    Loading…
+                  </div>
+                ) : cardRulings && cardRulings.length === 0 ? (
+                  <div style={{
+                    fontSize: 13,
+                    color: "var(--color-text-secondary, #a0a0a0)",
+                    fontStyle: "italic",
+                  }}>
+                    No rulings for this card.
+                  </div>
+                ) : cardRulings ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {cardRulings.map((r, i) => (
+                      <div key={i}>
+                        <div style={{
+                          fontSize: 11,
+                          color: "var(--color-text-secondary, #a0a0a0)",
+                          marginBottom: 3,
+                        }}>
+                          {r.published_at}
+                        </div>
+                        <div style={{
+                          fontSize: 13,
+                          color: "var(--color-text-primary, #e8e8e8)",
+                          lineHeight: 1.5,
+                        }}>
+                          {r.comment}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── CardBrowserScreen ─────────────────────────────────────────────────────────
 export default function CardBrowserScreen({ query, brewCards = [], onAddCard, onClose }) {
-  const [cards,     setCards]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [dragging,  setDragging]  = useState(false);
-  const [flyingIdx, setFlyingIdx] = useState(null);
-  const [toast,     setToast]     = useState(null);
+  const [cards,          setCards]          = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
+  const [activeIdx,      setActiveIdx]      = useState(0);
+  const [dragOffset,     setDragOffset]     = useState(0);
+  const [dragging,       setDragging]       = useState(false);
+  const [flyingIdx,      setFlyingIdx]      = useState(null);
+  const [toast,          setToast]          = useState(null);
+
+  // Detail sheet state
+  const [detailOpen,     setDetailOpen]     = useState(false);
+  const [detailVisible,  setDetailVisible]  = useState(false);
+  const [detailCard,     setDetailCard]     = useState(null);
+  const [rulingsCache,   setRulingsCache]   = useState({});
+  const [rulingsLoading, setRulingsLoading] = useState(false);
 
   const gestureRef = useRef(null); // { x, y, time, axis, pointerId }
   const toastTimer = useRef(null);
@@ -119,6 +356,36 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
     clearTimeout(toastTimer.current);
     setToast(msg);
     toastTimer.current = setTimeout(() => setToast(null), 1800);
+  }
+
+  // ── Detail sheet helpers ───────────────────────────────────────────────────
+  function openDetail(card) {
+    setDetailCard(card);
+    setDetailOpen(true);
+    // Two rAF frames to ensure the sheet is mounted before animating in
+    requestAnimationFrame(() => requestAnimationFrame(() => setDetailVisible(true)));
+
+    if (card && !rulingsCache[card.id]) {
+      setRulingsLoading(true);
+      fetch(`https://api.scryfall.com/cards/${card.id}/rulings`)
+        .then(r => r.json())
+        .then(data => {
+          setRulingsCache(prev => ({ ...prev, [card.id]: data.data ?? [] }));
+          setRulingsLoading(false);
+        })
+        .catch(() => {
+          setRulingsCache(prev => ({ ...prev, [card.id]: [] }));
+          setRulingsLoading(false);
+        });
+    }
+  }
+
+  function closeDetail() {
+    setDetailVisible(false);
+    setTimeout(() => {
+      setDetailOpen(false);
+      setDetailCard(null);
+    }, 320);
   }
 
   // ── Carousel geometry (computed each render from live viewport width) ───────
@@ -205,6 +472,12 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
 
     setDragging(false);
     setDragOffset(0);
+
+    // Tap: minimal movement — open detail sheet
+    if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
+      openDetail(cards[activeIdx]);
+      return;
+    }
 
     // Flick up: upward, fast, mostly vertical
     if (dy < -50 && Math.abs(dy) > Math.abs(dx) && (Math.abs(dy) / dt) > 0.35) {
@@ -419,7 +692,7 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
               letterSpacing: 1,
               userSelect: "none",
             }}>
-              FLICK UP TO ADD · SWIPE TO BROWSE
+              TAP FOR DETAILS · FLICK UP TO ADD · SWIPE TO BROWSE
             </div>
           </>
         )}
@@ -427,6 +700,17 @@ export default function CardBrowserScreen({ query, brewCards = [], onAddCard, on
         {/* Toast sits inside the positioned parent so it layers above the carousel */}
         <Toast msg={toast} />
       </div>
+
+      {/* Detail sheet — rendered inside the browser overlay so z-index is scoped correctly */}
+      {detailOpen && (
+        <CardDetailSheet
+          card={detailCard}
+          visible={detailVisible}
+          onClose={closeDetail}
+          rulingsCache={rulingsCache}
+          rulingsLoading={rulingsLoading}
+        />
+      )}
     </div>
   );
 }

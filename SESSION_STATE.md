@@ -1,7 +1,7 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test /nlp-testbed locally — run dev server, verify password gate works, verify RAG TRAIN flow calls Claude, verify query Run button returns results.
+Next: Test CardBrowserScreen tap-to-detail sheet — verify tap opens sheet, rulings load, legality chip shows correct color, dismiss via backdrop and drag works.
 
 ---
 
@@ -26,6 +26,14 @@ Next: Test /nlp-testbed locally — run dev server, verify password gate works, 
   - `DeckDetailScreen.jsx` built out: Win98 navy title bars for COMMANDER (1) and each type group (Creatures, Planeswalkers, Instants, Sorceries, Enchantments, Artifacts, Lands, Other), card rows with qty/name/chevron, fixed chrome bar showing card count, card lightbox with WREC tag pills (read-only)
   - Navigation: BrewShelfScreen already wired to `setSelectedDeckId` + `setScreen("deck-detail")`; back button returns to "brews"
   - Commander lock removed from `handleCommanderCardChange` in App.jsx — commander now freely editable like any other field
+
+- ✅ **CardBrowserScreen tap-to-detail bottom sheet** (2026-05-23)
+  - Tap detection added to `onPU`: if `|dx| < 5 && |dy| < 5`, opens detail sheet (checked before flick-up logic)
+  - `CardDetailSheet` component: slides up from bottom covering 85% of screen, `translateY` transition via `detailVisible` state + two-rAF mount trick
+  - Sheet contents: card name + mana cost, oracle text, type line + set/collector number, commander legality chip (green/red/muted), USD price
+  - Rulings: fetched lazily from Scryfall `/cards/{id}/rulings` on open, cached in `rulingsCache` keyed by card.id — repeat opens skip fetch
+  - Backdrop at `zIndex: 299`, sheet at `zIndex: 300`; tap backdrop to dismiss
+  - All sheet text uses DM Sans; gesture hint updated to include "TAP FOR DETAILS"
 
 - ✅ **Three screen-level fixes** (2026-05-20)
   - Fix 1: WREC batting-average block and BRACKET display in PileScreen commented out (not deleted)
