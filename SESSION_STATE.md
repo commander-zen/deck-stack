@@ -1,7 +1,7 @@
 # SESSION STATE — deck-swipe
 
 ## Cold Start Prompt
-Next: Test typography migration in browser — verify Noto Sans renders, Material Symbols icons appear (close, crown, arrow_back, flip, favorite, settings, search, filter_list, expand_more, check).
+Next: Test in browser — verify 44px touch targets on close/delete/flip buttons, MS icons render with correct variation settings (FILL 0 wght 400 baseline; FILL 1 wght 500 for WREC category icons), WREC category icons display colored MS icons in DeckReviewPill.
 
 ---
 
@@ -46,6 +46,19 @@ Next: Test typography migration in browser — verify Noto Sans renders, Materia
   - Flagged: WREC category emojis (🌱📖✂️💥🗺️📋) in wrec.js — no Material Symbols equivalent, kept with comment
   - Flagged: Google brand logo SVG in AuthSheet — no Material Symbols equivalent, kept with comment
   - Final grep: zero results for Bebas Neue, DM Sans, Space Grotesk, IBM Plex Mono, Tahoma, Verdana
+
+- ✅ **Touch target audit + MS font-variation-settings + WREC icon migration** (2026-05-23)
+  - All 20×20 close buttons → `minWidth/minHeight: 44` (AuthSheet, QuiverDrawer, SearchSheet, CommanderSearchSheet, ImportSheet, CommanderModal, DeckReviewPill, DeckDetailScreen)
+  - Flip buttons (PileSwipeScreen, CommanderModal) → `width/height: 44`
+  - Deck-delete icon buttons (BrewsScreen, QuiverDrawer) → `minWidth/minHeight: 44`
+  - DeckDetailScreen DEL/BACK/SEARCH → `minHeight: 44`
+  - WrecCategoryButtons → `minHeight: 44`
+  - SearchForm filters toggle + RemovableChip close → `minHeight: 44`
+  - DeckReviewPill TextList row remove → `minWidth/minHeight: 44`
+  - Flagged: DeckReviewPill VisualGrid 16×16 overlay button (NNG_TOUCH_TARGET: needs design review)
+  - CardDetailSheet drag handle: touch handlers added; drag > 80px dismisses with animation
+  - `fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24"` added to all 14 files with MS icon spans
+  - `wrec.js` CATEGORY_META: `emoji` fields replaced with `icon` (MS name) + `color`; DeckReviewPill renders FILL 1 / wght 500 colored icons
 
 - ✅ **CardBrowserScreen tap-to-detail bottom sheet** (2026-05-23)
   - Tap detection added to `onPU`: if `|dx| < 5 && |dy| < 5`, opens detail sheet (checked before flick-up logic)
